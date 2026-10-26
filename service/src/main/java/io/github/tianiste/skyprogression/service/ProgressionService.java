@@ -62,6 +62,7 @@ public final class ProgressionService {
                     send(x, 200, report(query.substring(4)));
                 }
                 case "/stats" -> send(x, 200, stats(query(x)));
+                case "/compare" -> send(x, 200, compare(query(x)));
                 case "/prices" -> send(x, 200, prices());
                 default -> send(x, 404, Map.of("error", "Unknown endpoint"));
             }
@@ -102,6 +103,25 @@ public final class ProgressionService {
             context = new StatContext(zone.isEmpty() ? null : StatContext.Zone.valueOf(zone), target.isEmpty() ? null : StatContext.Target.valueOf(target),
                     !"false".equals(q.get("god")));
         } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, zone or block target"); }
+        Member m = member(ign, profileId);
+        StatsReport result = StatsReport.of(m.member, m.owned, method, tool, !"equipped".equals(q.get("gear")), context);
+        result.player = ign; result.profileId = m.id; result.profile = m.name;
+        result.fetchedAt = m.fetchedAt;
+        result.resale = resale(result.resaleQueries);
+        return result;
+    }
+    /** Every rated method's automatic totals with its best owned gear, best tool and usual zone, for the method comparison. */
+    private MethodComparison.Report compare(Map<String, String> q) throws Exception {
+        String ign = q.getOrDefault("ign", ""), profileId = q.getOrDefault("profile", "");
+        if (!ign.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
+        if (!profileId.matches("[a-fA-F0-9-]{0,40}")) throw new LookupException(400, "Invalid profile");
+        Member m = member(ign, profileId);
+        MethodComparison.Report result = MethodComparison.of(m.member, m.owned, !"false".equals(q.get("god")));
+        result.player = ign; result.profileId = m.id; result.profile = m.name; result.fetchedAt = m.fetchedAt;
+        return result;
+    }
+    private record Member(JsonObject member, Loadout.Owned owned, String id, String name, String fetchedAt) {}
+    private Member member(String ign, String profileId) throws Exception {
         Cached cached = fetch(ign);
         JsonObject entry = null;
         for (JsonElement p : cached.raw.getAsJsonArray("profiles")) {
@@ -112,11 +132,7 @@ public final class ProgressionService {
         JsonObject member = at(entry, "members", cached.uuid).getAsJsonObject();
         String id = string(at(entry, "profile_id"), "");
         Loadout.Owned owned = cached.owned.computeIfAbsent(id, ignored -> Loadout.read(member));
-        StatsReport result = StatsReport.of(member, owned, method, tool, !"equipped".equals(q.get("gear")), context);
-        result.player = ign; result.profileId = id; result.profile = string(at(entry, "cute_name"), "Profile");
-        result.fetchedAt = cached.report.fetchedAt;
-        result.resale = resale(result.resaleQueries);
-        return result;
+        return new Member(member, owned, id, string(at(entry, "cute_name"), "Profile"), cached.report.fetchedAt);
     }
     private Report report(String ign) throws Exception { return fetch(ign).report; }
     private record Timed<T>(Instant time, T value) {}
