@@ -31,11 +31,13 @@ run off the Minecraft render thread and are cached.
 **This is not yet full Mining Cat parity.** The item catalog is generated from the official
 items resource (every obtainable item with a mining stat). The mod reads individual gear copies,
 displayed stats, enchantments, gemstone slots, drill parts, reforges and rarity, and recommends
-enchantments, Polarvoid, gemstones, drill parts, reforge stones (NEU reforge table), better base
-items and level-100 pets or a Quick Claw, using owned materials before buying. Gem methods rank
+enchantments, Polarvoid, gemstones and gem type swaps, drill parts, reforge stones (NEU reforge
+table), recombobulation, Divan's Powder Coating, better base items and full mining sets, level-100
+pets or a Quick Claw, essence perks, attribute shards and HOTM perk levels (powder shown as grinding),
+using owned materials and balances before buying. Gem methods rank
 upgrades by their Flawless/hour gain, other methods by drops, with a step-by-step plan. Unknown
-prices remain unknown. HOTM perk upgrades, attributes, set bonuses, recipe/resale costing and rates
-for non-gem methods still need further implementation. Method stats are computed automatically from
+prices remain unknown. Unlocking new HOTM perks, recipe/resale costing and rates for non-gem methods still need further
+implementation. Method stats are computed automatically from
 the profile using the best gear and tool you own for the method (Breakdown tab; you can switch to your
 equipped gear or a specific tool); Type Stats overrides them.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API

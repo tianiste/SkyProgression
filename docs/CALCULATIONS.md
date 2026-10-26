@@ -313,6 +313,51 @@ Block Fortune methods; Heated (Heat), Glacial (Cold), Stellar (Fallen Stars), Lu
 (Mithril/Titanium) and Scraped (matching Breaking Power) are conditional and not counted; Auspicious "+1% Mining
 Fortune" is unclear (additive or multiplicative) and not counted.
 
+## Recombobulation, gem swaps, powder coating, Power accessories
+
+- Recombobulator 3000 (item lore: "Permanently increases the rarity of an item", once per item; API `rarity_upgrades`):
+  base stats do not change; the reforge (table above) and socketed Jade/Amber/Topaz take their values at the next
+  rarity. Delta = (reforge + gems at next rarity) - (at the current rarity). Offered when it adds a mining stat.
+- Gem type swaps: flexible (Mining/Universal) slots may switch to another mining gem type. Delta = new gem - the old
+  gem's stat (lost); the removal fee of the old gem's quality is included. A non-mining old gem loses no mining stat.
+- Divan's Powder Coating (item lore, NEU `items/DIVAN_POWDER_COATING.json`; wiki): +500 Mining Speed on a drill,
+  +10 Mining Fortune on each Armor of Divan piece and the Pendant of Divan; once per item (API
+  `divan_powder_coating`, as read by SkyHanni and Coflnet).
+- Power Talisman/Ring/Artifact/Relic are in the catalog for their gem slots (items resource); they have no mining
+  stats of their own, so only socket proposals come from them. Accessory gems give half stats.
+
+## Essence perks, attributes, HOTM perk levels
+
+The companion reads each source's level and the balances, and sends target levels with their counted stats in the
+method's context (same conditions as the Breakdown) and the total cost from the current level:
+- Essence perks: Eager Miner (Gold Essence, +10 Mining Speed per level) and Rhinestone Infusion (Diamond Essence, +2
+  Gemstone Fortune per level), 100, 200, ... 1,000 essence for levels 1..10 (NEU `constants/essenceshops.json`). The
+  essence balance (`currencies.essence.<TYPE>.current`) is used first; the rest is priced at the bazaar quote.
+- Attributes: shards per level from the cumulative table above (NEU `attribute_shards.json` gives the same per-level
+  counts); bazaar IDs from that file (SHARD_FLITTER, SHARD_MINER_ZOMBIE, SHARD_QUARTZFANG, SHARD_HIDEONLEAF,
+  SHARD_GEMZIE, SHARD_BAL). Shards in the Hunting Box are not read, so every shard is bought. Quartz Speed (weather)
+  and Deep Technique (per-block roll) are not counted and therefore never proposed.
+- HOTM perks: levelling perks already unlocked in the evaluated tree, to the next level, +5, +10, +25 and max.
+  Powder per level from NEU `constants/hotmlayout.json`: floor((level + 2)^e) with e = 3 (Mining Speed), 3.05
+  (Mining Fortune, Rags to Riches), 3.2 (Speedy/Fortunate Mineman), 2.3 (Professional, Strong Arm), 4 (Gem Lover,
+  Old-School, Blockhead, Metal Head), 2.6 (Efficient Miner), 2.2 (Mole); Mining Master floor((level + 8)^5); level is
+  the current level. Unspent powder = `powder_<type>` - `powder_spent_<type>`. An option is free when the unspent powder
+  covers it, otherwise it is shown as grinding (no coin price) and the plan skips it. Unlocking new perks (tree path,
+  HOTM tier, tokens) is not proposed.
+In the plan a taken level replaces the chain's stats, the chain's earlier spending is subtracted from its later
+levels, and balances shrink by what was used.
+
+## Set bonuses
+
+Armor set bonuses with mining stats (item lore in the NEU repository; wiki Mineral and Glossy Mineral Armor):
+Miner Outfit full set +40 Mining Speed; Glacite full set +2 Mining Speed per Mining level; Mineral +100 and Glossy
+Mineral +150 Mining Spread per piece on ores and blocks (Ore and Block Fortune methods). Every armor piece swap adds
+the bonus it completes and subtracts the one it breaks, and each set is also offered as a full four-piece purchase
+(owned pieces free). Mixed Mineral/Glossy pieces are counted per set (whether they combine is unknown). Not counted:
+Goblin Smart Miner (converts Intelligence, not known to the engine) and Yog Absorb (+1 Mining Speed per 5 Yog kills).
+Known gap: the Breakdown reads a set bonus from the stored lore, which shows "+2 Mining Speed" for Glacite Expert
+Miner rather than 2 x level, so the baseline and this table can differ for a worn Glacite set.
+
 ## Pets and pet items
 
 The companion sends the evaluated pet's counted stats (same ledger rules as the Breakdown, in the method's zone and

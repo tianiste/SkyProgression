@@ -36,10 +36,13 @@ fix them later; do not block on the in-game test. Order:
    items resource (112 items; tools limited by Breaking Power); reforge-stone swaps from the NEU table (MIT); level-100
    pet swaps per rarity (lowest level-100 BIN) and Quick Claw. Fixture Grotto: Legendary Scatha +5.1% over the
    L97 Bal + Quick Claw; MF Gems keeps Bal. Rules: CALCULATIONS.md "Item catalog", "Reforges", "Pets and pet items".
-   **Next:** remaining sources through the same Proposal/apply path: recombobulation, powder coating, gemstone type
-   swaps in flexible slots, accessories' gem slots and Relic/Artifact of Power, HOTM perks/Blue Cheese, attributes,
-   essence perks and collections (marked as grinding, not purchases); set bonuses for the new armor. Owner checks
-   the Upgrades tab (reforge and pet cards, plan card) and that the companion prices pets.
+   **More sources (`628c77c`, `5b5dc2c`, `c713a6e`, in-game test pending):** recombobulation, gem type swaps, Divan's
+   Powder Coating, Power accessories' gem slots; essence perks, attribute shards and HOTM perk levels (free from
+   unspent powder, else grinding); Miner Outfit/Glacite/Mineral set bonuses in armor swaps plus full-set offers.
+   Rules: CALCULATIONS.md "Recombobulation, gem swaps...", "Essence perks, attributes, HOTM perk levels", "Set bonuses".
+   **Next:** owner checks the Upgrades tab (new cards, grinding label, plan) after restarting the companion. Then:
+   Breakdown reading Glacite Expert Miner as 2 x Mining level and Mineral tiered bonuses per set (not per piece);
+   unlocking new HOTM perks, Blue Cheese omelette, collections/skill as grinding; rate models for non-gem methods.
 3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
    prerequisites, mutual exclusions and prices. Each method values them through its rate model
    (coins/hour gained / cost); then a greedy sequential plan (take best, recompute).
@@ -162,7 +165,12 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (catalog, reforges, pets, 2026-10-26): `./gradlew build :service:installDist` succeeded after
+Latest verification (recomb, coating, gem swaps, profile perks, set bonuses, 2026-10-26): `./gradlew build
+:service:installDist` succeeded after each step; existing tests pass (the maxed-drill test now also sets coating and
+recombobulation; no tests added). Plans checked on the fixture (MF Gems, Obsidian) with a scratch runner: coating
++6.9% on the drill once Will-o'-wisp crosses the tick; Mining Master 9 -> 10 needs 1,419,857 Glacite Powder vs
+1,338,699 unspent, so it is shown as grinding; Obsidian picks Glossy Mineral pieces. Mod screens not run by the agent.
+Earlier verification (catalog, reforges, pets, 2026-10-26): `./gradlew build :service:installDist` succeeded after
 each step; existing tests pass (the maxed-drill test now also allows reforge swaps; no tests added). Catalog
 regenerated from a saved items resource; NEU table generated from commit `f19539bb`; rankings and plans checked on
 the fixture with a scratch runner; Coflnet pet BIN filter checked with curl; StatsReport pet fields round-trip
@@ -303,6 +311,11 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-26 (more upgrade sources): `GearUpgrades` adds recombobulate/coating/gem swaps; Power accessories via
+`CatalogExtractor.GEM_ONLY` (stat key order now follows the resource). `ProfileUpgrades` (Option/State chains with
+balances and per-chain spending) built in `StatsReport.of`, carried by `RateBasis.profile`; `ProgressionEngine.setBonus`
+and full-set candidates. Open: whether Mineral and Glossy pieces combine, Auspicious +1%, Hunting Box shard balance.
 
 2026-10-26 (catalog, reforges, pets): `CatalogExtractor` (`:core:extractCatalog`) rebuilds `mining-items.json` from
 the items resource, keeping hand-checked entries, groups and sources; `MiningMethod.breakingPower()`. `NeuExtractor`
