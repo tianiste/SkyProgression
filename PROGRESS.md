@@ -39,8 +39,8 @@ effective player stats. Target scope (feature spec from SkyCompass, see
 5. Document numerical discrepancies instead of tuning constants to match references.
 
 Acceptance: supported stats derive from API inputs with source breakdowns, bonuses are
-not double-counted, unsupported sources remain explicit, regression tests cover the
-fixture, and loading/calculation stays off the game thread. Full method validation
+not double-counted, unsupported sources remain explicit, and loading/calculation stays
+off the game thread. Full method validation
 still needs matching Mining Cat rates/stat totals and the owner's in-game comparison.
 
 **Method specs:** `docs/references/METHOD-GUIDES.md` (from Mining Cult guides; raw
