@@ -86,3 +86,19 @@ Our engine (`StatBreakdown`, equipped loadout with the DR-X655 selected) on the 
   unknown. Candidates we keep situational on purpose: Sky Mall +100 (random daily buff), Haste III
   from the Haste Artifact (+150). Neither explains the .5. Not tuned; needs the owner's in-game
   stat menu.
+
+## In-game stat menu (owner screenshot, 2026-10-26, drill held)
+
+Ground truth for Debotes · Zucchini at an unknown location and with unknown active buffs:
+Breaking Power 9, Mining Speed 7,610, Mining Spread 300, Gemstone Spread 2.5, Pristine 13.4,
+Mining Fortune 2,286.27, Ore Fortune 110, Block Fortune 125, Dwarven Metal Fortune 5,
+Gemstone Fortune 195.
+
+Against our engine (equipped, DR-X655 selected, Dwarven Mines context): Fortune 1,724.5
+(+561.77 in game), Speed 7,050 (+560 in game).
+Hypothesis, not encoded: 2,286.27 / 1.26 = 1,814.5 exactly, which suggests +25% Mining Fiesta
+(Cole) and +1% Auspicious Bonus combining additively on the whole total. The remaining +90 flat
+Fortune and +560 Speed would then come from temporary or situational sources (Sky Mall, potions,
+lanterns, weather, Better Together). This needs confirming with the menu's per-source details
+and the active buffs at capture time. Note the in-game values differ from SkyCompass's capture
+(1,724.5 / 7,150.5), so buffs likely changed between captures.
