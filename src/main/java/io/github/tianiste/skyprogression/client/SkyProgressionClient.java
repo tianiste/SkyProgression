@@ -7,6 +7,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 
 public final class SkyProgressionClient implements ClientModInitializer {
     private boolean open;
+    private boolean previewed;
     @Override public void onInitializeClient() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) -> {
             for (String command : new String[]{"skyprogression", "sp"}) {
@@ -15,6 +16,10 @@ public final class SkyProgressionClient implements ClientModInitializer {
         });
         // Open on the following tick: the chat screen closes after command execution.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (!previewed && Boolean.getBoolean("skyprogression.preview")
+                    && client.screen instanceof net.minecraft.client.gui.screens.TitleScreen && client.getOverlay() == null) {
+                previewed = true; ClientData.INSTANCE.demo(); open = true;
+            }
             if (open) { open = false; client.setScreen(new ProgressionScreen()); }
         });
     }

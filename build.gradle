@@ -20,3 +20,10 @@ processResources {
     }
 }
 java { toolchain.languageVersion = JavaLanguageVersion.of(25); withSourcesJar() }
+loom {
+    runs {
+        client {
+            if (project.hasProperty('preview')) vmArg '-Dskyprogression.preview=true'
+        }
+    }
+}
