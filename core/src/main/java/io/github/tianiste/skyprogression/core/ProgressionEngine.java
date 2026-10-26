@@ -66,7 +66,18 @@ public final class ProgressionEngine {
     }
     public List<Upgrade> upgrades(Profile p, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis) {
         if (!p.inventoryEnabled) return List.of(); // Missing API is not an empty inventory.
-        List<Upgrade> result = new ArrayList<>(candidates(p, bestOwned(p, m, focus), m, focus, baseline, prices, basis).stream().map(Candidate::upgrade).toList());
+        // Levels of one source (HOTM perk, essence perk, attribute, Efficiency, Prismatic, Polarvoid, one gem slot) are
+        // alternatives: list only the best value of each; the plan still steps through them.
+        Map<String, List<Upgrade>> chains = new LinkedHashMap<>();
+        for (Candidate c : candidates(p, bestOwned(p, m, focus), m, focus, baseline, prices, basis))
+            chains.computeIfAbsent(listKey(c), k -> new ArrayList<>()).add(c.upgrade());
+        List<Upgrade> result = new ArrayList<>();
+        for (List<Upgrade> chain : chains.values()) {
+            Upgrade best = chain.stream().min(Comparator.comparing((Upgrade u) -> !u.blocked().isEmpty()).thenComparing(u -> u.cost() == null)
+                    .thenComparingDouble(Upgrade::costPerUnit).thenComparing(Comparator.comparingDouble(Upgrade::gain).reversed())).orElseThrow();
+            if (chain.size() > 1) best.item().source += " (" + (chain.size() - 1) + " other level" + (chain.size() > 2 ? "s" : "") + " of this hidden; the plan steps through them.)";
+            result.add(best);
+        }
         result.sort(Comparator.comparing((Upgrade u) -> !u.blocked().isEmpty()).thenComparingDouble(Upgrade::costPerUnit));
         return result;
     }
@@ -79,6 +90,19 @@ public final class ProgressionEngine {
      */
     public List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps) {
         if (!p.inventoryEnabled) return List.of();
+        // A step that replaces what an earlier step bought (a second reforge on one item, a new helmet after enchanting
+        // the old one) would pay twice: ban the earlier step and plan again, so the later choice is taken directly.
+        Set<String> banned = new HashSet<>();
+        List<Step> steps;
+        int restarts = 0;
+        while ((steps = plan(p, m, baseline, prices, basis, maxSteps, banned)) == null && ++restarts <= 2 * maxSteps) {}
+        return steps != null ? steps : plan(p, m, baseline, prices, basis, maxSteps, banned, true);
+    }
+    private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, Set<String> banned) {
+        return plan(p, m, baseline, prices, basis, maxSteps, banned, false);
+    }
+    /** One greedy pass; null when a conflict was found (its earlier step is then added to banned). */
+    private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, Set<String> banned, boolean ignoreConflicts) {
         Profile state = new Profile();
         state.mode = p.mode; state.hotm = p.hotm; state.enchantingLevel = p.enchantingLevel; state.inventoryEnabled = true;
         state.owned = new HashMap<>(p.owned);
@@ -88,15 +112,22 @@ public final class ProgressionEngine {
         RateBasis current = basis;
         double start = metric(m, stats, current), total = 0;
         List<Step> steps = new ArrayList<>();
+        List<Candidate> taken = new ArrayList<>();
         while (steps.size() < maxSteps) {
             Candidate best = null;
             for (Candidate c : candidates(state, owned, m, null, stats, prices, current)) {
                 Upgrade u = c.upgrade();
-                if (!u.blocked().isEmpty() || u.cost() == null) continue;
+                if (!u.blocked().isEmpty() || u.cost() == null || banned.contains(id(c))) continue;
                 if (best == null || u.costPerUnit() < best.upgrade().costPerUnit()
                         || u.costPerUnit() == best.upgrade().costPerUnit() && u.gain() > best.upgrade().gain()) best = c;
             }
             if (best == null) break;
+            if (!ignoreConflicts) for (Candidate earlier : taken) {
+                if (Collections.disjoint(replaces(best), owns(earlier))) continue;
+                banned.add(id(earlier));
+                return null;
+            }
+            taken.add(best);
             Upgrade u = best.upgrade();
             if (best.pet() != null) current = current.withPet(best.pet());
             else if (best.profile() != null) current = current.withProfile(best.profile());
@@ -126,6 +157,52 @@ public final class ProgressionEngine {
     /** An upgrade plus what applying it needs: the gear change (null for a replacement item) and the materials used. */
     private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet, ProfileUpgrades.Option profile, List<Item> set) {
         Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null, null, null); }
+    }
+    /** Which part of an item an in-place upgrade replaces (null for added levels, recombobulation and coating). */
+    private static String gearKind(String label) {
+        if (label.contains("[") && label.contains("]")) return "gem:" + label.substring(label.indexOf('[') + 1, label.indexOf(']'));
+        if (label.contains(" reforge")) return "reforge";
+        if (label.contains("Fuel Tank")) return "fuel";
+        if (label.contains("Drill Engine")) return "engine";
+        if (label.contains("Omelette") || label.contains("Seasoning")) return "module";
+        return null;
+    }
+    private static String id(Candidate c) { return c.set() != null ? "set:" + c.upgrade().item().name : c.upgrade().item().id; }
+    /** Investments a step makes: the slot of the gear it changes or fills, and the part it fits. */
+    private static Set<String> owns(Candidate c) {
+        Upgrade u = c.upgrade();
+        Set<String> keys = new HashSet<>();
+        if (c.apply() != null) {
+            keys.add("slot:" + u.current().group);
+            String kind = gearKind(u.item().name);
+            if (kind != null) keys.add(u.current().instance + "|" + kind);
+        } else if (c.set() != null) c.set().forEach(i -> keys.add("slot:" + i.group));
+        else if (c.pet() != null) keys.add("pet");
+        else if (c.profile() == null) keys.add("slot:" + u.item().group);
+        return keys;
+    }
+    /** What a step throws away: a part it swaps out, the item in a slot it fills, or the current pet. */
+    private static Set<String> replaces(Candidate c) {
+        Upgrade u = c.upgrade();
+        if (c.apply() != null) {
+            String kind = gearKind(u.item().name);
+            return kind == null ? Set.of() : Set.of(u.current().instance + "|" + kind);
+        }
+        if (c.set() != null) { Set<String> keys = new HashSet<>(); c.set().forEach(i -> keys.add("slot:" + i.group)); return keys; }
+        if (c.pet() != null) return c.pet().heldItem() ? Set.of() : Set.of("pet");
+        if (c.profile() != null) return Set.of();
+        return Set.of("slot:" + u.item().group);
+    }
+    /** List grouping: levels of one source share a key; everything else is its own entry. */
+    private static String listKey(Candidate c) {
+        if (c.profile() != null) return "profile:" + c.profile().chain();
+        if (c.apply() != null) {
+            String label = c.upgrade().item().name, kind = gearKind(label);
+            if (kind != null && kind.startsWith("gem:")) return c.upgrade().current().instance + "|" + kind;
+            java.util.regex.Matcher level = java.util.regex.Pattern.compile("^(Efficiency|Prismatic|Polarvoid Books) ").matcher(label);
+            if (level.find()) return c.upgrade().current().instance + "|" + level.group(1);
+        }
+        return "own:" + id(c) + "|" + System.identityHashCode(c);
     }
     private static final List<String> ARMOR = List.of("Helmet", "Chestplate", "Leggings", "Boots");
     private static final List<String> EQUIPMENT = List.of("Necklace", "Cloak", "Belt", "Gloves");
