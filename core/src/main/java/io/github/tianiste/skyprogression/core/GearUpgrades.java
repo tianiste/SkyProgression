@@ -115,8 +115,34 @@ public final class GearUpgrades {
                 parts(gear,"drill_part_upgrade_module",MODULES,out);
             }
         }
+        reforges(gear,method,out);
         gemstones(gear,method,out);
         return out;
+    }
+    /**
+     * Reforge-stone swaps at the item's effective rarity: new reforge stats minus the current reforge's (unknown or
+     * non-mining reforges count as zero). Cost is the stone plus the Blacksmith fee; abilities are mostly not counted.
+     */
+    private static void reforges(Item gear,MiningMethod method,List<Proposal> out) {
+        if(!TIERS.contains(gear.tier))return;
+        Reforges.Reforge current=Reforges.byModifier(gear.modifier);
+        Map<Stat,Double> now=current==null?Map.of():current.at(gear.tier,method);
+        if(now==null)return;
+        for(Reforges.Reforge r:Reforges.all()) {
+            if(r.stone()==null||r==current||!r.fits(gear))continue;
+            Map<Stat,Double> next=r.at(gear.tier,method);
+            if(next==null)continue;
+            Map<Stat,Double> delta=new EnumMap<>(Stat.class);
+            for(Stat s:Stat.values()) {
+                double d=next.getOrDefault(s,0.0)-now.getOrDefault(s,0.0);
+                if(d!=0)delta.put(s,d);
+            }
+            if(delta.values().stream().noneMatch(v->v>0))continue;
+            String name=r.name().toLowerCase(Locale.ROOT);
+            out.add(new Proposal(gear,r.name()+" reforge"+(gear.modifier.isBlank()?"":" (now "+gear.modifier.substring(0,1).toUpperCase(Locale.ROOT)+gear.modifier.substring(1)+")"),delta,
+                    new Plan(Map.of(r.stone(),1),r.costs().getOrDefault(gear.tier,0.0),"Reforge Anvil; the fee is for "+gear.tier.toLowerCase(Locale.ROOT)+"."
+                            +(r.ability().isEmpty()||r.name().equals("Fleet")?"":" Ability not counted: "+r.ability())),"",g->g.modifier=name));
+        }
     }
     /** Records a socketed gem the way the API stores it: quality under the slot key, the type for flexible slots, unlocked. */
     private static void socket(Item g,String key,String quality,String type,boolean flexible) {
@@ -201,6 +227,7 @@ public final class GearUpgrades {
         Set<String> ids=new LinkedHashSet<>(List.of("ENCHANTMENT_FORTUNE_4","ENCHANTMENT_EFFICIENCY_5","SIL_EX","POLARVOID_BOOK"));
         for(var table:List.of(FUEL_TANKS.keySet(),ENGINES.keySet(),MODULES.keySet()))for(String key:table)ids.add(key.toUpperCase(Locale.ROOT));
         for(int n=1;n<=5;n++)ids.add("ENCHANTMENT_PRISTINE_"+n);
+        for(Reforges.Reforge r:Reforges.all())if(r.stone()!=null)ids.add(r.stone());
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");
         for(String type:List.of("RUBY","SAPPHIRE","AMETHYST","JASPER"))ids.add("FLAWLESS_"+type+"_GEM"); // gem rate values
         for(Item item:catalog) {
