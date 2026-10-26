@@ -17,10 +17,10 @@ the inventory and a handful of accessories.
 | Peak/core level | `skill_tree.nodes.mining.core_of_the_mountain`; `mining_2..5` | Extra trees each hold `core_of_the_mountain`; meaning not yet researched. |
 | Selected pickaxe ability | `skill_tree.selected_ability.mining` | e.g. `mining_speed_boost`. |
 | Powder | `mining_core.powder_<type>`, `powder_spent_<type>`, `powder_<type>_total` | `_total` is lower than spent here; do not treat it as lifetime earned without research. |
-| Daily HOTM effect | `mining_core.current_daily_effect` | e.g. `powder_bonus`. Situational. |
+| Daily HOTM effect | `mining_core.current_daily_effect` | Likely the Sky Mall buff of the current SkyBlock day (20 real minutes): `powder_bonus` at the first snapshot, `dig_speed` (probably +100 Mining Speed) at a refetch on 2026-10-26. The code-to-buff mapping is not yet verified. |
 | Mining skill | `player_data.experience.SKILL_MINING` | Skill level → base Mining Fortune. |
 | Essence/other shop perks | `player_data.perks` | Mining-relevant keys observed: `dwarven_training`, `eager_miner`, `treasures_of_the_earth`, `rhinestone_infusion`, `under_pressure`. Effects still need primary-source verification. |
-| Temporary effects | `player_data.active_effects`, `temp_stat_buffs`, `paused_effects`; `profile.cookie_buff_active` | Empty on this snapshot. God Potion/Mayor effects are not proven to appear here: keep them untrackable unless observed. |
+| Temporary effects | `player_data.active_effects`, `temp_stat_buffs`, `paused_effects`; `profile.cookie_buff_active` | Empty on this snapshot, and still empty at a 2026-10-26 refetch while the owner had a Fiesta Flask active: the Flask is not reported. God Potion/Mayor effects are not proven to appear here: keep them untrackable unless observed. |
 | Attributes (Hunting shards) | `attributes.stacks.<name>` | Stack counts, not levels. Mining candidates: `fortunate_miner`, `deep_technique`, `pickaxe_cooldown`, `devouring_spread`, `glossy_fortune`, `atomized_mithril`, `atomized_crystals`, `cavern_wisdom`, `quartz_speed`. Stack→level and effect tables still need research. |
 | Accessories | `inventory.bag_contents.talisman_bag` (NBT), `accessory_bag_storage` | Bag stores lore totals; `highest_magical_power`, `selected_power` and `tuning` are stored separately. |
 | Armor | `inventory.inv_armor` (NBT) | Equipped set. Wardrobe is `wardrobe_contents` with `wardrobe_equipped_slot` (absent contents on this snapshot). |
@@ -39,3 +39,6 @@ Observed caveats:
   (`POWER_RING` uses `"RUBY_0": "FINE"`). Parsers must accept both shapes.
 - Lore totals reflect the item's last rendered context; situational lines are stored as
   text and are not included in the headline stat numbers.
+- Mayor perks come from `v2/resources/skyblock/election` (no key needed). On 2026-10-26 the mayor was Cole
+  (Prospection, Mining Fiesta, Molten Forge). Whether the Fiesta event is running at a given time
+  depends on the SkyBlock calendar and is not yet computed.
