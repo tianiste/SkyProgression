@@ -1,0 +1,1011 @@
+{
+  "mining": {
+    "name": "Mining",
+    "description": "Dive into deep caves and find rare ores and valuable materials to earn Mining EXP!",
+    "maxLevel": 60,
+    "levels": [
+      {
+        "level": 1,
+        "totalExpRequired": 50.0,
+        "unlocks": [
+          "+Access to Gold Mine",
+          "Spelunker I   Grants +4  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Jerry Stone Reforge",
+          "+100 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 2,
+        "totalExpRequired": 175.0,
+        "unlocks": [
+          "Spelunker II   Grants +4➜8  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Black Diamond Reforge",
+          "+250 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 3,
+        "totalExpRequired": 375.0,
+        "unlocks": [
+          "Spelunker III   Grants +8➜12  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Overflowing Trash Can Reforge",
+          "+500 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 4,
+        "totalExpRequired": 675.0,
+        "unlocks": [
+          "Spelunker IV   Grants +12➜16  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "+750 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 5,
+        "totalExpRequired": 1175.0,
+        "unlocks": [
+          "+Access to Deep Caverns",
+          "Spelunker V   Grants +16➜20  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Lapis Crystal Reforge",
+          "Moil Log Reforge",
+          "+1,000 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 6,
+        "totalExpRequired": 1925.0,
+        "unlocks": [
+          "Spelunker VI   Grants +20➜24  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "+2,000 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 7,
+        "totalExpRequired": 2925.0,
+        "unlocks": [
+          "Spelunker VII   Grants +24➜28  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "+3,000 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 8,
+        "totalExpRequired": 4425.0,
+        "unlocks": [
+          "Spelunker VIII   Grants +28➜32  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Rare Diamond Reforge",
+          "+4,000 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 9,
+        "totalExpRequired": 6425.0,
+        "unlocks": [
+          "Spelunker IX   Grants +32➜36  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "SkyMart Brochure Reforge",
+          "+5,000 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 10,
+        "totalExpRequired": 9925.0,
+        "unlocks": [
+          "Spelunker X   Grants +36➜40  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Extremely Mild Adhesive Reforge",
+          "Dirt Bottle Reforge",
+          "+7,500 Coins",
+          "+5 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 11,
+        "totalExpRequired": 14925.0,
+        "unlocks": [
+          "Spelunker XI   Grants +40➜44  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Sunstone Reforge",
+          "Moonstone Reforge",
+          "+10,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 12,
+        "totalExpRequired": 22425.0,
+        "unlocks": [
+          "+Access to Crystal Hollows",
+          "+Access to Dwarven Mines",
+          "Spelunker XII   Grants +44➜48  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Moonglade Jewel Reforge",
+          "Hardened Wood Reforge",
+          "Large Walnut Reforge",
+          "+15,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 13,
+        "totalExpRequired": 32425.0,
+        "unlocks": [
+          "Spelunker XIII   Grants +48➜52  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Full-Jaw Fanging Kit Reforge",
+          "Flowering Bouquet Reforge",
+          "+20,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 14,
+        "totalExpRequired": 47425.0,
+        "unlocks": [
+          "Spelunker XIV   Grants +52➜56  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+1 Defense",
+          "Dwarven Treasure Reforge",
+          "End Stone Geode Reforge",
+          "+25,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 15,
+        "totalExpRequired": 67425.0,
+        "unlocks": [
+          "Spelunker XV   Grants +56➜60  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Beady Eyes Reforge",
+          "Diamonite Reforge",
+          "Clipped Wings Reforge",
+          "Kaleidoscopic Mineral Reforge",
+          "Geometric Oddity Reforge",
+          "Terry's Snowglobe Reforge",
+          "+30,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 16,
+        "totalExpRequired": 97425.0,
+        "unlocks": [
+          "Spelunker XVI   Grants +60➜64  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Premium Flesh Reforge",
+          "+40,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 17,
+        "totalExpRequired": 147425.0,
+        "unlocks": [
+          "Spelunker XVII   Grants +64➜68  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Red Nose Reforge",
+          "+50,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 18,
+        "totalExpRequired": 222425.0,
+        "unlocks": [
+          "Spelunker XVIII   Grants +68➜72  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Pitchin' Koi Reforge",
+          "Pure Mithril Reforge",
+          "+65,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 19,
+        "totalExpRequired": 322425.0,
+        "unlocks": [
+          "Spelunker XIX   Grants +72➜76  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Necromancer's Brooch Reforge",
+          "+80,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 20,
+        "totalExpRequired": 522425.0,
+        "unlocks": [
+          "Spelunker XX   Grants +76➜80  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Entropy Suppressor Reforge",
+          "Titanium Tesseract Reforge",
+          "Dragon Scale Reforge",
+          "Molten Cube Reforge",
+          "Frozen Bauble Reforge",
+          "+100,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 21,
+        "totalExpRequired": 822425.0,
+        "unlocks": [
+          "Spelunker XXI   Grants +80➜84  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Red Scarf Reforge",
+          "Squeaky Toy Reforge",
+          "Dwarven Geode Reforge",
+          "+125,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 22,
+        "totalExpRequired": 1222425.0,
+        "unlocks": [
+          "Spelunker XXII   Grants +84➜88  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Dragon Claw Reforge",
+          "Optical Lens Reforge",
+          "Mantid Claw Reforge",
+          "Diamond Atom Reforge",
+          "+150,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 23,
+        "totalExpRequired": 1722425.0,
+        "unlocks": [
+          "Spelunker XXIII   Grants +88➜92  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Overgrown Grass Reforge",
+          "Suspicious Vial Reforge",
+          "+175,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 24,
+        "totalExpRequired": 2322425.0,
+        "unlocks": [
+          "Spelunker XXIV   Grants +92➜96  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Gleaming Crystal Reforge",
+          "Presumed Gallon of Red Paint Reforge",
+          "Searing Stone Reforge",
+          "Blaze Wax Reforge",
+          "Blooming Thorns Reforge",
+          "Lucky Dice Reforge",
+          "Burrowing Spores Reforge",
+          "Shiny Prism Reforge",
+          "Meteor Chunk Reforge",
+          "Spirit Stone Reforge",
+          "+200,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 25,
+        "totalExpRequired": 3022425.0,
+        "unlocks": [
+          "Spelunker XXV   Grants +96➜100  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Giant Tooth Reforge",
+          "Andesite Whetstone Reforge",
+          "Bulky Stone Reforge",
+          "Midas Jewel Reforge",
+          "Sadan's Brooch Reforge",
+          "Dragon Horn Reforge",
+          "Rotting Branch Reforge",
+          "Blessed Fruit Reforge",
+          "+225,000 Coins",
+          "+10 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 26,
+        "totalExpRequired": 3822425.0,
+        "unlocks": [
+          "Spelunker XXVI   Grants +100➜104  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Warped Stone Reforge",
+          "Shriveled Cornea Reforge",
+          "Petrified Starfall Reforge",
+          "+250,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 27,
+        "totalExpRequired": 4722425.0,
+        "unlocks": [
+          "Spelunker XXVII   Grants +104➜108  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Blazen Sphere Reforge",
+          "+275,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 28,
+        "totalExpRequired": 5722425.0,
+        "unlocks": [
+          "Spelunker XXVIII   Grants +108➜112  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+300,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 29,
+        "totalExpRequired": 6822425.0,
+        "unlocks": [
+          "Spelunker XXIX   Grants +112➜116  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+325,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 30,
+        "totalExpRequired": 8022425.0,
+        "unlocks": [
+          "Spelunker XXX   Grants +116➜120  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Amber Material Reforge",
+          "Wither Blood Reforge",
+          "Precursor Gear Reforge",
+          "Mangrove Gem Reforge",
+          "Golden Ball Reforge",
+          "Frigid Husk Reforge",
+          "Jaderald Reforge",
+          "Daedalus' Notes Reforge",
+          "+350,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 31,
+        "totalExpRequired": 9322425.0,
+        "unlocks": [
+          "Spelunker XXXI   Grants +120➜124  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+375,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 32,
+        "totalExpRequired": 10722425.0,
+        "unlocks": [
+          "Spelunker XXXII   Grants +124➜128  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+400,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 33,
+        "totalExpRequired": 12222425.0,
+        "unlocks": [
+          "Spelunker XXXIII   Grants +128➜132  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "Kuudra Mandible Reforge",
+          "+425,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 34,
+        "totalExpRequired": 13822425.0,
+        "unlocks": [
+          "Spelunker XXXIV   Grants +132➜136  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+450,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 35,
+        "totalExpRequired": 15522425.0,
+        "unlocks": [
+          "Spelunker XXXV   Grants +136➜140  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+475,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 36,
+        "totalExpRequired": 17322425.0,
+        "unlocks": [
+          "Spelunker XXXVI   Grants +140➜144  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+500,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 37,
+        "totalExpRequired": 19222425.0,
+        "unlocks": [
+          "Spelunker XXXVII   Grants +144➜148  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+550,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 38,
+        "totalExpRequired": 21222425.0,
+        "unlocks": [
+          "Spelunker XXXVIII   Grants +148➜152  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+600,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 39,
+        "totalExpRequired": 23322425.0,
+        "unlocks": [
+          "Spelunker XXXIX   Grants +152➜156  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+650,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 40,
+        "totalExpRequired": 25522425.0,
+        "unlocks": [
+          "Spelunker XL   Grants +156➜160  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+700,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 41,
+        "totalExpRequired": 27822425.0,
+        "unlocks": [
+          "Spelunker XLI   Grants +160➜164  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+750,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 42,
+        "totalExpRequired": 30222425.0,
+        "unlocks": [
+          "Spelunker XLII   Grants +164➜168  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+800,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 43,
+        "totalExpRequired": 32722425.0,
+        "unlocks": [
+          "Spelunker XLIII   Grants +168➜172  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+850,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 44,
+        "totalExpRequired": 35322425.0,
+        "unlocks": [
+          "Spelunker XLIV   Grants +172➜176  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+900,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 45,
+        "totalExpRequired": 38072425.0,
+        "unlocks": [
+          "Spelunker XLV   Grants +176➜180  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 46,
+        "totalExpRequired": 40972425.0,
+        "unlocks": [
+          "Spelunker XLVI   Grants +180➜184  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 47,
+        "totalExpRequired": 44072425.0,
+        "unlocks": [
+          "Spelunker XLVII   Grants +184➜188  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 48,
+        "totalExpRequired": 47472425.0,
+        "unlocks": [
+          "Spelunker XLVIII   Grants +188➜192  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 49,
+        "totalExpRequired": 51172425.0,
+        "unlocks": [
+          "Spelunker XLIX   Grants +192➜196  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 50,
+        "totalExpRequired": 55172425.0,
+        "unlocks": [
+          "Spelunker L   Grants +196➜200  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+20 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 51,
+        "totalExpRequired": 59472425.0,
+        "unlocks": [
+          "Spelunker LI   Grants +200➜204  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 52,
+        "totalExpRequired": 64072425.0,
+        "unlocks": [
+          "Spelunker LII   Grants +204➜208  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 53,
+        "totalExpRequired": 68972425.0,
+        "unlocks": [
+          "Spelunker LIII   Grants +208➜212  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 54,
+        "totalExpRequired": 74172425.0,
+        "unlocks": [
+          "Spelunker LIV   Grants +212➜216  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 55,
+        "totalExpRequired": 79672425.0,
+        "unlocks": [
+          "Spelunker LV   Grants +216➜220  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 56,
+        "totalExpRequired": 85472425.0,
+        "unlocks": [
+          "Spelunker LVI   Grants +220➜224  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 57,
+        "totalExpRequired": 91572425.0,
+        "unlocks": [
+          "Spelunker LVII   Grants +224➜228  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 58,
+        "totalExpRequired": 97972425.0,
+        "unlocks": [
+          "Spelunker LVIII   Grants +228➜232  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 59,
+        "totalExpRequired": 104672425.0,
+        "unlocks": [
+          "Spelunker LIX   Grants +232➜236  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      },
+      {
+        "level": 60,
+        "totalExpRequired": 111672425.0,
+        "unlocks": [
+          "Spelunker LX   Grants +236➜240  Mining Fortune, which increases your chance for multiple ore drops.",
+          "+2 Defense",
+          "+1,000,000 Coins",
+          "+30 SkyBlock XP"
+        ]
+      }
+    ]
+  },
+  "collections": {
+    "TUNGSTEN": {
+      "name": "Tungsten",
+      "maxTiers": 9,
+      "tiers": [
+        {
+          "tier": 1,
+          "amountRequired": 100,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 2,
+          "amountRequired": 1000,
+          "unlocks": [
+            "Enchanted Tungsten Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 3,
+          "amountRequired": 5000,
+          "unlocks": [
+            "Refined Tungsten Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 4,
+          "amountRequired": 10000,
+          "unlocks": [
+            "Tungsten Key Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 5,
+          "amountRequired": 25000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 6,
+          "amountRequired": 50000,
+          "unlocks": [
+            "Tungsten Plate Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 7,
+          "amountRequired": 100000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 8,
+          "amountRequired": 250000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 9,
+          "amountRequired": 500000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        }
+      ]
+    },
+    "UMBER": {
+      "name": "Umber",
+      "maxTiers": 9,
+      "tiers": [
+        {
+          "tier": 1,
+          "amountRequired": 100,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 2,
+          "amountRequired": 1000,
+          "unlocks": [
+            "Enchanted Umber Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 3,
+          "amountRequired": 5000,
+          "unlocks": [
+            "Refined Umber Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 4,
+          "amountRequired": 10000,
+          "unlocks": [
+            "Umber Key Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 5,
+          "amountRequired": 25000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 6,
+          "amountRequired": 50000,
+          "unlocks": [
+            "Umber Plate Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 7,
+          "amountRequired": 100000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 8,
+          "amountRequired": 250000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 9,
+          "amountRequired": 500000,
+          "unlocks": [
+            "Umberella Recipe",
+            "+4 SkyBlock XP"
+          ]
+        }
+      ]
+    },
+    "GLACITE": {
+      "name": "Glacite",
+      "maxTiers": 9,
+      "tiers": [
+        {
+          "tier": 1,
+          "amountRequired": 100,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 2,
+          "amountRequired": 1000,
+          "unlocks": [
+            "Enchanted Glacite Recipe",
+            "Cold Resistance Potion Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 3,
+          "amountRequired": 5000,
+          "unlocks": [
+            "Glacite Amalgamation Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 4,
+          "amountRequired": 10000,
+          "unlocks": [
+            "[Lvl 1] Glacite Golem Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 5,
+          "amountRequired": 25000,
+          "unlocks": [
+            "Frigid Husk Dwarven Forge Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 6,
+          "amountRequired": 50000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 7,
+          "amountRequired": 100000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 8,
+          "amountRequired": 250000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 9,
+          "amountRequired": 500000,
+          "unlocks": [
+            "+10,000 Mining Experience",
+            "+4 SkyBlock XP"
+          ]
+        }
+      ]
+    },
+    "OBSIDIAN": {
+      "name": "Obsidian",
+      "maxTiers": 10,
+      "tiers": [
+        {
+          "tier": 1,
+          "amountRequired": 50,
+          "unlocks": [
+            "Obsidian Minion Recipes",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 2,
+          "amountRequired": 100,
+          "unlocks": [
+            "Lethality Exp Discount (-25%)",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 3,
+          "amountRequired": 250,
+          "unlocks": [
+            "Gravity Talisman Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 4,
+          "amountRequired": 1000,
+          "unlocks": [
+            "Enchanted Obsidian Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 5,
+          "amountRequired": 2500,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 6,
+          "amountRequired": 5000,
+          "unlocks": [
+            "Stun Potion Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 7,
+          "amountRequired": 10000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 8,
+          "amountRequired": 25000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 9,
+          "amountRequired": 50000,
+          "unlocks": [
+            "Obsidian Tablet Recipe",
+            "+4 SkyBlock XP"
+          ]
+        },
+        {
+          "tier": 10,
+          "amountRequired": 100000,
+          "unlocks": [
+            "+1 Mining Fortune",
+            "+50,000 Mining Experience",
+            "+4 SkyBlock XP"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -22,6 +22,7 @@ final class ClientData {
     String player = "";
     int profileIndex;
     boolean loading, demo;
+    private int generation;
     Map<String, Price> prices = new HashMap<>();
     final Map<String, Inputs> inputs = new HashMap<>();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
@@ -44,11 +45,18 @@ final class ClientData {
         Profile p = profile(); String key = (demo ? "demo" : p == null ? "none" : p.id) + ":" + method.name();
         return inputs.computeIfAbsent(key, ignored -> { Inputs i = new Inputs(); i.efficiency = method.defaultEfficiency(); return i; });
     }
-    void save() throws Exception { Files.createDirectories(file.getParent()); Files.writeString(file, Catalog.GSON.toJson(inputs)); }
+    void save() throws Exception {
+        Files.createDirectories(file.getParent());
+        Path temporary = file.resolveSibling(file.getFileName()+".tmp");
+        Files.writeString(temporary, Catalog.GSON.toJson(inputs));
+        Files.move(temporary,file,StandardCopyOption.REPLACE_EXISTING);
+    }
     void load(String ign, java.util.function.Consumer<Runnable> dispatch, Runnable changed) {
         if (loading) return;
         if (!ign.matches("[A-Za-z0-9_]{1,16}")) { message = "Enter a valid Minecraft username."; changed.run(); return; }
-        loading = true; message = "Loading " + ign + "..."; report = null; demo = false; changed.run();
+        generation++;
+        loading = true; message = "Loading " + ign + "..."; report = null; demo = false;
+        prices = new HashMap<>(); changed.run();
         CompletableFuture.supplyAsync(() -> {
             try {
                 JsonObject json = fetch("/report?ign=" + ign, 25).getAsJsonObject();
@@ -71,11 +79,12 @@ final class ClientData {
         }));
     }
     void loadPrices(java.util.function.Consumer<Runnable> dispatch, Runnable changed) {
+        int requestGeneration = generation;
         CompletableFuture.supplyAsync(() -> {
             try { return Catalog.GSON.<Map<String, Price>>fromJson(fetch("/prices", 240), new TypeToken<Map<String, Price>>(){}.getType()); }
             catch (Exception e) { return Map.<String, Price>of(); }
         }).thenAccept(p -> dispatch.accept(() -> {
-            if (demo) return;
+            if (demo || generation != requestGeneration) return;
             prices = p; message = p.isEmpty() ? "Prices unavailable. Costs remain unknown." : "Loaded " + p.size() + " price quotes. Estimates exclude fees and item modifiers.";
             changed.run();
         }));
@@ -93,6 +102,7 @@ final class ClientData {
     }
     void demo() {
         if (loading) return;
+        generation++;
         demo = true; profileIndex = 0; report = new Report();
         Profile p = new Profile(); p.player = "Demo"; p.name = "Example only"; p.id = "demo"; p.inventoryEnabled = true; p.hotm = 7;
         for (String id : List.of("DIVAN_HELMET","DIVAN_CHESTPLATE","DIVAN_LEGGINGS","DIVAN_BOOTS","TITANIUM_DRILL_4","MINERAL_TALISMAN","MITHRIL_NECKLACE")) p.owned.put(id,1);

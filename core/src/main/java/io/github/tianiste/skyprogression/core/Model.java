@@ -25,6 +25,7 @@ public final class Model {
         public Map<String, Integer> owned = new HashMap<>();
         public List<String> notes = new ArrayList<>();
         public Map<String, Double> progress = new LinkedHashMap<>();
+        public List<Milestone> milestones = new ArrayList<>();
     }
     public static class Report {
         public List<Profile> profiles = new ArrayList<>();
@@ -37,5 +38,6 @@ public final class Model {
         public double costPerUnit() { return cost == null || gain <= 0 ? Double.POSITIVE_INFINITY : cost / gain; }
     }
     public record Overview(String group, Item current, Item target, double value, double maximum) {}
+    public record Milestone(String name, double current, double maximum, String unit) {}
     public static double stat(Map<Stat, Double> stats, Stat stat) { return stats.getOrDefault(stat, 0.0); }
 }

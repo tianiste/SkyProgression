@@ -14,7 +14,8 @@ final class ChoiceScreen extends Screen {
     private int page;
     ChoiceScreen(Screen parent,String title,List<String> choices,IntConsumer selected){super(Component.literal(title));this.parent=parent;this.choices=choices;this.selected=selected;}
     @Override protected void init(){
-        clearWidgets();int count=Math.max(1,(height-80)/24),start=page*count;
+        clearWidgets();int count=Math.max(1,(height-80)/24);
+        page=Math.clamp(page,0,Math.max(0,(choices.size()-1)/count));int start=page*count;
         for(int n=start;n<Math.min(choices.size(),start+count);n++) {
             int index=n;
             addRenderableWidget(Button.builder(Component.literal(choices.get(n)),b->{selected.accept(index);onClose();}).bounds(20,40+(n-start)*24,width-40,20).build());

@@ -49,6 +49,7 @@ public final class ProfileParser {
             long[] thresholds = {0, 3000, 12000, 37000, 97000, 197000, 347000, 557000, 847000, 1247000};
             if (xp >= 0) { p.hotm = 1; for (int i = 1; i < thresholds.length; i++) if (xp >= thresholds[i]) p.hotm = i + 1; }
             p.progress.put("Heart of the Mountain tier", (double)p.hotm);
+            if (xp >= 0) p.milestones.add(new Milestone("Heart of the Mountain", p.hotm, 10, "tiers"));
             for (String powder : List.of("mithril", "gemstone", "glacite")) {
                 double spent = number(at(member, "mining_core", "powder_spent_" + powder), 0);
                 double available = number(at(member, "mining_core", "powder_" + powder), 0);
@@ -56,9 +57,29 @@ public final class ProfileParser {
             }
             JsonElement miningXp = at(member, "player_data", "experience", "SKILL_MINING");
             if (!miningXp.isJsonNull()) p.progress.put("Mining skill XP", number(miningXp, 0));
+            JsonObject rules = Catalog.progressionRules();
+            JsonElement levels = at(rules, "mining", "levels");
+            if (!miningXp.isJsonNull() && levels.isJsonArray()) {
+                int level = 0;
+                for (JsonElement rule : levels.getAsJsonArray())
+                    if (number(miningXp, 0) >= number(at(rule, "totalExpRequired"), Double.MAX_VALUE))
+                        level = Math.max(level, (int)number(at(rule, "level"), 0));
+                int maximum = (int)number(at(rules, "mining", "maxLevel"), 60);
+                p.milestones.add(new Milestone("Mining skill", level, maximum, "levels"));
+                p.milestones.add(new Milestone("Mining skill Fortune", level * 4, maximum * 4, "Mining Fortune"));
+            }
             for (String collection : List.of("TUNGSTEN", "UMBER", "GLACITE", "OBSIDIAN")) {
                 JsonElement count = at(member, "collection", collection);
                 if (!count.isJsonNull()) p.progress.put(collection + " collection", number(count, 0));
+                JsonElement tiers = at(rules, "collections", collection, "tiers");
+                if (!count.isJsonNull() && tiers.isJsonArray()) {
+                    int current = 0;
+                    for (JsonElement rule : tiers.getAsJsonArray())
+                        if (number(count,0) >= number(at(rule,"amountRequired"),Double.MAX_VALUE))
+                            current = Math.max(current,(int)number(at(rule,"tier"),0));
+                    p.milestones.add(new Milestone(collection + " collection",current,
+                            number(at(rules,"collections",collection,"maxTiers"),tiers.getAsJsonArray().size()),"tiers"));
+                }
             }
             JsonElement pets = at(member, "pets_data", "pets");
             if (pets.isJsonArray()) for (JsonElement pet : pets.getAsJsonArray()) {
@@ -80,6 +101,9 @@ public final class ProfileParser {
                 String id = string(at(item, "tag", "ExtraAttributes", "id"), "");
                 if (!id.isEmpty()) p.owned.merge(id, Math.max(1, (int)number(at(item, "Count"), 1)), Integer::sum);
             }
-        } catch (Exception e) { p.notes.add("Could not read " + label + "; ownership may be incomplete."); }
+        } catch (Exception e) {
+            p.inventoryEnabled = false;
+            p.notes.add("Could not read " + label + ". Recommendations are paused because ownership is incomplete. Refresh later.");
+        }
     }
 }

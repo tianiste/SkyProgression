@@ -72,7 +72,10 @@ public final class ProgressionScreen extends Screen {
             add("Demo lets you browse the interface without a service or API key.",MUTED);
             add("Your API key belongs in the service environment, never in the mod or chat.",MUTED);return;
         }
-        if(!p.inventoryEnabled) { for(String n:p.notes)add(n,GOLD);return; }
+        if(!p.inventoryEnabled) {
+            add("Inventory unavailable or incomplete; gear recommendations are paused. See Other for setup help.",GOLD);
+            if(tab==1 || tab==2) return;
+        }
         switch(tab) {
             case 0 -> overview(p);
             case 1 -> upgrades(p,null);
@@ -83,6 +86,15 @@ public final class ProgressionScreen extends Screen {
         page=Math.clamp(page,0,Math.max(0,pages()-1));
     }
     private void overview(Profile p) {
+        if (!p.milestones.isEmpty()) {
+            add("Basic progression",GOLD);
+            for (var m:p.milestones) {
+                add(m.name(),WHITE);
+                rows.add(new Row(fmt(m.current())+" / "+fmt(m.maximum())+" "+m.unit(),m.current()>=m.maximum()?GOLD:GREEN,
+                        m.maximum()>0?Math.min(1,m.current()/m.maximum()):0));
+            }
+        }
+        if (!p.inventoryEnabled) return;
         add(stat.label+" - base item progress",GOLD);
         add("Best owned per slot / catalog maximum. Bars exclude item modifiers; this is not full maxed-setup progress.",MUTED);
         for(var row:data.engine.overview(p,method,stat)) {

@@ -39,4 +39,13 @@ class ProfileParserTest {
     @Test void invalidEncodingIsRejected() {
         assertThrows(IOException.class,()->new InventoryReader().read("not base64"));
     }
+    @Test void officialTargetsProduceMiningAndCollectionProgress() {
+        var root=JsonParser.parseString("""
+            {"profiles":[{"members":{"abc":{"player_data":{"experience":{"SKILL_MINING":111672425}},
+             "collection":{"TUNGSTEN":100000000}}}}]}
+            """).getAsJsonObject();
+        var p=ProfileParser.parse(root,"abc","Example").getFirst();
+        assertTrue(p.milestones.stream().anyMatch(m->m.name().equals("Mining skill") && m.current()==60));
+        assertTrue(p.milestones.stream().anyMatch(m->m.name().equals("TUNGSTEN collection") && m.current()==m.maximum()));
+    }
 }

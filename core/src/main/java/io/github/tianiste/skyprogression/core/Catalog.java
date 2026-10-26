@@ -14,4 +14,10 @@ public final class Catalog {
             return List.of(GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Item[].class));
         } catch (IOException e) { throw new UncheckedIOException(e); }
     }
+    public static JsonObject progressionRules() {
+        try (var stream = Catalog.class.getResourceAsStream("/progression-rules.json")) {
+            if (stream == null) return new JsonObject();
+            return JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+        } catch (IOException e) { throw new UncheckedIOException(e); }
+    }
 }

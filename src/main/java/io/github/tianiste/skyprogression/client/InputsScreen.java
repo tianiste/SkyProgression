@@ -24,7 +24,7 @@ final class InputsScreen extends Screen {
     }
     private int count(){return Math.max(1,(height-105)/32);}
     @Override protected void init(){
-        clearWidgets();int count=count(),start=page*count;
+        clearWidgets();int count=count();page=Math.clamp(page,0,14/count);int start=page*count;
         for(int n=start;n<Math.min(15,start+count);n++) {
             int index=n;var box=new EditBox(font,width/2,44+(n-start)*32,width/2-20,20,Component.literal(labels[n]));
             box.setMaxLength(16);box.setValue(values[n]);box.setResponder(v->values[index]=v);addRenderableWidget(box);
