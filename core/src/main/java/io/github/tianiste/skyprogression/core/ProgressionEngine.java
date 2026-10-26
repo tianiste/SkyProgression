@@ -45,13 +45,18 @@ public final class ProgressionEngine {
      * Player settings the rate model needs: efficiency (%) and the evaluated tool's pickaxe ability (null when none),
      * plus the evaluated pet's counted stats and the pet alternatives (null / empty when unknown).
      */
-    public record RateBasis(double efficiency, MethodRates.Ability ability, Map<Stat, Double> pet, List<PetUpgrades.Option> petOptions) {
-        public RateBasis(double efficiency, MethodRates.Ability ability) { this(efficiency, ability, null, List.of()); }
-        RateBasis with(MethodRates.Ability a) { return new RateBasis(efficiency, a, pet, petOptions); }
+    public record RateBasis(double efficiency, MethodRates.Ability ability, Map<Stat, Double> pet, List<PetUpgrades.Option> petOptions, ProfileUpgrades.State profile) {
+        public RateBasis(double efficiency, MethodRates.Ability ability) { this(efficiency, ability, null, List.of(), ProfileUpgrades.State.EMPTY); }
+        public RateBasis {
+            if (petOptions == null) petOptions = List.of();
+            if (profile == null) profile = ProfileUpgrades.State.EMPTY;
+        }
+        RateBasis with(MethodRates.Ability a) { return new RateBasis(efficiency, a, pet, petOptions, profile); }
         /** After taking a pet option: it becomes the pet; a new pet drops the pet-item options for the old one. */
         RateBasis withPet(PetUpgrades.Option taken) {
-            return new RateBasis(efficiency, ability, taken.stats(), petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList());
+            return new RateBasis(efficiency, ability, taken.stats(), petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList(), profile);
         }
+        RateBasis withProfile(ProfileUpgrades.Option taken) { return new RateBasis(efficiency, ability, pet, petOptions, profile.take(taken)); }
     }
     /** How a method's upgrades are valued: its rate model when it has one, else the drop multiplier. */
     public static boolean rateModel(MiningMethod m) { return MethodRates.supported(m); }
@@ -94,6 +99,7 @@ public final class ProgressionEngine {
             if (best == null) break;
             Upgrade u = best.upgrade();
             if (best.pet() != null) current = current.withPet(best.pet());
+            else if (best.profile() != null) current = current.withProfile(best.profile());
             else if (best.apply() != null) {
                 best.apply().accept(u.current());
                 u.delta().forEach((s, v) -> u.current().stats.merge(s, v, Double::sum));
@@ -117,8 +123,8 @@ public final class ProgressionEngine {
     }
 
     /** An upgrade plus what applying it needs: the gear change (null for a replacement item) and the materials used. */
-    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet) {
-        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null); }
+    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet, ProfileUpgrades.Option profile) {
+        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null, null); }
     }
     /**
      * With a rate basis and no stat focus, methods with a rate model rank by rate after / rate before - 1 (so Mining
@@ -174,7 +180,27 @@ public final class ProgressionEngine {
             Price quote = prices.get(o.priceId());
             Double cost = o.owned() ? 0.0 : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? quote.buy : null;
             String blocked = !o.owned() && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
-            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after), null, Map.of(), o));
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after), null, Map.of(), o, null));
+        }
+        // Essence perks, attribute shards and HOTM perk levels: target level stats minus the chain's current stats.
+        if (basis != null) for (ProfileUpgrades.Option o : basis.profile().options()) {
+            Map<Stat, Double> now = basis.profile().chains().getOrDefault(o.chain(), Map.of());
+            Map<Stat, Double> delta = new EnumMap<>(Stat.class);
+            for (Stat s : Stat.values()) {
+                double d = o.stats().getOrDefault(s, 0.0) - now.getOrDefault(s, 0.0);
+                if (d != 0) delta.put(s, d);
+            }
+            Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
+            double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
+            if (!Double.isFinite(gain) || gain <= 1e-9) continue;
+            Double cost = basis.profile().cost(o, prices);
+            double have = basis.profile().available().getOrDefault(o.resource(), 0.0), need = basis.profile().remaining(o);
+            Item display = new Item(); display.id = "profile:" + o.chain() + ":" + o.rank(); display.name = o.label(); display.group = o.group();
+            display.modification = true;
+            display.source = o.note() + String.format(Locale.ROOT, " Needs %,.0f %s, %,.0f available.", need, o.resource(), have);
+            String blocked = o.priceId() != null && need > have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode))
+                    ? "No bazaar purchases on " + p.mode : "";
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, cost != null && cost == 0, blocked, 1, before, after), null, Map.of(), null, o));
         }
         return result;
     }

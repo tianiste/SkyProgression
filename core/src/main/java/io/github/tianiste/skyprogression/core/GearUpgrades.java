@@ -286,6 +286,7 @@ public final class GearUpgrades {
         for(int n=1;n<=5;n++)ids.add("ENCHANTMENT_PRISTINE_"+n);
         for(Reforges.Reforge r:Reforges.all())if(r.stone()!=null)ids.add(r.stone());
         ids.addAll(PetUpgrades.priceIds());
+        ids.addAll(ProfileUpgrades.priceIds());
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");
         for(String type:List.of("RUBY","SAPPHIRE","AMETHYST","JASPER"))ids.add("FLAWLESS_"+type+"_GEM"); // gem rate values
         for(Item item:catalog) {

@@ -128,7 +128,7 @@ public final class ProgressionScreen extends Screen {
         var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
         StatsReport report=data.stats(method);var basis=report==null?new ProgressionEngine.RateBasis(data.inputs(method).efficiency,null)
-                :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions==null?List.of():report.petOptions);
+                :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions,report.profileUpgrades);
         analysis=ClientData.WORK.submit(()->{
             try {
                 var base=data.engine.overview(p,selectedMethod,selectedStat);
@@ -206,10 +206,10 @@ public final class ProgressionScreen extends Screen {
             StringJoiner changes=new StringJoiner(" / ");u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});
             if(u.cooldownFactor()!=1)changes.add("ability cooldown x"+fmt(u.cooldownFactor()));
             if(changes.length()>0)c.line(changes.toString(),CYAN);
-            c.line(u.cost()==null?"Price unknown":coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
+            c.line(u.cost()==null?("HOTM".equals(u.item().group)?"Grind the powder (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
             if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" Flawless / hour",GREEN);
             else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
-            if(u.owned())c.line(u.item().modification?"Materials already owned":"Item already owned",GREEN);
+            if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder":u.item().modification?"Materials already owned":"Item already owned",GREEN);
             if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
             var quote=data.prices.get(u.item().id);c.line(quote!=null?quote.source:u.item().source,MUTED);
         }
