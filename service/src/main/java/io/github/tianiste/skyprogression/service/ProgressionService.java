@@ -63,6 +63,7 @@ public final class ProgressionService {
                 }
                 case "/stats" -> send(x, 200, stats(query(x)));
                 case "/compare" -> send(x, 200, compare(query(x)));
+                case "/start" -> send(x, 200, start(query(x)));
                 case "/prices" -> send(x, 200, prices());
                 default -> send(x, 404, Map.of("error", "Unknown endpoint"));
             }
@@ -108,6 +109,24 @@ public final class ProgressionService {
         result.player = ign; result.profileId = m.id; result.profile = m.name;
         result.fetchedAt = m.fetchedAt;
         result.resale = resale(result.resaleQueries);
+        return result;
+    }
+    /** Best owned loadout for one method, where each piece is stored, and the swaps from what is worn now. */
+    private StartWith.Report start(Map<String, String> q) throws Exception {
+        String ign = q.getOrDefault("ign", ""), profileId = q.getOrDefault("profile", ""), tool = q.getOrDefault("tool", "");
+        String zone = q.getOrDefault("zone", ""), target = q.getOrDefault("target", "");
+        if (!ign.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
+        if (!profileId.matches("[a-fA-F0-9-]{0,40}") || !tool.matches("[A-Za-z0-9_:#. -]{0,80}")) throw new LookupException(400, "Invalid profile or tool");
+        StatContext context;
+        MiningMethod method;
+        try {
+            method = MiningMethod.valueOf(q.getOrDefault("method", "MF_GEMS"));
+            context = new StatContext(zone.isEmpty() ? null : StatContext.Zone.valueOf(zone), target.isEmpty() ? null : StatContext.Target.valueOf(target),
+                    !"false".equals(q.get("god")));
+        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, zone or block target"); }
+        Member m = member(ign, profileId);
+        StartWith.Report result = StartWith.of(m.member, m.owned, method, tool, context);
+        result.player = ign; result.profileId = m.id; result.profile = m.name; result.fetchedAt = m.fetchedAt;
         return result;
     }
     /** Every rated method's automatic totals with its best owned gear, best tool and usual zone, for the method comparison. */

@@ -49,6 +49,13 @@ public final class Loadout {
     private Loadout(Kind kind, Owned owned) {
         this.kind = kind; inventoryKnown = owned.inventoryKnown; petsKnown = owned.petsKnown; notes.addAll(owned.notes);
     }
+    /** Same pieces, pet and HOTM tree, so one piece can be swapped without touching this loadout. */
+    public Loadout copy() {
+        Loadout l = new Loadout(kind, new Owned());
+        l.armor.addAll(armor); l.equipment.addAll(equipment); l.accessories.addAll(accessories);
+        l.tool = tool; l.pet = pet; l.hotmTree = hotmTree; l.inventoryKnown = inventoryKnown; l.petsKnown = petsKnown; l.notes.addAll(notes);
+        return l;
+    }
     public List<Item> gear() {
         List<Item> all = new ArrayList<>(armor); all.addAll(equipment);
         if (tool != null) all.add(tool);
