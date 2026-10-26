@@ -128,20 +128,25 @@ public final class ProgressionEngine {
         Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null, null, null); }
     }
     private static final List<String> ARMOR = List.of("Helmet", "Chestplate", "Leggings", "Boots");
-    /** Armor sets with a mining set bonus, by item ID prefix. */
-    private static final List<String> SETS = List.of("MINER_OUTFIT_", "GLACITE_", "MINERAL_", "GLOSSY_MINERAL_");
+    private static final List<String> EQUIPMENT = List.of("Necklace", "Cloak", "Belt", "Gloves");
+    /** A set with a mining set bonus: item ID prefix and the four slots it fills. */
+    private record SetDef(String prefix, String name, List<String> groups) {}
+    private static final List<SetDef> SETS = List.of(new SetDef("MINER_OUTFIT_", "Miner Outfit", ARMOR), new SetDef("GLACITE_", "Glacite", ARMOR),
+            new SetDef("MINERAL_", "Mineral", ARMOR), new SetDef("GLOSSY_MINERAL_", "Glossy Mineral", ARMOR),
+            new SetDef("MITHRIL_", "Mithril (Dwarf Wannabe)", EQUIPMENT), new SetDef("TITANIUM_", "Titanium (True Dwarf)", EQUIPMENT));
     /**
-     * Set bonuses with mining stats for the armor worn (item lore in the NEU repository; wiki Mineral and Glossy Mineral
+     * Set bonuses with mining stats for the gear worn (item lore in the NEU repository; wiki Mineral and Glossy Mineral
      * Armor): Miner Outfit full set +40 Mining Speed; Glacite full set +2 Mining Speed per Mining level; Mineral +100 and
-     * Glossy Mineral +150 Mining Spread per piece on ores and blocks. Goblin (Intelligence) and Yog (kills) depend on
-     * values the engine does not have and are not counted.
+     * Glossy Mineral +150 Mining Spread per piece on ores and blocks; Mithril equipment (Dwarf Wannabe) +30 Mining Speed
+     * and +5 Mining Fortune, Titanium equipment (True Dwarf) +50 and +40, both in the Dwarven Mines only (counted for
+     * methods mined there by default: Coal, Gold). Goblin (Intelligence) and Yog (kills) depend on values the engine
+     * does not have and are not counted.
      */
     static Map<Stat, Double> setBonus(Map<String, Item> worn, MiningMethod m, Profile p) {
         Map<String, Integer> count = new HashMap<>();
-        for (String group : ARMOR) {
+        for (SetDef set : SETS) for (String group : set.groups()) {
             Item i = worn.get(group);
-            if (i == null) continue;
-            for (String set : SETS) if (i.id.startsWith(set)) { count.merge(set, 1, Integer::sum); break; }
+            if (i != null && i.id.startsWith(set.prefix())) count.merge(set.prefix(), 1, Integer::sum);
         }
         Map<Stat, Double> out = new EnumMap<>(Stat.class);
         if (count.getOrDefault("MINER_OUTFIT_", 0) == 4) out.merge(Stat.MINING_SPEED, 40.0, Double::sum);
@@ -152,6 +157,10 @@ public final class ProgressionEngine {
         if (m.target() == StatContext.Target.ORE || m.target() == StatContext.Target.BLOCK) {
             out.merge(Stat.MINING_SPREAD, 100.0 * count.getOrDefault("MINERAL_", 0), Double::sum);
             out.merge(Stat.MINING_SPREAD, 150.0 * count.getOrDefault("GLOSSY_MINERAL_", 0), Double::sum);
+        }
+        if (m.defaultZone() == StatContext.Zone.DWARVEN_MINES) {
+            if (count.getOrDefault("MITHRIL_", 0) == 4) { out.merge(Stat.MINING_SPEED, 30.0, Double::sum); out.merge(Stat.MINING_FORTUNE, 5.0, Double::sum); }
+            if (count.getOrDefault("TITANIUM_", 0) == 4) { out.merge(Stat.MINING_SPEED, 50.0, Double::sum); out.merge(Stat.MINING_FORTUNE, 40.0, Double::sum); }
         }
         out.values().removeIf(v -> v == 0);
         return out;
@@ -183,7 +192,7 @@ public final class ProgressionEngine {
             if (current != null && i.id.equals(current.id)) continue;
             Map<Stat, Double> delta = new EnumMap<>(Stat.class);
             for (Stat s : Stat.values()) delta.put(s, stat(i.stats, s) - (current == null ? 0 : stat(current.stats, s)));
-            if (ARMOR.contains(i.group)) {
+            if (ARMOR.contains(i.group) || EQUIPMENT.contains(i.group)) {
                 Map<String, Item> worn = new HashMap<>(owned); worn.put(i.group, i);
                 setBonus(worn, m, p).forEach((s, v) -> delta.merge(s, v, Double::sum));
                 setBonus(owned, m, p).forEach((s, v) -> delta.merge(s, -v, Double::sum));
@@ -200,11 +209,11 @@ public final class ProgressionEngine {
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
             result.add(new Candidate(new Upgrade(i, current, delta, cost, gain, have, blocked, 1, before, after), null, Map.of()));
         }
-        // Full armor sets whose set bonus has mining stats: all four pieces at once.
-        for (String set : SETS) {
+        // Full sets whose set bonus has mining stats: all four pieces at once.
+        for (SetDef set : SETS) {
             List<Item> pieces = new ArrayList<>();
-            for (String group : ARMOR) catalog.stream().filter(i -> i.group.equals(group) && i.id.startsWith(set) && !i.id.startsWith("GLOSSY_" + set)).findFirst().ifPresent(pieces::add);
-            if (pieces.size() != ARMOR.size() || pieces.stream().allMatch(i -> owned.get(i.group) != null && owned.get(i.group).id.equals(i.id))) continue;
+            for (String group : set.groups()) catalog.stream().filter(i -> i.group.equals(group) && i.id.startsWith(set.prefix())).findFirst().ifPresent(pieces::add);
+            if (pieces.size() != set.groups().size() || pieces.stream().allMatch(i -> owned.get(i.group) != null && owned.get(i.group).id.equals(i.id))) continue;
             Map<String, Item> worn = new HashMap<>(owned);
             Map<Stat, Double> delta = new EnumMap<>(Stat.class);
             for (Item i : pieces) {
@@ -226,8 +235,8 @@ public final class ProgressionEngine {
                 Price quote = prices.get(i.id);
                 cost = cost == null || quote == null || !quote.available || !(quote.buy > 0) || !Double.isFinite(quote.buy) ? null : cost + quote.buy;
             }
-            Item display = new Item(); display.id = pieces.getFirst().id; display.name = "Full " + pieces.getFirst().name.replaceFirst(" Helmet$", "") + " set";
-            display.group = "Helmet"; display.source = "All four pieces, for the set bonus; owned pieces cost nothing.";
+            Item display = new Item(); display.id = pieces.getFirst().id; display.name = "Full " + set.name() + " set";
+            display.group = pieces.getFirst().group; display.source = "All four pieces, for the set bonus; owned pieces cost nothing.";
             String blocked = p.hotm < hotm ? "Requires HOTM " + hotm : "";
             if (!have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode))) blocked = "No market purchases on " + p.mode;
             result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, have, blocked, 1, before, after), null, Map.of(), null, null, pieces));
