@@ -25,19 +25,27 @@ final class ClientData {
     int profileIndex, revision;
     boolean loading, demo, ready, initializing, initializationFailed;
     private int generation;
-    private Future<?> lookup, priceRequest;
+    private Future<?> lookup, priceRequest, statsRequest;
+    /** Automatic stat ledger for {@link #statsKey}; requested lazily from the companion's /stats endpoint. */
+    StatsReport stats;
+    String statsKey = "", statsPending = "", statsError = "";
     Map<String, Price> prices = new HashMap<>();
     final Map<String, Inputs> inputs = new HashMap<>();
     private HttpClient http;
     private final Path file = FabricLoader.getInstance().getConfigDir().resolve("skyprogression-inputs.json");
     static final class Inputs {
+        /** Manual values; a stat absent here uses the automatic total when one exists. */
         Map<Stat, Double> stats = new EnumMap<>(Stat.class);
+        /** Held tool key and zone name for the breakdown; empty zone means the method's usual zone, "-" none. */
+        String tool = "", zone = "";
+        boolean godPotion = true;
         double efficiency = 65, blocksPerSecond, baseDrops = 1, coinsPerItem, coleweightPerItem;
         boolean confirmed;
         Inputs copy() {
             Inputs i=new Inputs();i.stats=new EnumMap<>(Stat.class);i.stats.putAll(stats);
             i.efficiency=efficiency;i.blocksPerSecond=blocksPerSecond;i.baseDrops=baseDrops;
-            i.coinsPerItem=coinsPerItem;i.coleweightPerItem=coleweightPerItem;i.confirmed=confirmed;return i;
+            i.coinsPerItem=coinsPerItem;i.coleweightPerItem=coleweightPerItem;i.confirmed=confirmed;
+            i.tool=tool;i.zone=zone;i.godPotion=godPotion;return i;
         }
     }
     // No filesystem, TLS initialization, or catalog parsing in the screen constructor.
@@ -66,6 +74,48 @@ final class ClientData {
         Profile p = profile(); String key = (demo ? "demo" : p == null ? "none" : p.id) + ":" + method.name();
         return inputs.computeIfAbsent(key, ignored -> { Inputs i = new Inputs(); i.efficiency = method.defaultEfficiency(); return i; });
     }
+    StatContext.Zone zone(MiningMethod method) {
+        String z=inputs(method).zone;
+        if(z==null||z.isEmpty())return method.defaultZone();
+        try{return z.equals("-")?null:StatContext.Zone.valueOf(z);}catch(IllegalArgumentException e){return method.defaultZone();}
+    }
+    private String statsQuery(MiningMethod method) {
+        Profile p=profile();if(p==null||demo)return "";
+        Inputs i=inputs(method);StatContext.Zone z=zone(method);
+        return "/stats?ign="+enc(p.player)+"&profile="+enc(p.id)+"&tool="+enc(i.tool==null?"":i.tool)+"&zone="+(z==null?"":z.name())
+                +"&target="+method.target().name()+"&god="+i.godPotion;
+    }
+    private static String enc(String value){return URLEncoder.encode(value,java.nio.charset.StandardCharsets.UTF_8);}
+    /** Automatic ledger for the current selections, or null while missing, loading or failed. */
+    StatsReport stats(MiningMethod method){String key=statsQuery(method);return !key.isEmpty()&&key.equals(statsKey)?stats:null;}
+    /** Automatic totals overlaid by the player's manual values. */
+    Map<Stat,Double> effective(MiningMethod method) {
+        Map<Stat,Double> result=new EnumMap<>(Stat.class);StatsReport r=stats(method);
+        if(r!=null)for(var l:r.stats)result.put(l.stat,l.total);
+        result.putAll(inputs(method).stats);return result;
+    }
+    boolean statsLoading(MiningMethod method){String key=statsQuery(method);return !key.isEmpty()&&key.equals(statsPending);}
+    String statsError(MiningMethod method){String key=statsQuery(method);return !key.isEmpty()&&key.equals(statsKey)?statsError:"";}
+    boolean hasStats(MiningMethod method){return inputs(method).confirmed||stats(method)!=null;}
+    /** Requests the ledger when the selections changed; safe to call on every screen rebuild. */
+    void ensureStats(MiningMethod method,Consumer<Runnable> dispatch,Runnable changed) {
+        String key=statsQuery(method);
+        if(!ready||loading||key.isEmpty()||key.equals(statsKey)||key.equals(statsPending))return;
+        if(statsRequest!=null)statsRequest.cancel(true);
+        statsPending=key;statsError="";int requestGeneration=generation;
+        statsRequest=WORK.submit(()->{
+            StatsReport result=null;String error="";
+            try{result=Catalog.GSON.fromJson(fetch(key,30),StatsReport.class);if(result==null||result.stats==null)throw new IllegalStateException("Empty stat breakdown");}
+            catch(IllegalStateException e){error=e.getMessage();}
+            catch(Exception e){error="Companion unavailable or timed out. Automatic stats need the companion.";}
+            StatsReport loaded=result;String failure=error;
+            dispatch.accept(()->{
+                if(requestGeneration!=generation||!key.equals(statsPending))return;
+                statsPending="";statsKey=key;stats=loaded;statsError=failure;revision++;changed.run();
+            });
+        });
+    }
+    void refreshStats(){statsKey="";statsPending="";stats=null;statsError="";if(statsRequest!=null)statsRequest.cancel(true);revision++;}
     void save(Consumer<Runnable> dispatch,Consumer<Boolean> complete) {
         Map<String,Inputs> snapshot=new HashMap<>();inputs.forEach((key,value)->snapshot.put(key,value.copy()));
         DISK.submit(()->{
@@ -83,6 +133,8 @@ final class ClientData {
         generation++;revision++;loading=false;
         if(lookup!=null)lookup.cancel(true);
         if(priceRequest!=null)priceRequest.cancel(true);
+        if(statsRequest!=null)statsRequest.cancel(true);
+        stats=null;statsKey="";statsPending="";statsError="";
         message="Lookup cancelled. You can load again or use Demo.";
     }
     void load(String ign, Consumer<Runnable> dispatch, Runnable changed) {
