@@ -10,11 +10,20 @@ runtime dependency on either tool; their outputs are validation evidence only.
 
 **Agreed plan (owner, 2026-10-26).** Treat the current Fortune/Speed numbers as correct for now and
 fix them later; do not block on the in-game test. Order:
-1. Automatic method stats: Gemstone/Ore/Dwarven Metal/Block Fortune, Mining/Gemstone Spread, Pristine
-   (same ledger, `/stats`, Breakdown tab; best gear and HOTM tree per method).
-2. Rate model per method, MF Gems first: Fortune is roughly linear, Pristine multiplies (Flawed = 80
-   Rough), Spread depends on adjacent blocks, Speed acts only through tick/instamine thresholds. Use
-   the Mining Cat developer's notes (guide averages at 65% efficiency, per-method value windows).
+1. **Implemented (`d567858`), in-game test pending.** Automatic method stats: Gemstone/Ore/Dwarven Metal/
+   Block Fortune, Mining/Gemstone Spread, Pristine in the same ledger, `/stats` and Breakdown tab (which now
+   shows only the method's stats plus the focused one). Feed Upgrades/Rates; Type Stats still overrides.
+   Fixture vs in-game menu: Spread 300, Gemstone Spread 2.5, Dwarven Metal 5, Pristine 13.4 match;
+   Gemstone 180 vs 195, Ore 100 vs 110, Block 115 vs 125 unexplained (likely untrackable consumables/buffs).
+   New: Magma Fields zone (MF default; Bal Furnace +2.91 Pristine there), Block target, one method
+   weighting for gear/pet/HOTM tree. Rules and sources: CALCULATIONS.md "Stat breakdown: method stats".
+2. **MF Gems rate engine implemented (`94517a1`), not validated against a measured session.** `MethodRates`
+   for MF Gems/Ruby/Topaz on the Rates tab: ticks from block strength, MSB cycle from the tool lore,
+   wiki Pristine/Fortune drop formula, Flawless = 512,000 Rough, coins at the Flawless buy quote. Hypermax
+   estimate reproduces the guide (~19.6 vs 20.1 Amber/h at 60%). Fixture: ~12.0 Amber/h at 65%.
+   **Next:** owner compares the automatic rate with a timed session (Flawless/h, blocks mined, Mining Speed,
+   ability uptime); then use `MethodRates` for the MF Gems upgrade ranking (gain% = rate after / before - 1)
+   and extend to Grotto (Jasper 4,800) and the other methods with the developer's value windows.
 3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
    prerequisites, mutual exclusions and prices. Each method values them through its rate model
    (coins/hour gained / cost); then a greedy sequential plan (take best, recompute).
@@ -137,7 +146,11 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (Step 4 `/stats` + Breakdown tab): `./gradlew build :service:installDist` succeeded;
+Latest verification (method stats + MF gem rates, 2026-10-26): `./gradlew build :service:installDist`
+succeeded after each step; existing tests pass, no tests added. Ledgers and rates checked on the fixture with
+a scratch runner (values above). GitHub Actions Build succeeded for `d567858` (run 40353140752). The mod
+screens were not run by the agent; the companion was not restarted against the live API for this step.
+Earlier verification (Step 4 `/stats` + Breakdown tab): `./gradlew build :service:installDist` succeeded;
 no tests added. Companion run locally with the stored key: `/stats` returned the fixture totals and a 400
 for an unknown zone. GitHub Actions Build succeeded for `f01bdc3` (run 40347288413). The mod screens were
 not run by the agent (owner tests Minecraft).
@@ -264,6 +277,14 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-26 (method stats and MF gem rates): extended `StatBreakdown` to all mining stats except Cold
+Resistance; new HOTM perks (Gem Lover, Old-School, Blockhead, Metal Head, Efficient Miner, Mole, Mining
+Master, Front Loaded with an unobserved key), pet perks (Bal Furnace, Scatha Drill Infusion, Armadillo Long
+Claws), attributes (Mossy Box, Devouring Spread, Deep Technique as situational expected value), Rhinestone
+Infusion and untrackable Dwarven O's cereals. Added `MethodRates` (MF gems) and Flawless gem price quotes.
+Open: unexplained +15 Gemstone / +10 Ore / +10 Block Fortune in game; whether the lore cooldown includes the
+fuel tank; MSB affecting all Mining Speed; Front Loaded key; Gold Box / Royal Riches keys.
 
 2026-10-26: reviewed owner-provided Coal, Coal Other Upgrades, Grotto and MF Gems
 screenshots and progression checklist. Verified Debotes/Zucchini API access; saved

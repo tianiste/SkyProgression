@@ -231,3 +231,43 @@ before Bal's Furnace (the menu was not taken in the Magma Fields; with it 16.31)
 195, Ore Fortune 100 vs 110, Block Fortune 115 vs 125: the gaps are unexplained. The flat +10 Ore and +10
 Block fit consumed Dwarven O's cereals (untrackable); the +15 Gemstone Fortune matches the unexplained +15
 Mining Fortune and may be one temporary source. Not tuned.
+
+## Rates: Magma Fields gemstones
+
+`core/` `MethodRates` (MF Gems, MF Ruby, MF Topaz), shown on the Rates tab as "automatic rate" from the
+effective stats (automatic totals, overridden by Type Stats), the efficiency in Type Stats (default 65%)
+and the pickaxe ability on the evaluated tool. The manual rate scenario stays next to it. The value window
+is a one-hour average that includes the Mining Speed Boost cycle (the Mining Cat developer named windows
+only for Obsidian, Shafting/metals and Coal).
+
+- Gem and block strength (wiki Block Strength, <https://hypixelskyblock.minecraft.wiki/w/Block_Strength>):
+  Ruby 2,300; Amber, Sapphire, Jade, Amethyst 3,000 (MF Gems uses these); Topaz 3,800.
+- Break time (wiki Mining Speed, <https://hypixelskyblock.minecraft.wiki/w/Mining_Speed>):
+  ticks = round(30 x strength / Mining Speed), at least 4 ticks (soft cap); 1 tick when Mining Speed exceeds
+  60 x strength (gemstone blocks). No extra tick per block is added (see the guide check below).
+- Ability: read from the tool lore (`Ability: Mining Speed Boost`, `Grants +250% Mining Speed for 15s`,
+  `Cooldown: 108s`). Uptime = duration / cooldown; during it the speed is multiplied by (1 + boost). It is
+  assumed to apply to all counted Mining Speed. Reference values (wiki Mining Speed Boost,
+  <https://hypixelskyblock.minecraft.wiki/w/Mining_Speed_Boost>): level 1/2/3 = +200/250/300% for 10/15/20 s,
+  120 s cooldown, reductions multiply. The fixture's lore shows 108 s = 120 x 0.9 (Pickaxe Cooldown 10);
+  whether the lore also includes the fuel tank's -4% is not verified (it would give 103.7 s). Maniac Miner is
+  not modelled (no speed boost).
+- Blocks / hour = 3600 x efficiency x 20 x (uptime / boosted ticks + (1 - uptime) / ticks) x (1 + Gemstone
+  Spread / 100). Every spread block is assumed to be another gemstone; travel time is part of the efficiency.
+- Rough per block = 4 x (1 + 0.79 x Pristine) x (1 + (Mining Fortune + Gemstone Fortune) / 100), with 4 the
+  average of the 3-5 base yield (wiki Gemstone and Pristine,
+  <https://hypixelskyblock.minecraft.wiki/w/Gemstone>, <https://hypixelskyblock.minecraft.wiki/w/Pristine>).
+  Flawless = 80 x 80 x 80 = 512,000 Rough.
+- Coins / hour = Flawless / hour x the Coflnet buy quote for the Flawless gem. Labelled as the buy quote:
+  selling yields less after the bazaar spread and tax. No sale price is invented.
+
+Guide check (Magma Fields guide, rates "up to" at 60% Block Efficiency, computed with a third-party calculator):
+Ruby 23.5, Amber/Sapphire/Jade/Amethyst 20.1, Topaz 16.5 Flawless / hour. With an estimated hypermax
+(Mining Speed about 9,700 on gems, MSB level 2 with 97 s cooldown, Pristine 17.8, Mining + Gemstone Fortune
+about 2,730, Spread 2.5) the model gives about 19.6 Amber / hour at 60%. The guide's per-gem ratios do not pin
+down the tick model by themselves. The guide states 60% while the Mining Cat developer described guide
+averages at 65%; we keep the guide's own 60% for the reference and 65% as the player's default.
+
+Fixture (Debotes, best owned gear, DR-X655, Magma Fields, 65%): Mining Speed 8,000 (11 ticks on Amber, 4
+during MSB), Pristine 16.31, Fortune 1,767 + 180: about 12.0 Amber, 13.9 Ruby and 10.3 Topaz Flawless / hour.
+Not validated against a measured session yet.

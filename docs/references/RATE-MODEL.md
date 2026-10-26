@@ -1,6 +1,7 @@
 # Rate model (research, 2026-10-26)
 
-Derived from the owner's guides and Debotes's Mining Cat Coal pages. Not yet implemented.
+Derived from the owner's guides and Debotes's Mining Cat Coal pages. The Magma Fields gemstone part is
+implemented (`MethodRates`, docs/CALCULATIONS.md "Rates: Magma Fields gemstones"); the rest is research.
 Constants marked "fitted" match Mining Cat output but are not verified game mechanics.
 
 ## 1. Break time (ticks)
@@ -45,8 +46,10 @@ temporary bonuses (in-game tooltip showed 2,248 Fortune). Gold uses a different 
 
 ## Open questions
 
-- Is there an extra tick per block on ticked blocks? Fit with MF gem rates (Ruby 23.5,
-  Amber/Jade/Sapphire/Amethyst 20.1, Topaz 16.5 Flawless/h at 60% efficiency).
+- Is there an extra tick per block on ticked blocks? MF gem guide rates (Ruby 23.5, Amber/Jade/Sapphire/
+  Amethyst 20.1, Topaz 16.5 Flawless/h at 60%) are matched within about 5% without one, using Flawless =
+  512,000 Rough and an estimated hypermax. Their ratios alone fit several tick models; needs a measured
+  session (blocks mined per minute at a known speed).
 - Where does spreadEff 0.8 come from (missing neighbor blocks?), and does it vary by method?
 - Per-method instamine caps for Cobble/End Stone/Mycelium/Red Sand from guide rates.
 - Gold's baseline loadout; how Maniac Miner's +500 enters Coal.
