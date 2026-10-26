@@ -5,6 +5,11 @@ Minecraft **26.1.2**, Fabric Loader **0.20.1+**, Fabric API and Java **25**.
 
 Open with `/skyprogression` or `/sp`.
 
+## Continuing development
+
+Start with [AGENTS.md](AGENTS.md) and [PROGRESS.md](PROGRESS.md). They contain the working
+agreement, verified state, reference cases, remaining milestones and next concrete task.
+
 ## Development
 
 `./gradlew build` builds the mod. `./gradlew runClient` launches a development client.
