@@ -117,6 +117,61 @@ public final class GearUpgrades {
         }
         reforges(gear,method,out);
         gemstones(gear,method,out);
+        recombobulate(gear,method,out);
+        coating(gear,out);
+        return out;
+    }
+    private static final Set<String> DIVAN_COATED=Set.of("DIVAN_HELMET","DIVAN_CHESTPLATE","DIVAN_LEGGINGS","DIVAN_BOOTS","DIVAN_PENDANT");
+    /** Divan's Powder Coating (item lore): +500 Mining Speed on a drill, +10 Mining Fortune on Armor/Pendant of Divan; once per item. */
+    private static void coating(Item gear,List<Proposal> out) {
+        if(number(at(gear.extra,"divan_powder_coating"),0)>0)return;
+        Map<Stat,Double> delta="DRILL".equals(gear.category)?Map.of(Stat.MINING_SPEED,500.0):DIVAN_COATED.contains(gear.id)?Map.of(Stat.MINING_FORTUNE,10.0):null;
+        if(delta==null)return;
+        out.add(new Proposal(gear,"Divan's Powder Coating",delta,new Plan(Map.of("DIVAN_POWDER_COATING",1),0,"Combine in an anvil; once per item."),"",
+                g->g.extra.addProperty("divan_powder_coating",1)));
+    }
+    /**
+     * Recombobulator 3000: one rarity up, once per item. Base stats do not change; the reforge and socketed gems take
+     * their values at the new rarity.
+     */
+    private static void recombobulate(Item gear,MiningMethod method,List<Proposal> out) {
+        int index=TIERS.indexOf(gear.tier);
+        if(gear.recombobulated||number(at(gear.extra,"rarity_upgrades"),0)>0||index<0||index>=TIERS.size()-1)return;
+        String next=TIERS.get(index+1);
+        Map<Stat,Double> delta=new EnumMap<>(Stat.class);
+        Reforges.Reforge reforge=Reforges.byModifier(gear.modifier);
+        if(reforge!=null) {
+            Map<Stat,Double> now=reforge.at(gear.tier,method),then=reforge.at(next,method);
+            if(now==null||then==null)return;
+            for(Stat s:Stat.values())delta.merge(s,then.getOrDefault(s,0.0)-now.getOrDefault(s,0.0),Double::sum);
+        }
+        Map<Stat,Double> gemsNow=socketed(gear,gear.tier),gemsThen=socketed(gear,next);
+        if(gemsNow==null||gemsThen==null)return;
+        for(Stat s:Stat.values())delta.merge(s,gemsThen.getOrDefault(s,0.0)-gemsNow.getOrDefault(s,0.0),Double::sum);
+        delta.values().removeIf(v->v==0);
+        if(delta.values().stream().noneMatch(v->v>0))return;
+        out.add(new Proposal(gear,"Recombobulator 3000 ("+next.toLowerCase(Locale.ROOT)+")",delta,
+                new Plan(Map.of("RECOMBOBULATOR_3000",1),0,"Combine in an anvil; once per item. Only reforge and gem values change."),"",
+                g->{g.tier=next;g.recombobulated=true;g.extra.addProperty("rarity_upgrades",1);}));
+    }
+    /** Mining stats of the socketed gems at a rarity, or null when a gem's quality is not recognised. */
+    private static Map<Stat,Double> socketed(Item gear,String tier) {
+        Map<Stat,Double> out=new EnumMap<>(Stat.class);
+        if(gear.slots==null)return out;
+        JsonElement gems=at(gear.extra,"gems");
+        Map<String,Integer> indexes=new HashMap<>();
+        for(Slot slot:gear.slots) {
+            if(slot==null)continue;
+            String key=slot.slot_type+"_"+(indexes.merge(slot.slot_type,1,Integer::sum)-1);
+            JsonElement gem=at(gems,key);
+            String quality=gem.isJsonObject()?string(at(gem,"quality"),""):string(gem,"");
+            if(quality.isEmpty())continue;
+            String type=string(at(gems,key+"_gem"),slot.slot_type);
+            if(gemStat(type)==null)continue;
+            double value=gemValue(type,quality,tier,"ACCESSORY".equals(gear.category));
+            if(!Double.isFinite(value))return null;
+            out.merge(gemStat(type),value,Double::sum);
+        }
         return out;
     }
     /**
@@ -203,20 +258,22 @@ public final class GearUpgrades {
             for(String type:types) {
                 if(gemStat(type)==null || type.equals("TOPAZ")&&!method.gems())continue;
                 for(String target:List.of("FLAWLESS","PERFECT")) {
-                    // Preserve the gem type in occupied slots; swapping mixed slots needs a full build comparison.
-                    if(!quality.isEmpty()&&(!type.equals(oldType)||QUALITIES.indexOf(target)<=QUALITIES.indexOf(quality)))continue;
+                    // Same type: only higher qualities. Another type (flexible slots): the old gem's stat is lost.
+                    boolean swap=!quality.isEmpty()&&!type.equals(oldType);
+                    if(!quality.isEmpty()&&!swap&&QUALITIES.indexOf(target)<=QUALITIES.indexOf(quality))continue;
                     Map<Stat,Double> delta=new EnumMap<>(Stat.class);
-                    double before=quality.isEmpty()?0:gemValue(oldType,quality,gear.tier,"ACCESSORY".equals(gear.category));
+                    double before=quality.isEmpty()||gemStat(oldType)==null?0:gemValue(oldType,quality,gear.tier,"ACCESSORY".equals(gear.category));
                     double after=gemValue(type,target,gear.tier,"ACCESSORY".equals(gear.category));
-                    if(!Double.isFinite(before)||!Double.isFinite(after)||after<=before)continue;
-                    delta.put(gemStat(type),after-before);
+                    if(!Double.isFinite(before)||!Double.isFinite(after)||(swap?after<=0:after<=before))continue;
+                    if(swap){delta.put(gemStat(type),after);if(gemStat(oldType)!=null&&before>0)delta.merge(gemStat(oldType),-before,Double::sum);}
+                    else delta.put(gemStat(type),after-before);
                     Map<String,Integer> materials=new LinkedHashMap<>();materials.put(target+"_"+type+"_GEM",1);
                     double fee=quality.isEmpty()?0:REMOVAL[QUALITIES.indexOf(quality)];
                     if(!unlocked&&slot.costs!=null)for(Ingredient ingredient:slot.costs) {
                         if(ingredient.type.equals("COINS"))fee+=ingredient.coins;
                         else if(ingredient.type.equals("ITEM"))materials.merge(ingredient.item_id,ingredient.amount,Integer::sum);
                     }
-                    out.add(new Proposal(gear,(unlocked?"Socket ":"Unlock + socket ")+target+" "+type+" ["+key+"]",delta,
+                    out.add(new Proposal(gear,(unlocked?"Socket ":"Unlock + socket ")+target+" "+type+" ["+key+"]"+(swap?" (replaces "+quality+" "+oldType+")":""),delta,
                             new Plan(materials,fee,"Gemstone Grinder. Includes unlock/removal fees; no assumed resale credit."),"",
                             g->socket(g,key,target,type,!type.equals(slot.slot_type))));
                 }
@@ -224,7 +281,7 @@ public final class GearUpgrades {
         }
     }
     public static Set<String> priceIds(List<Item> catalog) {
-        Set<String> ids=new LinkedHashSet<>(List.of("ENCHANTMENT_FORTUNE_4","ENCHANTMENT_EFFICIENCY_5","SIL_EX","POLARVOID_BOOK"));
+        Set<String> ids=new LinkedHashSet<>(List.of("ENCHANTMENT_FORTUNE_4","ENCHANTMENT_EFFICIENCY_5","SIL_EX","POLARVOID_BOOK","RECOMBOBULATOR_3000","DIVAN_POWDER_COATING"));
         for(var table:List.of(FUEL_TANKS.keySet(),ENGINES.keySet(),MODULES.keySet()))for(String key:table)ids.add(key.toUpperCase(Locale.ROOT));
         for(int n=1;n<=5;n++)ids.add("ENCHANTMENT_PRISTINE_"+n);
         for(Reforges.Reforge r:Reforges.all())if(r.stone()!=null)ids.add(r.stone());

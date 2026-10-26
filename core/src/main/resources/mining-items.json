@@ -37,8 +37,8 @@
     "name": "Sorrow Helmet",
     "group": "Helmet",
     "stats": {
-      "MINING_SPEED": 50,
-      "MINING_FORTUNE": 20
+      "MINING_FORTUNE": 20,
+      "MINING_SPEED": 50
     },
     "hotm": 0,
     "methods": [],
@@ -114,8 +114,8 @@
     "name": "Helmet of Divan",
     "group": "Helmet",
     "stats": {
-      "MINING_SPEED": 80,
-      "MINING_FORTUNE": 30
+      "MINING_FORTUNE": 30,
+      "MINING_SPEED": 80
     },
     "hotm": 6,
     "methods": [],
@@ -241,8 +241,8 @@
     "name": "Sorrow Chestplate",
     "group": "Chestplate",
     "stats": {
-      "MINING_SPEED": 50,
-      "MINING_FORTUNE": 20
+      "MINING_FORTUNE": 20,
+      "MINING_SPEED": 50
     },
     "hotm": 0,
     "methods": [],
@@ -318,8 +318,8 @@
     "name": "Chestplate of Divan",
     "group": "Chestplate",
     "stats": {
-      "MINING_SPEED": 80,
-      "MINING_FORTUNE": 30
+      "MINING_FORTUNE": 30,
+      "MINING_SPEED": 80
     },
     "hotm": 6,
     "methods": [],
@@ -445,8 +445,8 @@
     "name": "Sorrow Leggings",
     "group": "Leggings",
     "stats": {
-      "MINING_SPEED": 50,
-      "MINING_FORTUNE": 20
+      "MINING_FORTUNE": 20,
+      "MINING_SPEED": 50
     },
     "hotm": 0,
     "methods": [],
@@ -522,8 +522,8 @@
     "name": "Leggings of Divan",
     "group": "Leggings",
     "stats": {
-      "MINING_SPEED": 80,
-      "MINING_FORTUNE": 30
+      "MINING_FORTUNE": 30,
+      "MINING_SPEED": 80
     },
     "hotm": 6,
     "methods": [],
@@ -649,8 +649,8 @@
     "name": "Sorrow Boots",
     "group": "Boots",
     "stats": {
-      "MINING_SPEED": 50,
-      "MINING_FORTUNE": 20
+      "MINING_FORTUNE": 20,
+      "MINING_SPEED": 50
     },
     "hotm": 0,
     "methods": [],
@@ -726,8 +726,8 @@
     "name": "Boots of Divan",
     "group": "Boots",
     "stats": {
-      "MINING_SPEED": 80,
-      "MINING_FORTUNE": 30
+      "MINING_FORTUNE": 30,
+      "MINING_SPEED": 80
     },
     "hotm": 6,
     "methods": [],
@@ -1167,8 +1167,8 @@
     "name": "Titanium Drill DR-X355",
     "group": "Tool",
     "stats": {
-      "MINING_SPEED": 700,
-      "MINING_FORTUNE": 25
+      "MINING_FORTUNE": 25,
+      "MINING_SPEED": 700
     },
     "hotm": 5,
     "methods": [
@@ -1189,8 +1189,8 @@
     "name": "Titanium Drill DR-X455",
     "group": "Tool",
     "stats": {
-      "MINING_SPEED": 900,
-      "MINING_FORTUNE": 40
+      "MINING_FORTUNE": 40,
+      "MINING_SPEED": 900
     },
     "hotm": 5,
     "methods": [
@@ -1217,8 +1217,8 @@
     "name": "Titanium Drill DR-X555",
     "group": "Tool",
     "stats": {
-      "MINING_SPEED": 1200,
-      "MINING_FORTUNE": 70
+      "MINING_FORTUNE": 70,
+      "MINING_SPEED": 1200
     },
     "hotm": 5,
     "methods": [
@@ -1263,8 +1263,8 @@
     "name": "Titanium Drill DR-X655",
     "group": "Tool",
     "stats": {
-      "MINING_SPEED": 1600,
-      "MINING_FORTUNE": 120
+      "MINING_FORTUNE": 120,
+      "MINING_SPEED": 1600
     },
     "hotm": 6,
     "methods": [
@@ -1333,8 +1333,8 @@
     "name": "Divan\u0027s Drill",
     "group": "Tool",
     "stats": {
-      "MINING_SPEED": 1800,
-      "MINING_FORTUNE": 150
+      "MINING_FORTUNE": 150,
+      "MINING_SPEED": 1800
     },
     "hotm": 7,
     "methods": [
@@ -1858,8 +1858,8 @@
     "name": "Ember Ash Helmet",
     "group": "Helmet",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 5
+      "MINING_FORTUNE": 5,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -1873,8 +1873,8 @@
     "name": "Flamebreaker Helmet",
     "group": "Helmet",
     "stats": {
-      "MINING_SPEED": 25,
-      "MINING_FORTUNE": 15
+      "MINING_FORTUNE": 15,
+      "MINING_SPEED": 25
     },
     "hotm": 0,
     "methods": [],
@@ -1948,8 +1948,8 @@
     "name": "Heat Helmet",
     "group": "Helmet",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 10
+      "MINING_FORTUNE": 10,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -1996,8 +1996,8 @@
     "name": "Netherite Helmet",
     "group": "Helmet",
     "stats": {
-      "MINING_SPEED": 25,
-      "MINING_FORTUNE": 10
+      "MINING_FORTUNE": 10,
+      "MINING_SPEED": 25
     },
     "hotm": 0,
     "methods": [],
@@ -2072,8 +2072,8 @@
     "name": "Ember Ash Chestplate",
     "group": "Chestplate",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 5
+      "MINING_FORTUNE": 5,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -2087,8 +2087,8 @@
     "name": "Flamebreaker Chestplate",
     "group": "Chestplate",
     "stats": {
-      "MINING_SPEED": 25,
-      "MINING_FORTUNE": 15
+      "MINING_FORTUNE": 15,
+      "MINING_SPEED": 25
     },
     "hotm": 0,
     "methods": [],
@@ -2162,8 +2162,8 @@
     "name": "Heat Chestplate",
     "group": "Chestplate",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 10
+      "MINING_FORTUNE": 10,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -2271,8 +2271,8 @@
     "name": "Ember Ash Leggings",
     "group": "Leggings",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 5
+      "MINING_FORTUNE": 5,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -2286,8 +2286,8 @@
     "name": "Flamebreaker Leggings",
     "group": "Leggings",
     "stats": {
-      "MINING_SPEED": 25,
-      "MINING_FORTUNE": 15
+      "MINING_FORTUNE": 15,
+      "MINING_SPEED": 25
     },
     "hotm": 0,
     "methods": [],
@@ -2361,8 +2361,8 @@
     "name": "Heat Leggings",
     "group": "Leggings",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 10
+      "MINING_FORTUNE": 10,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -2470,8 +2470,8 @@
     "name": "Ember Ash Boots",
     "group": "Boots",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 5
+      "MINING_FORTUNE": 5,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -2485,8 +2485,8 @@
     "name": "Flamebreaker Boots",
     "group": "Boots",
     "stats": {
-      "MINING_SPEED": 25,
-      "MINING_FORTUNE": 15
+      "MINING_FORTUNE": 15,
+      "MINING_SPEED": 25
     },
     "hotm": 0,
     "methods": [],
@@ -2560,8 +2560,8 @@
     "name": "Heat Boots",
     "group": "Boots",
     "stats": {
-      "MINING_SPEED": 15,
-      "MINING_FORTUNE": 10
+      "MINING_FORTUNE": 10,
+      "MINING_SPEED": 15
     },
     "hotm": 0,
     "methods": [],
@@ -3016,5 +3016,132 @@
     "tier": "EPIC",
     "category": "ACCESSORY",
     "slots": []
+  },
+  {
+    "id": "POWER_ARTIFACT",
+    "name": "Artifact of Power",
+    "group": "Power accessory",
+    "stats": {},
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "ACCESSORY",
+    "slots": [
+      {
+        "slot_type": "JADE"
+      },
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "TOPAZ"
+      },
+      {
+        "slot_type": "SAPPHIRE"
+      },
+      {
+        "slot_type": "AMETHYST"
+      },
+      {
+        "slot_type": "JASPER"
+      },
+      {
+        "slot_type": "RUBY"
+      }
+    ]
+  },
+  {
+    "id": "POWER_RELIC",
+    "name": "Relic of Power",
+    "group": "Power accessory",
+    "stats": {},
+    "hotm": 10,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "ACCESSORY",
+    "slots": [
+      {
+        "slot_type": "JADE"
+      },
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "TOPAZ"
+      },
+      {
+        "slot_type": "SAPPHIRE"
+      },
+      {
+        "slot_type": "AMETHYST"
+      },
+      {
+        "slot_type": "JASPER"
+      },
+      {
+        "slot_type": "RUBY"
+      },
+      {
+        "slot_type": "OPAL"
+      },
+      {
+        "slot_type": "ONYX"
+      },
+      {
+        "slot_type": "PERIDOT"
+      },
+      {
+        "slot_type": "CITRINE"
+      },
+      {
+        "slot_type": "AQUAMARINE"
+      }
+    ]
+  },
+  {
+    "id": "POWER_RING",
+    "name": "Ring of Power",
+    "group": "Power accessory",
+    "stats": {},
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "ACCESSORY",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      },
+      {
+        "slot_type": "AMETHYST"
+      },
+      {
+        "slot_type": "JADE"
+      },
+      {
+        "slot_type": "AMBER"
+      }
+    ]
+  },
+  {
+    "id": "POWER_TALISMAN",
+    "name": "Talisman of Power",
+    "group": "Power accessory",
+    "stats": {},
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "COMMON",
+    "category": "ACCESSORY",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      },
+      {
+        "slot_type": "AMBER"
+      }
+    ]
   }
 ]

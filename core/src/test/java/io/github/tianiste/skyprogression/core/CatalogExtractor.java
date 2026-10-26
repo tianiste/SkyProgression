@@ -22,7 +22,10 @@ public final class CatalogExtractor {
             "BOOTS", "Boots", "NECKLACE", "Necklace", "CLOAK", "Cloak", "BELT", "Belt", "GLOVES", "Gloves", "BRACELET", "Bracelet");
     /** Accessory families (only the highest-rarity member counts); unknown families use the item name. */
     private static final Map<String, String> FAMILIES = Map.of("MINERAL_TALISMAN", "Mineral accessory", "GLOSSY_MINERAL_TALISMAN", "Mineral accessory",
-            "HASTE_RING", "Haste accessory", "HASTE_ARTIFACT", "Haste accessory", "SPEED_RELIC", "Speed accessory");
+            "HASTE_RING", "Haste accessory", "HASTE_ARTIFACT", "Haste accessory", "SPEED_RELIC", "Speed accessory",
+            "POWER_TALISMAN", "Power accessory", "POWER_RING", "Power accessory", "POWER_ARTIFACT", "Power accessory", "POWER_RELIC", "Power accessory");
+    /** No mining stats of their own, but Jade/Amber/Topaz slots that take mining gems. */
+    private static final Set<String> GEM_ONLY = Set.of("POWER_TALISMAN", "POWER_RING", "POWER_ARTIFACT", "POWER_RELIC");
     private static final List<String> ORDER = List.of("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS", "PICKAXE", "DRILL", "GAUNTLET",
             "NECKLACE", "CLOAK", "BELT", "GLOVES", "BRACELET", "ACCESSORY");
 
@@ -46,17 +49,16 @@ public final class CatalogExtractor {
             JsonObject stats = item.has("stats") ? item.getAsJsonObject("stats") : new JsonObject();
             String tier = item.has("tier") ? item.get("tier").getAsString() : "COMMON";
             String category = item.has("category") ? item.get("category").getAsString() : "";
-            if (stats.keySet().stream().noneMatch(MINING::contains) || tier.equals("SPECIAL") || tier.equals("UNOBTAINABLE")
-                    || !ORDER.contains(category)) continue;
             String id = item.get("id").getAsString();
+            if (stats.keySet().stream().noneMatch(MINING::contains) && !GEM_ONLY.contains(id) || tier.equals("SPECIAL") || tier.equals("UNOBTAINABLE")
+                    || !ORDER.contains(category)) continue;
             JsonObject old = existing.get(id), out = new JsonObject();
             out.addProperty("id", id);
             out.addProperty("name", item.get("name").getAsString().replaceAll("§.", ""));
             out.addProperty("group", old != null ? old.get("group").getAsString() : TOOLS.contains(category) ? "Tool"
                     : category.equals("ACCESSORY") ? FAMILIES.getOrDefault(id, item.get("name").getAsString().replaceAll("§.", "")) : GROUPS.get(category));
             JsonObject kept = new JsonObject();
-            for (String s : MINING) if (stats.has(s)) kept.add(s, stats.get(s));
-            if (stats.has("COLD_RESISTANCE")) kept.add("COLD_RESISTANCE", stats.get("COLD_RESISTANCE"));
+            for (String s : stats.keySet()) if (MINING.contains(s) || s.equals("COLD_RESISTANCE")) kept.add(s, stats.get(s));
             out.add("stats", kept);
             int hotm = 0;
             List<String> needs = new ArrayList<>();

@@ -52,7 +52,7 @@ class GearUpgradesTest {
         assertTrue(GearUpgrades.forItem(i,MiningMethod.COAL,p,Map.of()).stream().noneMatch(c->c.label().startsWith("Fortune")));
     }
     @Test void maxedEnchantmentsAreNotRecommendedAgain() {
-        Item i=drill();i.enchantments.putAll(Map.of("fortune",4,"efficiency",10,"pristine",5));i.extra.addProperty("polarvoid",5);i.extra.addProperty("drill_part_fuel_tank","perfectly_cut_fuel_tank");i.extra.addProperty("drill_part_engine","amber_polished_drill_engine");i.extra.addProperty("drill_part_upgrade_module","goblin_omelette_sunny_side");
+        Item i=drill();i.enchantments.putAll(Map.of("fortune",4,"efficiency",10,"pristine",5));i.extra.addProperty("polarvoid",5);i.extra.addProperty("drill_part_fuel_tank","perfectly_cut_fuel_tank");i.extra.addProperty("drill_part_engine","amber_polished_drill_engine");i.extra.addProperty("drill_part_upgrade_module","goblin_omelette_sunny_side");i.extra.addProperty("divan_powder_coating",1);i.extra.addProperty("rarity_upgrades",1);
         // Only trade-offs and reforge swaps remain (e.g. Starfall Seasoning: more Speed, less Fortune), which the rate or drop model then values.
         assertTrue(GearUpgrades.forItem(i,MiningMethod.MF_GEMS,profile(i),Map.of()).stream().allMatch(c->c.label().contains("reforge")||c.delta().values().stream().anyMatch(v->v<0)));
     }
