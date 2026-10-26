@@ -146,7 +146,7 @@ final class ClientData {
         lookup=WORK.submit(()->{
             try {
                 JsonObject json=fetch("/report?ign="+ign,25).getAsJsonObject();
-                if(json.has("error"))throw new IllegalStateException(json.get("error").getAsString());
+                String failure=ProfileParser.string(ProfileParser.at(json,"error"),"");if(!failure.isBlank())throw new IllegalStateException(failure);
                 Report r=Catalog.GSON.fromJson(json,Report.class);
                 if(r==null||r.profiles==null||r.profiles.isEmpty())throw new IllegalStateException("No profiles found");
                 dispatch.accept(()->{
@@ -157,7 +157,7 @@ final class ClientData {
                 });
             }catch(Exception e){dispatch.accept(()->{
                 if(requestGeneration!=generation)return;
-                loading=false;message=e instanceof IllegalStateException?e.getMessage():"Companion unavailable or timed out. Start it, then Load again. Demo works offline.";revision++;changed.run();
+                loading=false;message=e instanceof IllegalStateException&&e.getMessage()!=null&&!e.getMessage().isBlank()?e.getMessage():"Companion unavailable or timed out. Start it, then Load again. Demo works offline.";revision++;changed.run();
             });}
         });
     }
