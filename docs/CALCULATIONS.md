@@ -462,6 +462,8 @@ only for Obsidian, Shafting/metals and Coal).
 - Break time (wiki Mining Speed, <https://hypixelskyblock.minecraft.wiki/w/Mining_Speed>):
   ticks = round(30 x strength / Mining Speed), at least 4 ticks (soft cap); 1 tick when Mining Speed exceeds
   60 x strength (gemstone blocks). No extra tick per block is added (see the guide check below).
+  Cross-checked against the community tick-threshold guide: all 210 table thresholds match
+  (`docs/references/TICK-THRESHOLDS.md`, which also lists the block strengths for other methods).
 - Ability: read from the tool lore (`Ability: Mining Speed Boost`, `Grants +250% Mining Speed for 15s`,
   `Cooldown: 108s`). Uptime = duration / cooldown; during it the speed is multiplied by (1 + boost). It is
   assumed to apply to all counted Mining Speed. Reference values (wiki Mining Speed Boost,
@@ -498,8 +500,8 @@ Not validated against a measured session yet.
   (wiki Jasper Gemstone, <https://hypixelskyblock.minecraft.wiki/w/Jasper_Gemstone>); Flawless Jasper =
   512,000 Rough, priced at the `FLAWLESS_JASPER_GEM` buy quote.
 - 4 ticks (the soft cap) needs Mining Speed above 30 x 4,800 / 4.5 = 32,000, matching the Fairy Grotto guide's
-  "32000 Mining Speed required to mine Japer in 4 Ticks" with Mining Speed Boost level 2. Whether exactly 32,000
-  is enough is not verified (we round 4.5 up to 5 ticks).
+  "32000 Mining Speed required to mine Japer in 4 Ticks" with Mining Speed Boost level 2. The tick-threshold
+  guide lists it as "> 32000", consistent with our rounding (exactly 32,000 = 4.5, which rounds up to 5 ticks).
 - All mining time is assumed to be on Jasper with the ability used on Jasper (the guide recommends routing so).
   Unknown and not modelled: the share of time spent on the surrounding Breaking Power 7 gems, grotto size and
   griefed veins, the Magma Fields share of a partly Magma Fields grotto, ping and TPS. These lower the real

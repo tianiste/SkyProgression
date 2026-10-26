@@ -438,3 +438,9 @@ breakdown incomplete (fixture: Auspicious Bonus +1% only). Fortune matches SkyCo
 Speed differs by 100.5 (documented, not tuned). Resolved the `polarvoid` vs "Prismatic V" question
 in API-FIELDS.md. Tests: one minimal totals test per the owner's request. Not done: companion
 `/stats`, UI, other stat groups. Next: owner's in-game stat menu comparison, then Step 4.
+
+2026-10-26 (tick thresholds): owner supplied a community Mining Speed tick-threshold guide (Sept 2026).
+Summarized in `docs/references/TICK-THRESHOLDS.md` (rules + implied block strengths for every method).
+All 210 tick thresholds in its tables match `MethodRates.ticks`/`nextTickSpeed`; no code change needed. It
+also confirms Jasper 4 ticks needs > 32,000. Non-gem rate models (roadmap 2) should take strengths and
+the mid-air x5 rule from that file after confirming each strength on the wiki. Documentation only; no rebuild.
