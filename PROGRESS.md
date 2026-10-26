@@ -319,6 +319,10 @@ Recent milestones:
 - [ ] Use early/mid/end guide stages for orientation; personalize actual next steps.
 - [ ] Explain prerequisites, where/how to acquire, owned/missing quantities, source
   confidence and distance from a validated method-specific max.
+- [ ] **Later (owner request, 2026-10-26):** a "Start with" tab showing which of the player's
+  owned gear to use for the selected method before buying anything (best owned armor, equipment,
+  tool, pet, accessories and HOTM tree, with where each piece is stored and what to swap from
+  the current loadout). Not scheduled yet; do after the coins/hour comparison.
 
 ### 5. Regression/parity validation and distribution
 
