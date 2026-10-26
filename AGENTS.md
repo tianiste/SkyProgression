@@ -36,8 +36,11 @@ publish credentials. Public hosting/account provisioning needs the owner's invol
   the mockups contain placeholders and are not a mechanics specification.
 - The owner tests the Minecraft window. Do not launch or control Minecraft unless
   the owner explicitly changes that instruction. Build and test without doing so.
-- Inspect Git status before editing. Preserve unrelated user changes. Commit coherent
-  increments with clear messages and push the authorized repository. Never force-push.
+- Inspect Git status before editing. Preserve unrelated user changes. Never force-push.
+- Push code incrementally with `git` and `gh`: commit each small working step (as soon
+  as it builds) with a clear message and push it to the authorized repository right
+  away, rather than batching a whole milestone into one push. Use `gh` for GitHub work
+  such as checking CI runs (`gh run list` / `gh run view`) after a push.
 - Tests are not required; the owner tests changes manually. Do not add tests by
   default. If a test is genuinely needed, keep it EXTREMELY minimal (one small focused
   case, no broad suites or test scaffolding). Existing tests must still pass the build.
