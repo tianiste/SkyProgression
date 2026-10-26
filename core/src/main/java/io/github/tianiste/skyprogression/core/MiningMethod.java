@@ -38,8 +38,11 @@ public enum MiningMethod {
             case RED_SAND, MYCELIUM -> null;
         };
     }
-    /** Uptime defaults per the Mining Cat developer (2026-10-26): about 80-85% for instant-mine blocks, 65-70% otherwise. */
-    public double defaultEfficiency() { return instant ? 82.5 : 65; }
+    /**
+     * Uptime defaults per the Mining Cat developer (2026-10-26): about 80-85% for instant-mine blocks, 65-70% otherwise.
+     * Coal ore is instamined on the ground from 1,801 Mining Speed (wiki Block Strength), so it takes the instant default.
+     */
+    public double defaultEfficiency() { return instant || this == COAL ? 82.5 : 65; }
     public boolean gems() { return fortune == Stat.GEMSTONE_FORTUNE; }
     /** Spread stat that applies: Gemstone Spread on gemstones, Mining Spread otherwise. */
     public Stat spread() { return gems() ? Stat.GEMSTONE_SPREAD : Stat.MINING_SPREAD; }

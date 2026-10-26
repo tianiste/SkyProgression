@@ -38,12 +38,16 @@ includes the Jasper 4-tick value (> 32,000), so exactly 32,000 gives 5 ticks, as
 | 800 | Mithril (Prismarine) |
 | 600 | Pure ores, Quartz |
 | 500 | Obsidian, Sulphur, Mithril (Cyan Terracotta, Gray Wool) |
-| 50 | Hard Stone (Cyan Terracotta) |
-| 30 | Normal ores (Coal, Gold, Iron ... ore blocks), End Stone |
-| 25 | Hard Stone (stone) |
-| 10 | Cobblestone |
-| 7.5 | Stone |
-| 4 | Netherrack |
+| 50 | Hard Stone (wiki; instamine 1,501) |
+| 30 | Normal ores (Coal, Gold, Iron ... ore blocks; instamine 1,801), End Stone (instamine 901) |
+| 20 | Cobblestone (wiki; instamine 601) |
+| 15 | Stone (wiki; instamine 451) |
+| 8 | Netherrack (wiki; instamine 241) |
 
-The strengths for blocks listed only with an instamine value come from instamine speed / 60. Before a non-gem
-rate model uses these, confirm each one against the wiki Block Strength page.
+Wiki check (Block Strength page, 2026-10-26): instamining needs Mining Speed above 60 x strength on ores, Obsidian,
+gemstones and Dwarven Metal blocks, and above 30 x strength on other blocks. The guide-derived strengths for
+non-ore blocks listed only with an instamine value were first computed as instamine / 60 and came out at half the
+wiki value (Cobblestone 10, Stone 7.5, Netherrack 4, Hard Stone 25). The wiki values above replace them; the
+thresholds themselves are unchanged. Confirmed on the wiki: Coal Ore 30, Obsidian 500, End Stone 30, Cobblestone 20,
+Hard Stone 50, Pure Gold/Coal blocks 600, Tungsten and Umber 5,600, Glacite 6,000. The wiki lists no strength for
+Mycelium or Red Sand (only a theorized vanilla hardness of 0.6 / 0.5).

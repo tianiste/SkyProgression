@@ -306,6 +306,7 @@ public final class GearUpgrades {
         ids.addAll(PetUpgrades.priceIds());
         ids.addAll(ProfileUpgrades.priceIds());
         ids.addAll(Recipes.inputIds());
+        ids.addAll(MethodRates.priceIds());
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");
         for(String type:List.of("RUBY","SAPPHIRE","AMETHYST","JASPER"))ids.add("FLAWLESS_"+type+"_GEM"); // gem rate values
         for(Item item:catalog) {

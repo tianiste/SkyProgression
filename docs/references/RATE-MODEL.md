@@ -11,9 +11,10 @@ Constants marked "fitted" match Mining Cat output but are not verified game mech
     airborne: effective speed = miningSpeed / 5
     speed needed for n ticks = 30 * blockStrength / (n + 0.5); instamine needs > 60 * strength
 
-Implied strengths reproduce every guide threshold: Cobblestone 10 (601), End Stone 15
-(901), Coal 30 (1,801 ground / 9,001 airborne), Gold block 600 (36,001), Jasper 4,800
-(32,000 for 4 ticks). Verify strengths against the wiki block list before encoding.
+Wiki strengths reproduce every guide threshold: Cobblestone 20 (601 = 30 x 20 + 1), End Stone 30
+(901), Coal 30 (1,801 = 60 x 30 + 1 ground / 9,001 airborne), Gold block 600 (36,001), Jasper 4,800
+(32,000 for 4 ticks). Ores, Obsidian, gemstones and Dwarven Metal instamine above 60 x strength, other
+blocks above 30 x (wiki Block Strength). Coal is implemented (docs/CALCULATIONS.md "Rates: Coal").
 Speed only matters when it crosses a tick boundary; between boundaries it gives 0%.
 
 ## 2. Blocks per hour

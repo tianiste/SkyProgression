@@ -30,8 +30,8 @@ Combined yield is the product of those multipliers.
 Estimated improvement % = `100 * (yield after / yield before - 1)`.
 Cost per 1% = `purchase cost / estimated improvement %`.
 Speed/cold-only changes are available in stat queries, not assigned imaginary drop gains.
-This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz and
-Grotto); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
+This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz, Grotto
+and Coal); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
 
 Items/hour = `3600 * efficiency/100 * active blocks/sec * base drops/block * yield`.
 Coins/hour and Coleweight/hour multiply that rate by the user-entered per-item values.
@@ -242,11 +242,12 @@ Mining Fortune and may be one temporary source. Not tuned.
 
 ## Upgrade ranking by rate
 
-Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto) rank upgrades on the Upgrades tab by
-gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour from the sections below. Before and
+Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto, Coal) rank upgrades on the Upgrades tab by
+gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour for the gem methods and Coal per 30 minutes
+for Coal (sections below; the window does not change the gain). Before and
 after use the same effective stats as the Rates tab (automatic totals; Type Stats overrides still win), the
 efficiency from Type Stats and the evaluated tool's Mining Speed Boost; the upgrade's stat delta is added to
-those stats. Each card shows the gain and the Flawless / hour before and after. Cost per 1% = cost / gain %, as
+those stats. Each card shows the gain and the rate before and after in the method's unit, which the Upgrades header also names. Cost per 1% = cost / gain %, as
 before, and every card stays an independent alternative against the same baseline; the step-by-step plan below
 is the cumulative view.
 - Mining Speed has value only when it changes the ticks per block, normally or during the ability (ticks are
@@ -516,3 +517,47 @@ at 65%, against the guide's 12 for a route that also mines other gems. Not valid
 
 Fixture (Debotes, best owned gear, DR-X655, Crystal Hollows, 65%): Mining Speed 8,000 (18 ticks, 5 during MSB
 because 28,000 is below 32,000; next tick at 8,229), about 6.7 Flawless Jasper / hour.
+
+## Rates: Coal
+
+`MethodRates.blocks` for Coal, on the Rates tab as "automatic rate" and used for the Upgrades ranking. Default
+efficiency 82.5% (instamine blocks; Mining Cat developer, 2026-10-26). Value window: 30 minutes with two lobby hops (the
+Mining Cat developer's window for Coal). The model has no lobby-hop time of its own: hops, travel, Hard Stone and aiming
+are part of the efficiency, so the 30-minute value is half the hourly rate.
+- Coal Ore strength 30; ores, Obsidian, gemstones and Dwarven Metal instamine above 60 x strength (1,800, so 1,801),
+  other blocks above 30 x strength (wiki Block Strength, <https://hypixelskyblock.minecraft.wiki/w/Block_Strength>,
+  checked 2026-10-26). Otherwise ticks = round(30 x strength / Mining Speed), at least 4 (soft cap).
+- Airborne: the wiki applies a x5 break-time penalty when "the player's feet are not on the ground". Modelled as Mining
+  Speed / 5, which reproduces the Coal guide's 9,001 airborne instamine threshold (and 7,501 for Hard Stone, strength 50).
+  Below 9,001 an airborne Coal block hits the 4-tick soft cap.
+- Share of blocks mined airborne: 8%. Source: the Mining Cat Coal page ("coal mined in the air (about 8% of the time)
+  takes 4x longer"). This is a route estimate, not a mechanic; whether it is a share of blocks or of time is not stated.
+  We read it as blocks. Average ticks per block = 0.92 x ground ticks + 0.08 x airborne ticks.
+- Mining Speed Boost from the tool lore, as for gems: blocks / second = 20 x (uptime / boosted average ticks +
+  (1 - uptime) / average ticks). Maniac Miner (the Coal guide's Blue Cheese swap drill) is not modelled: its effect
+  (Fortune per mana spent) has no verified rule here yet, so it is listed as not modelled.
+- Blocks / hour = 3600 x efficiency x blocks / second x (1 + Mining Spread / 100). The wiki Mining Spread page says Spread
+  mines adjacent blocks; it does not say whether only blocks of the same type. We assume each Spread block is Coal Ore.
+- Coal per block = 1 x (1 + (Mining Fortune + Ore Fortune) / 100) (wiki Mining Fortune: every 100 is one more set of drops,
+  the remainder a chance at one more; Ore Fortune adds on ores; Fortune also applies to Spread blocks). Base drop 1 Coal.
+- Coins = Coal x the Coflnet buy quote for `COAL`, labelled as the buy quote. Hard Stone (the guide's 3-6M / hour) and
+  crafting into enchanted items are not counted.
+
+Guide check (Coal guide, owner-supplied `service-data/guides/coal.txt`, October 2026: "rough estimates", 4.0M-9.0M Coal
+and 3.0M-6.0M Hard Stone / hour). An assumed hypermax with Mining Speed above 9,001, Fortune + Ore Fortune about 2,700 and
+Spread 400 gives about 8.3M Coal / hour at 82.5%, inside the guide's range.
+
+Fixture (Debotes, best owned gear, DR-X655, Dwarven Mines default context, 82.5%): Mining Speed 7,250 (instamine on the
+ground, 4 ticks airborne; 8,750 x 3.5 during MSB instamines airborne too), Fortune 1,767 + Ore 100, Spread 300: about
+3.89M Coal / hour, 1.95M per 30 minutes. Reaching 9,001 Mining Speed would add about 20% (the ability already covers
+14% of the time). Not validated against a measured session.
+
+Mining Cat Coal pages (comparison only; `docs/references/MININGCAT.md`):
+- Fortune rows: ours = delta / (100 + Fortune + Ore Fortune), for example Flawless Jade +35 = 1.78% on 1,767 + 100.
+  Mining Cat shows 1.8% (fits its counted 1,724.5). Same rule; the baselines differ by the 1% Auspicious multiplier and
+  God Potion Fortune we count.
+- Spread rows differ: ours gives Snoozle VIII (+8 Spread) 8 / 400 = 2.0%, Mining Cat 1.6%; Snoozle IX-X (+2) 0.5% against
+  0.39%. Their numbers fit a Spread efficiency of about 0.8 (`RATE-MODEL.md`). We found no mechanic for that (perhaps missing
+  neighbor blocks on a route), so we keep the plain Spread rule and record the difference.
+- Speed: Mining Cat says 7,380 is "1,621 short of the 9,001 needed to instamine coal while falling". Our threshold is the
+  same 9,001; our fixture speed is 7,250 (the 130 difference is not yet explained).

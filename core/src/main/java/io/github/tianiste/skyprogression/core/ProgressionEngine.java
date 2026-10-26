@@ -160,7 +160,7 @@ public final class ProgressionEngine {
         }
         return steps;
     }
-    /** Rate (Flawless / hour) when the method has a usable rate model, else the drop multiplier. */
+    /** Rate (MethodRates.unit) when the method has a usable rate model, else the drop multiplier. */
     private static double metric(MiningMethod m, Map<Stat, Double> stats, RateBasis basis) {
         Double r = basis != null && rateModel(m) ? rate(m, stats, basis, 1) : null;
         return r != null && r > 0 ? r : yieldMultiplier(m, stats);
@@ -395,11 +395,11 @@ public final class ProgressionEngine {
         for (Stat s : Stat.values()) after.put(s, stat(baseline, s) + stat(delta, s));
         return after;
     }
-    /** Flawless / hour with the ability cooldown scaled by cooldownFactor; null when the stats are invalid for the model. */
+    /** Rate over the method's value window (MethodRates.unit) with the ability cooldown scaled by cooldownFactor; null when the stats are invalid. */
     private static Double rate(MiningMethod m, Map<Stat, Double> stats, RateBasis basis, double cooldownFactor) {
         var a = basis.ability();
         if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * cooldownFactor);
-        try { return MethodRates.gems(m, stats, basis.efficiency(), a).flawlessPerHour(); }
+        try { return MethodRates.value(m, stats, basis.efficiency(), a); }
         catch (IllegalArgumentException e) { return null; }
     }
     /** Drop-only model. Does not pretend speed, cold, route, abilities or tick thresholds are linear yield. */

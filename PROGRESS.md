@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-26 (upgrade coverage). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-26 (Coal rate model). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -56,6 +56,13 @@ fix them later; do not block on the in-game test. Order:
    HOTM/collection unlocks, forge time); net cost after selling the replaced item (modifier-aware lowest BIN per copy,
    else Coflnet sell, else "no sale price"); drill part swaps add the 9,999 removal fee. Rules: CALCULATIONS.md
    "Essence perks, attributes, HOTM perk levels", "Buy or craft/forge", "Replacement resale credit".
+   **Coal rate model (in-game test pending):** `MethodRates.blocks` for Coal (wiki Block Strength 30, ores instamine above
+   60 x strength = 1,801, airborne Mining Speed / 5 = 9,001, 8% airborne share from the Mining Cat page, MSB from lore,
+   Coal = 1 x (1 + (Mining + Ore Fortune) / 100), Spread blocks assumed Coal, default 82.5%, shown per 30 minutes with two
+   lobby hops). Rates tab card; Upgrades rank by rate with before/after Coal / 30 min, header names the unit. Fixture:
+   ~3.89M Coal/h (1.95M / 30 min); 9,001 Speed would add ~20%. Guide 4-9M/h hypermax; estimated hypermax ~8.3M/h.
+   Differences vs Mining Cat: Spread rows (Snoozle +8: ours 2.0%, theirs 1.6%) documented, not tuned. Wiki fix: non-ore
+   strengths are instamine / 30 (Cobblestone 20, not 10). Rules: CALCULATIONS.md "Rates: Coal".
    **Next:** owner restarts the companion (new `/stats` resale fields and prices) and checks the Upgrades tab: grinding
    labels, craft/buy notes, net-cost lines, plan resale line. Then: rate models for non-gem methods (roadmap 2).
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
