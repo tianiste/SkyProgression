@@ -100,6 +100,7 @@ public final class ProgressionEngine {
             Upgrade u = best.upgrade();
             if (best.pet() != null) current = current.withPet(best.pet());
             else if (best.profile() != null) current = current.withProfile(best.profile());
+            else if (best.set() != null) best.set().forEach(i -> owned.put(i.group, i.copy()));
             else if (best.apply() != null) {
                 best.apply().accept(u.current());
                 u.delta().forEach((s, v) -> u.current().stats.merge(s, v, Double::sum));
@@ -123,8 +124,37 @@ public final class ProgressionEngine {
     }
 
     /** An upgrade plus what applying it needs: the gear change (null for a replacement item) and the materials used. */
-    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet, ProfileUpgrades.Option profile) {
-        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null, null); }
+    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet, ProfileUpgrades.Option profile, List<Item> set) {
+        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null, null, null); }
+    }
+    private static final List<String> ARMOR = List.of("Helmet", "Chestplate", "Leggings", "Boots");
+    /** Armor sets with a mining set bonus, by item ID prefix. */
+    private static final List<String> SETS = List.of("MINER_OUTFIT_", "GLACITE_", "MINERAL_", "GLOSSY_MINERAL_");
+    /**
+     * Set bonuses with mining stats for the armor worn (item lore in the NEU repository; wiki Mineral and Glossy Mineral
+     * Armor): Miner Outfit full set +40 Mining Speed; Glacite full set +2 Mining Speed per Mining level; Mineral +100 and
+     * Glossy Mineral +150 Mining Spread per piece on ores and blocks. Goblin (Intelligence) and Yog (kills) depend on
+     * values the engine does not have and are not counted.
+     */
+    static Map<Stat, Double> setBonus(Map<String, Item> worn, MiningMethod m, Profile p) {
+        Map<String, Integer> count = new HashMap<>();
+        for (String group : ARMOR) {
+            Item i = worn.get(group);
+            if (i == null) continue;
+            for (String set : SETS) if (i.id.startsWith(set)) { count.merge(set, 1, Integer::sum); break; }
+        }
+        Map<Stat, Double> out = new EnumMap<>(Stat.class);
+        if (count.getOrDefault("MINER_OUTFIT_", 0) == 4) out.merge(Stat.MINING_SPEED, 40.0, Double::sum);
+        if (count.getOrDefault("GLACITE_", 0) == 4) {
+            double level = p.milestones.stream().filter(x -> x.name().equals("Mining skill")).mapToDouble(Milestone::current).findFirst().orElse(0);
+            out.merge(Stat.MINING_SPEED, 2 * level, Double::sum);
+        }
+        if (m.target() == StatContext.Target.ORE || m.target() == StatContext.Target.BLOCK) {
+            out.merge(Stat.MINING_SPREAD, 100.0 * count.getOrDefault("MINERAL_", 0), Double::sum);
+            out.merge(Stat.MINING_SPREAD, 150.0 * count.getOrDefault("GLOSSY_MINERAL_", 0), Double::sum);
+        }
+        out.values().removeIf(v -> v == 0);
+        return out;
     }
     /**
      * With a rate basis and no stat focus, methods with a rate model rank by rate after / rate before - 1 (so Mining
@@ -153,6 +183,11 @@ public final class ProgressionEngine {
             if (current != null && i.id.equals(current.id)) continue;
             Map<Stat, Double> delta = new EnumMap<>(Stat.class);
             for (Stat s : Stat.values()) delta.put(s, stat(i.stats, s) - (current == null ? 0 : stat(current.stats, s)));
+            if (ARMOR.contains(i.group)) {
+                Map<String, Item> worn = new HashMap<>(owned); worn.put(i.group, i);
+                setBonus(worn, m, p).forEach((s, v) -> delta.merge(s, v, Double::sum));
+                setBonus(owned, m, p).forEach((s, v) -> delta.merge(s, -v, Double::sum));
+            }
             Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
             if (!Double.isFinite(gain) || gain <= 1e-9) continue;
@@ -164,6 +199,38 @@ public final class ProgressionEngine {
             String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : "";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
             result.add(new Candidate(new Upgrade(i, current, delta, cost, gain, have, blocked, 1, before, after), null, Map.of()));
+        }
+        // Full armor sets whose set bonus has mining stats: all four pieces at once.
+        for (String set : SETS) {
+            List<Item> pieces = new ArrayList<>();
+            for (String group : ARMOR) catalog.stream().filter(i -> i.group.equals(group) && i.id.startsWith(set) && !i.id.startsWith("GLOSSY_" + set)).findFirst().ifPresent(pieces::add);
+            if (pieces.size() != ARMOR.size() || pieces.stream().allMatch(i -> owned.get(i.group) != null && owned.get(i.group).id.equals(i.id))) continue;
+            Map<String, Item> worn = new HashMap<>(owned);
+            Map<Stat, Double> delta = new EnumMap<>(Stat.class);
+            for (Item i : pieces) {
+                Item current = owned.get(i.group);
+                for (Stat s : Stat.values()) delta.merge(s, stat(i.stats, s) - (current == null ? 0 : stat(current.stats, s)), Double::sum);
+                worn.put(i.group, i);
+            }
+            setBonus(worn, m, p).forEach((s, v) -> delta.merge(s, v, Double::sum));
+            setBonus(owned, m, p).forEach((s, v) -> delta.merge(s, -v, Double::sum));
+            delta.values().removeIf(v -> v == 0);
+            Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
+            double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
+            if (!Double.isFinite(gain) || gain <= 1e-9) continue;
+            Double cost = 0.0; boolean have = true; int hotm = 0;
+            for (Item i : pieces) {
+                hotm = Math.max(hotm, i.hotm);
+                if (owned.get(i.group) != null && owned.get(i.group).id.equals(i.id) || p.owned.getOrDefault(i.id, 0) > 0) continue;
+                have = false;
+                Price quote = prices.get(i.id);
+                cost = cost == null || quote == null || !quote.available || !(quote.buy > 0) || !Double.isFinite(quote.buy) ? null : cost + quote.buy;
+            }
+            Item display = new Item(); display.id = pieces.getFirst().id; display.name = "Full " + pieces.getFirst().name.replaceFirst(" Helmet$", "") + " set";
+            display.group = "Helmet"; display.source = "All four pieces, for the set bonus; owned pieces cost nothing.";
+            String blocked = p.hotm < hotm ? "Requires HOTM " + hotm : "";
+            if (!have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode))) blocked = "No market purchases on " + p.mode;
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, have, blocked, 1, before, after), null, Map.of(), null, null, pieces));
         }
         // Pets: option stats minus the evaluated pet's, both counted in the same context.
         if (basis != null && basis.pet() != null) for (PetUpgrades.Option o : basis.petOptions()) {
@@ -180,7 +247,7 @@ public final class ProgressionEngine {
             Price quote = prices.get(o.priceId());
             Double cost = o.owned() ? 0.0 : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? quote.buy : null;
             String blocked = !o.owned() && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
-            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after), null, Map.of(), o, null));
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after), null, Map.of(), o, null, null));
         }
         // Essence perks, attribute shards and HOTM perk levels: target level stats minus the chain's current stats.
         if (basis != null) for (ProfileUpgrades.Option o : basis.profile().options()) {
@@ -200,7 +267,7 @@ public final class ProgressionEngine {
             display.source = o.note() + String.format(Locale.ROOT, " Needs %,.0f %s, %,.0f available.", need, o.resource(), have);
             String blocked = o.priceId() != null && need > have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode))
                     ? "No bazaar purchases on " + p.mode : "";
-            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, cost != null && cost == 0, blocked, 1, before, after), null, Map.of(), null, o));
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, cost != null && cost == 0, blocked, 1, before, after), null, Map.of(), null, o, null));
         }
         return result;
     }
