@@ -32,11 +32,14 @@ fix them later; do not block on the in-game test. Order:
    1%, apply, recompute; materials consumed). Fixture MF Gems plan with placeholder prices: Will-o'-wisp, Amber engine,
    Perfectly-Cut tank, Glossy Mineral Talisman = +8.7% rate. Rules: CALCULATIONS.md "Step-by-step upgrade plan".
    **Owner decision (2026-10-26):** every upgrade that adds any mining stat should be an upgrade.
-   **Next:** extend the shared upgrade catalog source group by source, each through the same Proposal/apply path so
-   the plan picks it up: reforges (method-aware), recombobulation, powder coating, gemstone type swaps in flexible
-   slots, pets/pet items (one pet item at a time), accessories and Relic/Artifact of Power gems, HOTM perks/Blue
-   Cheese, attributes, essence perks and collections (marked as grinding, not purchases). Owner checks the Upgrades
-   tab (gains, before/after, plan card, model label) and ideally times a session.
+   **Catalog, reforges, pets (`a75f9aa`, `e6659d3`, `1a3614b`, in-game test pending):** catalog generated from the
+   items resource (112 items; tools limited by Breaking Power); reforge-stone swaps from the NEU table (MIT); level-100
+   pet swaps per rarity (lowest level-100 BIN) and Quick Claw. Fixture Grotto: Legendary Scatha +5.1% over the
+   L97 Bal + Quick Claw; MF Gems keeps Bal. Rules: CALCULATIONS.md "Item catalog", "Reforges", "Pets and pet items".
+   **Next:** remaining sources through the same Proposal/apply path: recombobulation, powder coating, gemstone type
+   swaps in flexible slots, accessories' gem slots and Relic/Artifact of Power, HOTM perks/Blue Cheese, attributes,
+   essence perks and collections (marked as grinding, not purchases); set bonuses for the new armor. Owner checks
+   the Upgrades tab (reforge and pet cards, plan card) and that the companion prices pets.
 3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
    prerequisites, mutual exclusions and prices. Each method values them through its rate model
    (coins/hour gained / cost); then a greedy sequential plan (take best, recompute).
@@ -159,7 +162,13 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (rate ranking + Grotto, 2026-10-26): `./gradlew build :service:installDist` succeeded after
+Latest verification (catalog, reforges, pets, 2026-10-26): `./gradlew build :service:installDist` succeeded after
+each step; existing tests pass (the maxed-drill test now also allows reforge swaps; no tests added). Catalog
+regenerated from a saved items resource; NEU table generated from commit `f19539bb`; rankings and plans checked on
+the fixture with a scratch runner; Coflnet pet BIN filter checked with curl; StatsReport pet fields round-trip
+through Gson. GitHub Actions Build succeeded for `a75f9aa` and `e6659d3`. Mod screens not run by the agent; the
+companion was not restarted against the live API, so pet prices in the mod are unverified.
+Earlier verification (rate ranking + Grotto, 2026-10-26): `./gradlew build :service:installDist` succeeded after
 each step; existing tests pass (one existing drill test now sets a maxed fuel tank; no tests added). Rankings and
 Grotto rates checked on the fixture with a scratch runner. GitHub Actions Build succeeded for `c8b6afb`
 (run 40359432674). Mod screens not run by the agent; companion not restarted against the live API.
@@ -294,6 +303,14 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-26 (catalog, reforges, pets): `CatalogExtractor` (`:core:extractCatalog`) rebuilds `mining-items.json` from
+the items resource, keeping hand-checked entries, groups and sources; `MiningMethod.breakingPower()`. `NeuExtractor`
+(`:core:extractNeu`) writes `mining-reforges.json`; `Reforges` loads it and `GearUpgrades` proposes stone swaps.
+`PetUpgrades` + `StatBreakdown.petStats/petTiers`; `StatsReport.petStats/petOptions`; `RateBasis` carries them; the
+companion prices "PET_TYPE;RARITY;100" keys from Coflnet's BIN filter. New pet rows: Bee, Glacite Golem, Mole.
+Open: Auspicious +1% (additive or multiplicative), whether NEU's Bee Busy Buzz Buzz stacks as assumed, set bonuses,
+pet item carry-over on a pet swap.
 
 2026-10-26 (rate ranking and Grotto): `ProgressionEngine.upgrades(..., RateBasis)` values upgrades by `MethodRates`
 for MF Gems/Ruby/Topaz and Grotto (efficiency + tool ability from `/stats`); `Upgrade` carries the cooldown factor

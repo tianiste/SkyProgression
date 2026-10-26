@@ -28,15 +28,16 @@ selectors, progress bars and a clearly labeled offline demo. A local companion s
 loads Hypixel profiles and Coflnet price quotes. Inventory lookups and price requests
 run off the Minecraft render thread and are cached.
 
-**This is not yet full Mining Cat parity.** Alongside 57 base gear items, the mod now
-reads individual gear copies, displayed stats, enchantments, gemstone slots and rarity.
-It recommends Fortune, Efficiency/Silex, Prismatic, Polarvoid and supported gemstone
-upgrades, using owned materials before buying and including socket unlock/removal fees.
-Overview includes modifier progress bars. Unknown prices remain unknown.
-Pets, complete HOTM stat math, reforges, recipe/resale costing and exact method rates
-still need further implementation. Mining Fortune and Mining Speed are computed automatically from
+**This is not yet full Mining Cat parity.** The item catalog is generated from the official
+items resource (every obtainable item with a mining stat). The mod reads individual gear copies,
+displayed stats, enchantments, gemstone slots, drill parts, reforges and rarity, and recommends
+enchantments, Polarvoid, gemstones, drill parts, reforge stones (NEU reforge table), better base
+items and level-100 pets or a Quick Claw, using owned materials before buying. Gem methods rank
+upgrades by their Flawless/hour gain, other methods by drops, with a step-by-step plan. Unknown
+prices remain unknown. HOTM perk upgrades, attributes, set bonuses, recipe/resale costing and rates
+for non-gem methods still need further implementation. Method stats are computed automatically from
 the profile using the best gear and tool you own for the method (Breakdown tab; you can switch to your
-equipped gear or a specific tool); other stats are still entered manually.
+equipped gear or a specific tool); Type Stats overrides them.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API
 key for Demo. Real profile lookup requires your own registered Hypixel application key
 in the local companion service. The mod never asks for a key.

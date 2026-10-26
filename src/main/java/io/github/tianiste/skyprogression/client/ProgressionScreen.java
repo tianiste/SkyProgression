@@ -174,7 +174,7 @@ public final class ProgressionScreen extends Screen {
         for(var e:p.progress.entrySet())if(e.getKey().contains("powder")){powder.line(e.getKey(),MUTED).line(fmt(e.getValue()),CYAN);hasPowder=true;}
         if(!hasPowder)powder.line("Powder data unavailable.",MUTED);
         powder.line("Spent + available. Targets depend on your HOTM build.",MUTED);
-        card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Pets, full HOTM stat math and reforge upgrades still need manual checks.",MUTED);
+        card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("HOTM perk upgrades, attributes and set bonuses are not ranked yet.",MUTED);
         for(var row:overview){
             Card c=card(row.group()+" | "+(row.current()==null?"Missing":row.current().name),GOLD,1);
             c.icon=icon(row.current()!=null?row.current().id:row.target().id,row.group());
