@@ -27,9 +27,16 @@ fix them later; do not block on the in-game test. Order:
    before - 1 with before/after Flawless/h on each card; other methods keep the drop multiplier; the Upgrades header
    names the model. New fuel tank upgrades (wiki Drill Parts 2/4/6/10%) count through MSB uptime; Gemstone tank
    +0.42% on the fixture (Mining Cat page: +0.39%). Rules: CALCULATIONS.md "Upgrade ranking by rate", "Rates: Fairy Grotto".
-   **Next:** owner checks the Upgrades tab for MF Gems and Grotto (gains, before/after, fuel tank card, model label)
-   and ideally times a session (Flawless/h, blocks/min, Mining Speed, uptime). Then drill engines/omelettes as
-   upgrades, a sequential plan (take best, recompute), and rate models for the other methods.
+   **Drill parts and step-by-step plan (`081b612`, in-game test pending):** engines (Mithril..Amber-Polished) and
+   modules (Sunny Side, Starfall Seasoning) are upgrades; the Upgrades tab shows a 12-step plan (take best cost per
+   1%, apply, recompute; materials consumed). Fixture MF Gems plan with placeholder prices: Will-o'-wisp, Amber engine,
+   Perfectly-Cut tank, Glossy Mineral Talisman = +8.7% rate. Rules: CALCULATIONS.md "Step-by-step upgrade plan".
+   **Owner decision (2026-10-26):** every upgrade that adds any mining stat should be an upgrade.
+   **Next:** extend the shared upgrade catalog source group by source, each through the same Proposal/apply path so
+   the plan picks it up: reforges (method-aware), recombobulation, powder coating, gemstone type swaps in flexible
+   slots, pets/pet items (one pet item at a time), accessories and Relic/Artifact of Power gems, HOTM perks/Blue
+   Cheese, attributes, essence perks and collections (marked as grinding, not purchases). Owner checks the Upgrades
+   tab (gains, before/after, plan card, model label) and ideally times a session.
 3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
    prerequisites, mutual exclusions and prices. Each method values them through its rate model
    (coins/hour gained / cost); then a greedy sequential plan (take best, recompute).
@@ -292,7 +299,9 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
 for MF Gems/Ruby/Topaz and Grotto (efficiency + tool ability from `/stats`); `Upgrade` carries the cooldown factor
 and rate before/after. `GearUpgrades` proposes fuel tank swaps (item IDs from the official items resource).
 `MethodRates.Gem` now holds its guide efficiency/note; Grotto added; `nextTickSpeed` shown on the Rates tab.
-Open/unknown: whether the lore cooldown already includes the fuel tank (affects only the baseline), whether exactly
+Later the same day (`081b612`): drill engines/modules as proposals; every proposal carries an apply step; new
+`ProgressionEngine.plan` and `Item.copy`; plan card on the Upgrades tab. The maxed-drill test now allows trade-off
+proposals only. Open/unknown: whether the lore cooldown already includes the fuel tank (affects only the baseline), whether exactly
 32,000 reaches 4 ticks on Jasper, the grotto route's share of other gems and Magma Fields, drill engine and omelette
 upgrades (not proposed yet).
 

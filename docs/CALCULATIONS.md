@@ -241,7 +241,8 @@ gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour from 
 after use the same effective stats as the Rates tab (automatic totals; Type Stats overrides still win), the
 efficiency from Type Stats and the evaluated tool's Mining Speed Boost; the upgrade's stat delta is added to
 those stats. Each card shows the gain and the Flawless / hour before and after. Cost per 1% = cost / gain %, as
-before, and every card stays an independent alternative against the same baseline (no sequential plan yet).
+before, and every card stays an independent alternative against the same baseline; the step-by-step plan below
+is the cumulative view.
 - Mining Speed has value only when it changes the ticks per block, normally or during the ability (ticks are
   rounded; see the break-time rule). Upgrades with no rate change are left out, as zero-gain upgrades were before.
   The Rates tab shows the next tick threshold: Mining Speed > 30 x strength / (ticks - 0.5), or above 60 x
@@ -256,6 +257,28 @@ before, and every card stays an independent alternative against the same baselin
   Coflnet buy quote; forging, the old tank and resale are not credited.
 - If the rate cannot be computed (for example Mining Speed 0), the method falls back to the drop multiplier
   and says so. The Stats tab (cheapest stat points) is unchanged.
+- Drill engines and upgrade modules (wiki Drill Parts): Mithril-Plated +75 Speed/+5 Fortune, Titanium-Plated
+  +150/+15, Ruby-Polished +250/+30, Sapphire-Polished +400/+50, Amber-Polished +600/+100; Sunny Side Goblin Omelette
+  +50 Fortune (quadruple fuel use, not priced); Starfall Seasoning +25/+10 (doubled within 20 blocks of a fallen star,
+  not counted). One engine and one module per drill, so a swap's delta is new part minus current part. The fixture's
+  Ruby-Polished +250/+30 matches its lore, and the Mining Cat MF Gems page's engine deltas (+150/+20 to Sapphire,
+  +200/+50 Sapphire to Amber) match these tables. Blue Cheese (+1 level to unlocked HOTM perks) and the fuel-only
+  omelettes are not proposed: Blue Cheese needs a HOTM recompute (not implemented). Which drills accept which parts is
+  not stated on the wiki; every drill is assumed to accept every part.
+
+## Step-by-step upgrade plan
+
+The Upgrades tab (method view) shows a plan of up to 12 steps. Each step takes the available upgrade with the lowest
+known cost per 1% (ties: larger gain), applies it and recomputes every candidate from the new state:
+- the gear copy changes (enchantment level, Polarvoid count, drill part, socketed gem and unlocked slot), so the next
+  proposal for that item starts from there (Prismatic 4 -> 5 after 3 -> 4, no second fuel tank of the same kind);
+- a replacement item becomes the slot's item, so later deltas compare against it;
+- the effective stats add the step's delta, a fuel tank scales the ability cooldown, and owned materials used by
+  the step are no longer available to later steps.
+Gain per step is against the state after the previous step; the total is rate (or drop multiplier) now / at the
+start - 1. Blocked and unpriced upgrades are skipped, not assumed free. A replacement base item has no known
+modifiers, so no in-place upgrades are proposed for it afterwards. Prices are the current quotes for every step
+(no market impact), and no resale of replaced items is credited.
 
 ## Rates: Magma Fields gemstones
 
