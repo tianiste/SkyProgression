@@ -16,11 +16,23 @@ import static io.github.tianiste.skyprogression.core.ProfileParser.*;
 /** Local application backend. The Hypixel application key never goes into the mod or a response. */
 public final class ProgressionService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
-    private final String apiKey = System.getenv("HYPIXEL_API_KEY");
+    private final String apiKey = readApiKey();
     private final Map<String, Cached> reports = new HashMap<>();
     private Map<String, Price> quotes = Map.of();
     private Instant quotedAt = Instant.EPOCH;
     private record Cached(Instant time, Report report) {}
+    private static String readApiKey() {
+        String configured = System.getenv("HYPIXEL_API_KEY");
+        if (configured != null && !configured.isBlank()) return configured;
+        Console console = System.console();
+        if (console == null) return null;
+        console.printf("SkyProgression companion service%nKeep this window open while using live profile lookup.%n");
+        console.printf("Enter your application key (hidden input), or press Enter to skip.%nThe key is not saved to disk.%n");
+        char[] entered = console.readPassword("Hypixel application key: ");
+        if (entered == null) return null;
+        try { return new String(entered).strip(); }
+        finally { Arrays.fill(entered, '\0'); }
+    }
     public static void main(String[] args) throws IOException {
         new ProgressionService().start();
     }

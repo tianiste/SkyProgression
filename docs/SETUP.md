@@ -12,7 +12,7 @@
 ## Enable real profile lookups
 
 The local companion application fetches a profile when you press Load. The API key stays
-in the companion's process environment and is never sent to Minecraft or committed to Git.
+in the companion process and is never sent to Minecraft or committed to Git.
 
 1. Open <https://developer.hypixel.net/> yourself and sign in.
 2. Register a project for SkyProgression. Follow the dashboard's current process for a
@@ -20,8 +20,11 @@ in the companion's process environment and is never sent to Minecraft or committ
    Development keys expire. Read <https://developer.hypixel.net/policies/>.
 3. In SkyBlock, enable **SkyBlock Menu > Settings > API Settings > Inventory API**.
    Enable the relevant skill/collection API options as well if available in your settings.
-4. Run `Start-Service.ps1` in PowerShell from the extracted test pack or repository.
-   It prompts for the key using hidden input and keeps it only for this service process.
+4. Extract the entire test pack, then double-click **`Start-Service.cmd`**.
+   It starts Java directly, does not require PowerShell script permissions, and keeps
+   errors visible. Alternatively, where scripts are permitted, run `Start-Service.ps1`
+   in an existing PowerShell window.
+   It prompts for the key using hidden input and keeps it only in memory for this service process.
    You can alternatively set `HYPIXEL_API_KEY` yourself and run the service launcher.
 5. Keep the companion running. In Minecraft, enter your username and press **Load**.
    The selected SkyBlock profile loads by default. Use the profile selector for another.
@@ -76,6 +79,10 @@ No automatic Coleweight coefficient is invented: enter one or the result stays u
 
 ## Troubleshooting
 
+- **Launcher closes immediately:** use `Start-Service.cmd` rather than right-clicking the
+  PowerShell script. It runs Java directly and startup errors stay visible.
+  Windows PowerShell may block scripts before the PowerShell launcher can run.
+  No execution-policy change is needed for the CMD launcher. Do not run files inside the ZIP.
 - **Companion unavailable:** start the service on this computer; check its terminal for errors.
 - **Key invalid/expired:** restart with a current key. Never send the key with a bug report.
 - **Inventory unavailable:** enable Inventory API and wait out the five-minute profile cache.

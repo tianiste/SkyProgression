@@ -37,7 +37,7 @@ the version-upgrade workflow.
 
 ```powershell
 .\gradlew.bat build :service:installDist
-.\Start-Service.ps1
+.\Start-Service.cmd
 ```
 
 Build output: `build/libs/skyprogression-0.1.0.jar`.
