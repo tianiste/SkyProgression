@@ -49,15 +49,71 @@ public final class ProgressionEngine {
     public List<Upgrade> upgrades(Profile p, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices) {
         return upgrades(p, m, focus, baseline, prices, null);
     }
+    public List<Upgrade> upgrades(Profile p, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis) {
+        if (!p.inventoryEnabled) return List.of(); // Missing API is not an empty inventory.
+        List<Upgrade> result = new ArrayList<>(candidates(p, bestOwned(p, m, focus), m, focus, baseline, prices, basis).stream().map(Candidate::upgrade).toList());
+        result.sort(Comparator.comparing((Upgrade u) -> !u.blocked().isEmpty()).thenComparingDouble(Upgrade::costPerUnit));
+        return result;
+    }
+
+    /** One plan step: the upgrade taken (gain against the previous step), the running gain and cost, and the rate after it. */
+    public record Step(Upgrade upgrade, double totalGain, double totalCost, Double rate) {}
+    /**
+     * Step-by-step plan: take the available upgrade with the lowest known cost per 1%, apply it (gear, stats, ability,
+     * used materials), recompute every candidate from the new state, repeat. Blocked and unpriced upgrades are skipped.
+     */
+    public List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps) {
+        if (!p.inventoryEnabled) return List.of();
+        Profile state = new Profile();
+        state.mode = p.mode; state.hotm = p.hotm; state.enchantingLevel = p.enchantingLevel; state.inventoryEnabled = true;
+        state.owned = new HashMap<>(p.owned);
+        Map<String, Item> owned = new LinkedHashMap<>();
+        bestOwned(p, m, null).forEach((group, item) -> owned.put(group, item.copy()));
+        Map<Stat, Double> stats = plus(baseline, Map.of());
+        RateBasis current = basis;
+        double start = metric(m, stats, current), total = 0;
+        List<Step> steps = new ArrayList<>();
+        while (steps.size() < maxSteps) {
+            Candidate best = null;
+            for (Candidate c : candidates(state, owned, m, null, stats, prices, current)) {
+                Upgrade u = c.upgrade();
+                if (!u.blocked().isEmpty() || u.cost() == null) continue;
+                if (best == null || u.costPerUnit() < best.upgrade().costPerUnit()
+                        || u.costPerUnit() == best.upgrade().costPerUnit() && u.gain() > best.upgrade().gain()) best = c;
+            }
+            if (best == null) break;
+            Upgrade u = best.upgrade();
+            if (best.apply() != null) {
+                best.apply().accept(u.current());
+                u.delta().forEach((s, v) -> u.current().stats.merge(s, v, Double::sum));
+                best.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
+            } else owned.put(u.item().group, u.item().copy());
+            stats = plus(stats, u.delta());
+            if (u.cooldownFactor() != 1 && current != null && current.ability() != null && current.ability().cooldown() != null) {
+                var a = current.ability();
+                current = new RateBasis(current.efficiency(), new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * u.cooldownFactor()));
+            }
+            total += u.cost();
+            double now = metric(m, stats, current);
+            steps.add(new Step(u, (now / start - 1) * 100, total, u.rateAfter()));
+        }
+        return steps;
+    }
+    /** Rate (Flawless / hour) when the method has a usable rate model, else the drop multiplier. */
+    private static double metric(MiningMethod m, Map<Stat, Double> stats, RateBasis basis) {
+        Double r = basis != null && rateModel(m) ? rate(m, stats, basis, 1) : null;
+        return r != null && r > 0 ? r : yieldMultiplier(m, stats);
+    }
+
+    /** An upgrade plus what applying it needs: the gear change (null for a replacement item) and the materials used. */
+    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) {}
     /**
      * With a rate basis and no stat focus, methods with a rate model rank by rate after / rate before - 1 (so Mining
      * Speed counts only when it changes ticks and ability cooldown counts through uptime); other methods use the drop
      * multiplier, which gives speed and cooldown no value.
      */
-    public List<Upgrade> upgrades(Profile p, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis) {
-        if (!p.inventoryEnabled) return List.of(); // Missing API is not an empty inventory.
-        var owned = bestOwned(p, m, focus);
-        List<Upgrade> result = new ArrayList<>();
+    private List<Candidate> candidates(Profile p, Map<String, Item> owned, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis) {
+        List<Candidate> result = new ArrayList<>();
         Double before = focus == null && basis != null && rateModel(m) ? rate(m, baseline, basis, 1) : null;
         if (before != null && !(before > 0)) before = null; // No rate to compare against; fall back to drops.
         for(Item gear:owned.values()) for(var proposal:GearUpgrades.forItem(gear,m,p,prices)) {
@@ -69,7 +125,8 @@ public final class ProgressionEngine {
             display.modification=true;display.source=cost.detail();
             String blocked=proposal.blocked();
             if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
-            result.add(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after));
+            result.add(new Candidate(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after),
+                    proposal.apply(),proposal.plan().materials()));
         }
         for (Item i : catalog) {
             if (!i.applies(m)) continue;
@@ -87,9 +144,8 @@ public final class ProgressionEngine {
             else if (quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy)) cost = quote.buy;
             String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : "";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
-            result.add(new Upgrade(i, current, delta, cost, gain, have, blocked, 1, before, after));
+            result.add(new Candidate(new Upgrade(i, current, delta, cost, gain, have, blocked, 1, before, after), null, Map.of()));
         }
-        result.sort(Comparator.comparing((Upgrade u) -> !u.blocked().isEmpty()).thenComparingDouble(Upgrade::costPerUnit));
         return result;
     }
     private static Map<Stat, Double> plus(Map<Stat, Double> baseline, Map<Stat, Double> delta) {

@@ -17,6 +17,15 @@ public final class Model {
         /** Cleaned lore lines of an observed copy; kept for the stat ledger, not serialized. */
         public transient List<String> lore = new ArrayList<>();
         public boolean applies(MiningMethod m) { return methods.isEmpty() || methods.contains(m); }
+        /** Copy whose stats, enchantments and extra attributes can change without touching this item. */
+        public Item copy() {
+            Item c = new Item();
+            c.id = id; c.name = name; c.group = group; c.source = source; c.hotm = hotm; c.tier = tier; c.category = category;
+            c.instance = instance; c.location = location; c.modifier = modifier; c.observed = observed; c.modification = modification;
+            c.recombobulated = recombobulated; c.stats.putAll(stats); c.enchantments.putAll(enchantments); c.extra = extra.deepCopy();
+            c.slots = slots; c.methods = methods; c.lore = lore;
+            return c;
+        }
     }
     public static class Slot {
         public String slot_type = "";

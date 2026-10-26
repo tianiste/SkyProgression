@@ -25,6 +25,7 @@ public final class ProgressionScreen extends Screen {
     private List<Overview> overview=List.of();
     private List<Item> gear=List.of();
     private List<Upgrade> upgrades=List.of();
+    private List<ProgressionEngine.Step> plan=List.of();
     private final List<Card> cards=new ArrayList<>();
     private final List<Placed> placed=new ArrayList<>();
     private static final String[] TABS={"Overview","Upgrades","Stats","Breakdown","Rates","Other"};
@@ -121,7 +122,7 @@ public final class ProgressionScreen extends Screen {
     private void selectProfile(){if(data.report!=null)minecraft.setScreen(new ChoiceScreen(this,"SkyBlock profile",data.report.profiles.stream().map(p->p.name+" ["+p.mode+"]"+(p.selected?" - active":"")).toList(),n->{data.profileIndex=n;scroll=0;}));}
     private void analyze(){
         int generation=++analysisGeneration;if(analysis!=null)analysis.cancel(true);
-        Profile p=data.profile();overview=List.of();gear=List.of();upgrades=List.of();
+        Profile p=data.profile();overview=List.of();gear=List.of();upgrades=List.of();plan=List.of();
         if(p==null||!data.ready||!p.inventoryEnabled||tab>=BREAKDOWN){calculating=false;buildCards();return;}
         calculating=true;buildCards();
         var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;
@@ -132,7 +133,8 @@ public final class ProgressionScreen extends Screen {
                 var base=data.engine.overview(p,selectedMethod,selectedStat);
                 var selectedGear=new ArrayList<>(data.engine.bestOwned(p,selectedMethod,selectedStat).values());
                 var ranked=selectedTab==1||selectedTab==2?data.engine.upgrades(p,selectedMethod,selectedTab==2?selectedStat:null,effective,quotes,basis):List.<Upgrade>of();
-                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;gear=selectedGear;upgrades=ranked;calculating=false;buildCards();});
+                var steps=selectedTab==1?data.engine.plan(p,selectedMethod,effective,quotes,basis,PLAN_STEPS):List.<ProgressionEngine.Step>of();
+                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;gear=selectedGear;upgrades=ranked;plan=steps;calculating=false;buildCards();});
             }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
         });
     }
@@ -209,12 +211,29 @@ public final class ProgressionScreen extends Screen {
             if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
             var quote=data.prices.get(u.item().id);c.line(quote!=null?quote.source:u.item().source,MUTED);
         }
+        if(!focused)planCard(rated);
         Card comparison=card("Cost efficiency",CYAN,1);
         var known=upgrades.stream().filter(u->u.cost()!=null&&Double.isFinite(u.costPerUnit())&&u.blocked().isEmpty()).limit(4).toList();
         double max=known.stream().mapToDouble(Upgrade::costPerUnit).max().orElse(1);
         for(var u:known){comparison.line(u.item().name,TEXT);comparison.lines.add(new Line(coins(u.costPerUnit())+(focused?" / point":" / 1%"),CYAN,u.costPerUnit()/Math.max(1,max)));}
         comparison.line("Shorter bars cost less per gain. These are separate alternatives.",MUTED);
         card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("No assumed resale credit or transfer of modifiers onto replacement gear.",MUTED).line(rated?"Rate gains use your efficiency and the tool's Mining Speed Boost; route and travel are part of the efficiency.":"Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
+    }
+    private static final int PLAN_STEPS=12;
+    /** Sequential plan: each step is the best value after the previous ones are applied, so gains build on each other. */
+    private void planCard(boolean rated){
+        Card c=card("Step-by-step plan",GOLD,1);
+        c.line("Take the best value, apply it, recompute everything, repeat. Unpriced and blocked upgrades are skipped.",MUTED);
+        if(plan.isEmpty()){c.line("No priced upgrade available to plan with.",TEXT);return;}
+        int n=0;
+        for(var step:plan){var u=step.upgrade();
+            c.line((++n)+". "+u.item().name+(u.current()!=null&&u.item().modification?" ("+u.current().name+")":""),TEXT);
+            c.line("   +"+fmt(u.gain())+"% | "+coins(u.cost())+" | total +"+fmt(step.totalGain())+"% for "+coins(step.totalCost())
+                    +(step.rate()!=null?" | "+fmt(step.rate())+" Flawless / hour":""),u.cost()==0?GREEN:CYAN);
+        }
+        var last=plan.getLast();
+        c.line("After "+plan.size()+" steps: +"+fmt(last.totalGain())+"% "+(rated?"rate":"drops")+" for "+coins(last.totalCost())
+                +(plan.size()==PLAN_STEPS?" (first "+PLAN_STEPS+" steps)":""),GOLD);
     }
     /** Automatic Magma Fields gem rate from the effective stats, the tool's ability and the player's efficiency. */
     private void gemRateCard(){
