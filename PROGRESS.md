@@ -8,7 +8,18 @@ Last updated: 2026-10-26. Current release: **0.3.0**. Status: functional preview
 **Direction (2026-10-26): build our own Mining Cat + SkyCompass equivalent.** No
 runtime dependency on either tool; their outputs are validation evidence only.
 
-**Next milestone: our own source-attributed Stat Breakdown engine (mining).**
+**Agreed plan (owner, 2026-10-26).** Treat the current Fortune/Speed numbers as correct for now and
+fix them later; do not block on the in-game test. Order:
+1. Automatic method stats: Gemstone/Ore/Dwarven Metal/Block Fortune, Mining/Gemstone Spread, Pristine
+   (same ledger, `/stats`, Breakdown tab; best gear and HOTM tree per method).
+2. Rate model per method, MF Gems first: Fortune is roughly linear, Pristine multiplies (Flawed = 80
+   Rough), Spread depends on adjacent blocks, Speed acts only through tick/instamine thresholds. Use
+   the Mining Cat developer's notes (guide averages at 65% efficiency, per-method value windows).
+3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
+   prerequisites, mutual exclusions and prices. Each method values them through its rate model
+   (coins/hour gained / cost); then a greedy sequential plan (take best, recompute).
+
+**Stat Breakdown engine (mining)**: background and history below.
 Use Debotes / Zucchini and the private live snapshot described below. First inspect
 which raw fields expose the selected gear, drill parts, pet, HOTM perks, powder,
 attributes, collections, essence shops and permanent bonuses. Build a source ledger
