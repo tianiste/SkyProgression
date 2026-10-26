@@ -32,7 +32,7 @@ public final class ProfileParser {
             p.selected = "true".equals(string(at(entry, "selected"), "false"));
             p.mode = string(at(entry, "game_mode"), "normal");
             JsonElement inventory = at(member, "inventory");
-            p.inventoryEnabled = at(inventory, "inv_contents", "data").isJsonPrimitive();
+            p.inventoryEnabled = !string(at(inventory, "inv_contents", "data"), "").isBlank();
             if (!p.inventoryEnabled) p.notes.add("Inventory API unavailable. SkyBlock Menu > Settings > API Settings > Inventory API: ON.");
             else {
                 for (String field : List.of("inv_contents", "inv_armor", "equipment_contents", "ender_chest_contents", "wardrobe_contents"))
@@ -96,7 +96,7 @@ public final class ProfileParser {
         if (data.isEmpty()) return;
         try {
             JsonElement items = new InventoryReader().read(data).get("i");
-            if (items == null || !items.isJsonArray()) return;
+            if (items == null || !items.isJsonArray()) throw new java.io.IOException("Missing inventory item list");
             for (JsonElement item : items.getAsJsonArray()) {
                 String id = string(at(item, "tag", "ExtraAttributes", "id"), "");
                 if (!id.isEmpty()) p.owned.merge(id, Math.max(1, (int)number(at(item, "Count"), 1)), Integer::sum);

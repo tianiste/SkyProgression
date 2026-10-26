@@ -39,6 +39,14 @@ class ProfileParserTest {
     @Test void invalidEncodingIsRejected() {
         assertThrows(IOException.class,()->new InventoryReader().read("not base64"));
     }
+    @Test void corruptInventoryPausesRecommendations() {
+        var root=JsonParser.parseString("""
+            {"profiles":[{"members":{"abc":{"inventory":{"inv_contents":{"data":"invalid"}}}}}]}
+            """).getAsJsonObject();
+        var p=ProfileParser.parse(root,"abc","Example").getFirst();
+        assertFalse(p.inventoryEnabled);
+        assertTrue(p.notes.stream().anyMatch(n->n.contains("Recommendations are paused")));
+    }
     @Test void officialTargetsProduceMiningAndCollectionProgress() {
         var root=JsonParser.parseString("""
             {"profiles":[{"members":{"abc":{"player_data":{"experience":{"SKILL_MINING":111672425}},
