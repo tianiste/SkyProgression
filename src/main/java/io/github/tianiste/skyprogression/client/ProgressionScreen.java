@@ -17,6 +17,7 @@ public final class ProgressionScreen extends Screen {
     private final ClientData data=ClientData.INSTANCE;
     private MiningMethod method=MiningMethod.MF_GEMS;
     private Stat stat=Stat.MINING_FORTUNE;
+    private boolean autoLoadTried;
     private int lastRevision, tab, left, top, span, bottom, bodyTop, bodyBottom, scroll, contentHeight, analysisGeneration;
     private boolean wide, calculating;
     private EditBox username;
@@ -78,7 +79,11 @@ public final class ProgressionScreen extends Screen {
         data.ensureStats(method,minecraft::execute,this::refresh);
         lastRevision=data.revision;analyze();
     }
-    @Override public void tick(){if(lastRevision!=data.revision)refresh();}
+    @Override public void tick(){
+        // Load the typed player once per opening, as soon as the catalog is ready; a kept profile or Demo is left as is.
+        if(!autoLoadTried&&data.ready&&data.report==null&&!data.loading&&!data.demo&&username!=null){autoLoadTried=true;data.load(username.getValue(),minecraft::execute,this::refresh);}
+        if(lastRevision!=data.revision)refresh();
+    }
     void refresh(){if(minecraft.screen==this)init();}
     private void typeStats(){minecraft.setScreen(new InputsScreen(this,data.inputs(method),method));}
     private void breakdownControls(int y){
