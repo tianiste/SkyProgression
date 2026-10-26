@@ -23,7 +23,7 @@ Not affiliated with or endorsed by Hypixel or Mojang.
 
 ## Stitch interface (0.3.0)
 
-The native Stitch-inspired interface has Overview, Upgrades, Stats, Rates and Other tabs, method/stat/profile
+The native Stitch-inspired interface has Overview, Upgrades, Stats, Breakdown, Rates and Other tabs, method/stat/profile
 selectors, progress bars and a clearly labeled offline demo. A local companion service
 loads Hypixel profiles and Coflnet price quotes. Inventory lookups and price requests
 run off the Minecraft render thread and are cached.
@@ -34,7 +34,8 @@ It recommends Fortune, Efficiency/Silex, Prismatic, Polarvoid and supported gems
 upgrades, using owned materials before buying and including socket unlock/removal fees.
 Overview includes modifier progress bars. Unknown prices remain unknown.
 Pets, complete HOTM stat math, reforges, recipe/resale costing and exact method rates
-still need further implementation. Effective method stats must still be entered manually.
+still need further implementation. Mining Fortune and Mining Speed are computed automatically from
+the profile (Breakdown tab, held tool and zone chosen by you); other stats are still entered manually.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API
 key for Demo. Real profile lookup requires your own registered Hypixel application key
 in the local companion service. The mod never asks for a key.

@@ -88,8 +88,11 @@ Rule references:
 
 ## Stat breakdown: Mining Fortune and Mining Speed
 
-`core/` `Loadout`, `StatContext`, `StatBreakdown` and `Breakdown` build a source ledger. No UI or
-companion endpoint uses them yet.
+`core/` `Loadout`, `StatContext`, `StatBreakdown` and `Breakdown` build a source ledger. The companion
+serves it as `GET /stats?ign=&profile=&tool=&zone=&target=&god=` (`StatsReport`: equipped ledger per
+supported stat, best-owned total, owned tools). The mod's Breakdown tab shows it; automatic totals feed
+Upgrades and Rates unless the player typed a manual value for that stat. The zone defaults to the
+method's usual location and the block target follows the method's fortune type (`MiningMethod`).
 
 Loadouts:
 - **Equipped**: `inv_armor`, `equipment_contents`, the accessory bag and the active pet, plus a tool

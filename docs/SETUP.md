@@ -44,9 +44,13 @@ this development companion is designed for the project owner's machine.
 
 - **Overview:** HOTM, mining level and collection progress, plus the selected stat's best
   owned base item per slot, catalog target and remaining points.
-- **Upgrades:** choose a method, then enter effective in-game stats in **Type Stats**.
+- **Upgrades:** choose a method. Mining Fortune/Speed come from the loaded profile automatically;
+  enter other effective stats (or override Fortune/Speed) in **Type Stats**. Blank fields stay automatic or unknown.
   Ranks supported gear upgrades and base-item alternatives by purchase cost per estimated 1% more drops.
 - **Stats:** ranks supported gear upgrades and base-item alternatives by purchase cost per point of the selected stat.
+- **Breakdown:** automatic Mining Fortune and Mining Speed itemized by source (counted, situational,
+  missing, temporary, not in the API), with the best-owned loadout total. Choose the held tool (the API
+  does not report it) and the zone; God Potion is assumed on and can be switched off. Refresh retries.
 - **Rates:** enter effective stats, active blocks per second, base drops per block, efficiency,
   sale price per item and optionally Coleweight per item. Inputs are saved per profile/method.
 - **Other:** known profile milestones plus a checklist of bonuses not modeled automatically.

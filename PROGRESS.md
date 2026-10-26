@@ -39,10 +39,18 @@ effective player stats. Target scope (feature spec from SkyCompass, see
    is assumed (Spelunker V / Haste IV) and the Booster Cookie is read from the API (no Fortune/Speed).
    Fixture defaults: Fortune 1,749.5 x 1.01 = 1,767.0; Speed 7,250 (Dwarven Mines), which equals the
    in-game 7,610 minus temporary buffs. 15 Fortune is unconfirmed (likely Fortunate Festivity, temporary).
-   **Next: Step 4, the companion `/stats` endpoint.** Open: Auspicious +1% mechanic, Mole/Glacite Golem
+   Open: Auspicious +1% mechanic, Mole/Glacite Golem
    pet rates, Front Loaded/Mineshaft Mayhem/Eager Adventurer API keys, Blue Cheese +1 perk level.
-4. **Next task.** Expose it via our companion HTTP API (e.g. `/stats`), then wire automatic totals into
-   the existing screens with a Stats breakdown view; retain optional manual overrides.
+4. **Implemented (2026-10-26), awaiting the owner's in-game test.** Companion `GET /stats` (`StatsReport`,
+   see CALCULATIONS.md "Stat breakdown") and a new **Breakdown** tab: held-tool picker (owned tools), zone
+   picker (defaults to the method's usual zone), God Potion toggle, Refresh. Automatic Fortune/Speed feed
+   Upgrades/Rates and the header (marked "auto"); Type Stats values override per stat, blank = automatic
+   or unknown. Selections persist per profile+method in `skyprogression-inputs.json`. Older saved inputs
+   hold all ten stats, so they act as overrides until cleared. Live check: `/stats` for Debotes with
+   TITANIUM_DRILL_4 in the Dwarven Mines returned Speed 7,250 and Fortune 1,767.0 (= fixture).
+   **Next:** owner tests the Breakdown tab in-game (tool/zone/God Potion changes update totals without
+   stutter; overrides win; Demo and companion-offline show clear messages). Then extend the ledger to
+   Gemstone/Ore/Dwarven Metal/Block Fortune and Pristine so method yield stops needing typed values.
 5. Document numerical discrepancies instead of tuning constants to match references.
 
 Acceptance: supported stats derive from API inputs with source breakdowns, bonuses are
@@ -109,7 +117,11 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (Step 2 breakdown): `./gradlew build :service:installDist` succeeded; one
+Latest verification (Step 4 `/stats` + Breakdown tab): `./gradlew build :service:installDist` succeeded;
+no tests added. Companion run locally with the stored key: `/stats` returned the fixture totals and a 400
+for an unknown zone. GitHub Actions Build succeeded for `f01bdc3` (run 40347288413). The mod screens were
+not run by the agent (owner tests Minecraft).
+Earlier verification (Step 2 breakdown): `./gradlew build :service:installDist` succeeded; one
 minimal fixture totals test added (owner asked for minimal tests; manual testing by the owner).
 GitHub Actions Build succeeded for `2092b32` (run 40342758813) and `c603977`
 (run 40342893779). No in-game comparison yet.
@@ -125,6 +137,7 @@ Recent milestones:
 - `c09874c`: native Stitch design and responsiveness changes (0.3.0).
 - `269f77c`: design adaptation and freeze review documentation.
 - `2092b32`: loadout model and Mining Fortune/Speed source breakdown (Step 2).
+- `f01bdc3`, `03b44bc`: companion `/stats` endpoint; Breakdown tab and automatic totals (Step 4).
 
 ## Remaining roadmap, in dependency order
 
@@ -136,7 +149,7 @@ Recent milestones:
 - [ ] Trackable temporary sources from the API where available (active mayor/perks such
   as Cole's Mining Fiesta, detectable consumables); label God Potion and other
   never-reported effects as untrackable rather than absent.
-- [ ] Companion `/stats` endpoint and an in-game breakdown view.
+- [x] Companion `/stats` endpoint and an in-game breakdown view (implemented; in-game test pending).
 
 - [x] Parse/evaluate selected and alternative valid loadouts; don't equip stored items
   implicitly or stack incompatible accessory/pet/gear alternatives (`Loadout`, `2092b32`).
@@ -211,7 +224,7 @@ Do not implement questionable mechanics solely because a reference claims them.
 Primary data entry points: official Hypixel item/skill/collection resources and profile
 API; Coflnet prices. Existing mechanics references and formulas are in docs/CALCULATIONS.md.
 SkyCompass/Mining Cat inspire the workflow; no dependency on scraping their outputs.
-Our companion service is our own API: it should grow `/stats`, `/upgrades` and `/rates`
+Our companion service is our own API: it has `/stats`; it should grow `/upgrades` and `/rates`
 endpoints backed by the core engine, and later a hosted deployment (owner decision).
 
 ## Build, architecture and local workflow
