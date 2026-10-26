@@ -44,10 +44,16 @@ public final class MethodRates {
      * A non-gem block method: block strength and instamine factor (wiki Block Strength: instamining needs more than
      * 60 x strength on ores, Obsidian, gemstones and Dwarven Metal, else 30 x), the share of blocks mined airborne,
      * base drops per block, the priced product, and the value window: windowHours with its description, or one Mining
-     * Speed Boost cycle (abilityCycle; one hour when the tool has no Mining Speed Boost).
+     * Speed Boost cycle (abilityCycle; one hour when the tool has no Mining Speed Boost). dropNote is null when the base
+     * drop per block is known, else says why the rate is shown at that base drop.
      */
     public record Block(String name, double strength, double instamineFactor, double airShare, double baseDrops, String product, String unit,
-                        double windowHours, String window, boolean abilityCycle, String guideNote) {}
+                        double windowHours, String window, boolean abilityCycle, String guideNote, String dropNote) {
+        public Block(String name, double strength, double instamineFactor, double airShare, double baseDrops, String product, String unit,
+                     double windowHours, String window, boolean abilityCycle, String guideNote) {
+            this(name, strength, instamineFactor, airShare, baseDrops, product, unit, windowHours, window, abilityCycle, guideNote, null);
+        }
+    }
     public record BlockRate(Block block, double speed, int groundTicks, int airTicks, int boostedGroundTicks, int boostedAirTicks, double uptime,
                             double blocksPerHour, double dropsPerBlock, double perHour, double windowHours, List<String> assumptions) {
         public double perWindow() { return perHour * windowHours; }
@@ -61,6 +67,13 @@ public final class MethodRates {
             // Obsidian guide: "around 3.5m/h" with max Magical Power and decent skill; mined on the floor and walls.
             case OBSIDIAN -> new Block("Obsidian", 500, 60, 0, 1, "OBSIDIAN", "Obsidian", 1, "hour", true,
                     "Obsidian guide: around 3.5M Obsidian / hour with max Magical Power and decent skill");
+            // Wiki Tungsten / Umber / Glacite: 5,600 / 5,600 / 6,000 strength, Breaking Power 9; Dwarven Metal Fortune applies.
+            case TUNGSTEN -> new Block("Tungsten", 5600, 60, 0, 1, "TUNGSTEN", "Tungsten", 1, "hour", false, "No Tungsten guide rate supplied",
+                    "Base drops: Cobblestone 1, Clay 3 (wiki Tungsten); the vein mix is unknown, so the rate is per 1 base drop");
+            case UMBER -> new Block("Umber", 5600, 60, 0, 1, "UMBER", "Umber", 1, "hour", false, "No Umber guide rate supplied",
+                    "Base drops: Terracotta 1, Brown Terracotta 2, Smooth Red Sandstone 3 (wiki Umber); the vein mix is unknown, so the rate is per 1 base drop");
+            case SHAFTING -> new Block("Glacite (Packed Ice)", 6000, 60, 0, 1, "GLACITE", "Glacite", 1, "hour", false, "No Glacite guide rate supplied",
+                    "Base drop per Packed Ice is not stated on the wiki; shown per 1 base drop. Mineshaft loot and gemstones are not counted");
             default -> null;
         };
     }
@@ -162,6 +175,7 @@ public final class MethodRates {
         else assumptions.add("All blocks mined on the ground (the airborne share of the route is unknown; airborne blocks take 5x longer).");
         assumptions.add("Every Mining Spread block is another " + b.name() + "; other blocks on the route, travel and lobby hops are part of the efficiency.");
         assumptions.add(b.unit() + " per block = " + fmt(b.baseDrops()) + " x (1 + (Mining Fortune + " + m.fortune.label + ") / 100).");
+        if (b.dropNote() != null) assumptions.add(b.dropNote() + ". Upgrade gains do not depend on it.");
         return new BlockRate(b, speed, ground, air, boostedGround, boostedAir, uptime, blocksPerHour, drops, blocksPerHour * drops, windowHours(m, ability), assumptions);
     }
 

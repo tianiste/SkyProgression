@@ -66,6 +66,9 @@ fix them later; do not block on the in-game test. Order:
    **Obsidian rate model (in-game test pending):** strength 500 (instamine > 30,000), 4-tick soft cap otherwise, so
    speed only counts when MSB lifts it above 30,000; Block Fortune; shown per ability cycle (cooldown), ranked hourly.
    Fixture ~0.93M/h at 65%; 8,572 Speed would add ~41%. Hypermax estimate ~2.6M/h vs guide ~3.5M/h (gap documented).
+   **Tungsten / Umber / Shafting (Glacite) rate models (in-game test pending):** 5,600 / 5,600 / 6,000 strength, tick model
+   with MSB, Dwarven Metal Fortune, per hour. Base drops vary by block (vein mix unknown; Glacite's not on the wiki), so
+   rates are per 1 base drop and labelled. Fixture ~200.7k/h Tungsten/Umber, ~190.6k/h Glacite at 65%. No guide rates.
    **Next:** owner restarts the companion (new `/stats` resale fields and prices) and checks the Upgrades tab: grinding
    labels, craft/buy notes, net-cost lines, plan resale line. Then: rate models for non-gem methods (roadmap 2).
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,

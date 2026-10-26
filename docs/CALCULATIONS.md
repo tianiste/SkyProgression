@@ -31,7 +31,7 @@ Estimated improvement % = `100 * (yield after / yield before - 1)`.
 Cost per 1% = `purchase cost / estimated improvement %`.
 Speed/cold-only changes are available in stat queries, not assigned imaginary drop gains.
 This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz, Grotto,
-Coal and Obsidian); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
+Coal, Obsidian, Tungsten, Umber and Shafting); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
 
 Items/hour = `3600 * efficiency/100 * active blocks/sec * base drops/block * yield`.
 Coins/hour and Coleweight/hour multiply that rate by the user-entered per-item values.
@@ -242,9 +242,9 @@ Mining Fortune and may be one temporary source. Not tuned.
 
 ## Upgrade ranking by rate
 
-Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto, Coal, Obsidian) rank upgrades on the Upgrades
+Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto, Coal, Obsidian, Tungsten, Umber, Shafting) rank upgrades on the Upgrades
 tab by gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour for the gem methods, Coal per 30
-minutes and Obsidian per Mining Speed Boost cycle (sections below). The gain is always computed on the hourly rate; the
+minutes, Obsidian per Mining Speed Boost cycle and the Dwarven Metals per hour (sections below). The gain is always computed on the hourly rate; the
 window only scales what is shown, and before and after use the baseline's window (a cooldown upgrade shortens the
 cycle, which would otherwise look like a loss). The plan's running total is hourly too. Before and
 after use the same effective stats as the Rates tab (automatic totals; Type Stats overrides still win), the
@@ -588,5 +588,26 @@ Mining + Block Fortune about 2,950) gives about 2.6M / hour at 65%, about 25% be
 skilled routes may run above 65% efficiency, or Spread may be higher. Not tuned.
 
 Fixture (Debotes, best owned gear, DR-X655, Crystal Hollows, 65%): Mining Speed 7,250 (4 ticks, 25,375 during the
-ability, still 4 ticks), Fortune 1,767 + Block 115, Spread 300: about 0.93M Obsidian / hour, 25,000 per 108 s cycle.
+ability, still 4 ticks), Fortune 1,767 + Block 115, Spread 300: about 0.93M Obsidian / hour, 27,800 per 108 s cycle.
 8,572 Mining Speed would add about 41%. Not validated against a measured session.
+
+## Rates: Tungsten, Umber, Glacite (Shafting)
+
+`MethodRates.blocks` with the Coal rules, per hour (the Mining Cat developer's window for Shafting and the Dwarven
+Metals), default efficiency 65%, all blocks mined on the ground (airborne share unknown).
+- Strength: Tungsten 5,600 (all block types), Umber 5,600 (all types), Glacite 6,000 (Packed Ice), Breaking Power 9
+  (wiki Tungsten, Umber, Glacite and Block Strength pages, checked 2026-10-26). Ticks = round(30 x strength / Mining
+  Speed), at least 4: Tungsten/Umber reach 4 ticks above 37,333, Glacite above 40,000. Mining Speed Boost changes the
+  ticks during the ability, so speed counts at every tick threshold, as for gems.
+- Fortune: Mining Fortune + Dwarven Metal Fortune (wiki Dwarven Metal Fortune lists Mithril, Titanium, Umber, Tungsten and
+  Glacite; every 100 adds 100% drops). Mining Spread applies to Dwarven Metals (wiki Mining Spread).
+- Base drops are not one number. Tungsten: Cobblestone 1, Clay 3; Umber: Terracotta 1, Brown Terracotta 2, Smooth Red
+  Sandstone 3 (wiki). The share of each block in a vein is unknown, and the wiki states no base drop for Glacite. The rate
+  is shown per 1 base drop and labelled so; upgrade gains are ratios and do not depend on it. Coins are not shown as a
+  real income for that reason, only at the buy quote per shown unit.
+- Shafting is modelled as Glacite mining only: mineshaft spawns, corpses and mineshaft gemstones are not counted.
+- No guide rate was supplied for these methods (`METHOD-GUIDES.md`, "Missing guides").
+
+Fixture (Debotes, best owned gear, DR-X655, 65%): Glacite Tunnels, Mining Speed 7,255 (23 ticks, 7 during the ability),
+Fortune 1,767 + Dwarven Metal 5, Spread 300: about 200,700 Tungsten or Umber / hour per base drop. Glacite Mineshafts
+(Glacite): 25 ticks, 7 during the ability, Fortune 1,771: about 190,600 / hour per base drop. Not validated.
