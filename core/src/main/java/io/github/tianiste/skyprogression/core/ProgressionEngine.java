@@ -45,19 +45,25 @@ public final class ProgressionEngine {
      * Player settings the rate model needs: efficiency (%) and the evaluated tool's pickaxe ability (null when none),
      * plus the evaluated pet's counted stats and the pet alternatives (null / empty when unknown).
      */
-    public record RateBasis(double efficiency, MethodRates.Ability ability, Map<Stat, Double> pet, List<PetUpgrades.Option> petOptions, ProfileUpgrades.State profile) {
+    /** resale: modifier-aware sale quotes of the evaluated copies by instance key and "pet" (StatsReport.resale). */
+    public record RateBasis(double efficiency, MethodRates.Ability ability, Map<Stat, Double> pet, List<PetUpgrades.Option> petOptions, ProfileUpgrades.State profile,
+                            Map<String, Price> resale) {
         public RateBasis(double efficiency, MethodRates.Ability ability) { this(efficiency, ability, null, List.of(), ProfileUpgrades.State.EMPTY); }
+        public RateBasis(double efficiency, MethodRates.Ability ability, Map<Stat, Double> pet, List<PetUpgrades.Option> petOptions, ProfileUpgrades.State profile) {
+            this(efficiency, ability, pet, petOptions, profile, Map.of());
+        }
         public RateBasis {
             if (petOptions == null) petOptions = List.of();
             if (profile == null) profile = ProfileUpgrades.State.EMPTY;
+            if (resale == null) resale = Map.of();
         }
-        RateBasis with(MethodRates.Ability a) { return new RateBasis(efficiency, a, pet, petOptions, profile); }
+        RateBasis with(MethodRates.Ability a) { return new RateBasis(efficiency, a, pet, petOptions, profile, resale); }
         /** After taking a pet option: it becomes the pet; a new pet drops the pet-item options for the old one. */
         RateBasis withPet(PetUpgrades.Option taken) {
-            return new RateBasis(efficiency, ability, taken.stats(), petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList(), profile);
+            return new RateBasis(efficiency, ability, taken.stats(), petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList(), profile, resale);
         }
-        RateBasis withProfile(ProfileUpgrades.Option taken) { return new RateBasis(efficiency, ability, pet, petOptions, profile.take(taken)); }
-        RateBasis withOmelette(boolean held) { return new RateBasis(efficiency, ability, pet, petOptions, profile.withOmelette(held)); }
+        RateBasis withProfile(ProfileUpgrades.Option taken) { return new RateBasis(efficiency, ability, pet, petOptions, profile.take(taken), resale); }
+        RateBasis withOmelette(boolean held) { return new RateBasis(efficiency, ability, pet, petOptions, profile.withOmelette(held), resale); }
     }
     /** How a method's upgrades are valued: its rate model when it has one, else the drop multiplier. */
     public static boolean rateModel(MiningMethod m) { return MethodRates.supported(m); }
@@ -84,7 +90,8 @@ public final class ProgressionEngine {
     }
 
     /** One plan step: the upgrade taken (gain against the previous step), the running gain and cost, and the rate after it. */
-    public record Step(Upgrade upgrade, double totalGain, double totalCost, Double rate) {}
+    /** totalResale: known sale value of everything the steps so far replace; unpricedResale: replaced items without a sale price. */
+    public record Step(Upgrade upgrade, double totalGain, double totalCost, Double rate, double totalResale, int unpricedResale) {}
     /**
      * Step-by-step plan: take the available upgrade with the lowest known cost per 1%, apply it (gear, stats, ability,
      * used materials), recompute every candidate from the new state, repeat. Blocked and unpriced upgrades are skipped.
@@ -111,7 +118,8 @@ public final class ProgressionEngine {
         bestOwned(p, m, null).forEach((group, item) -> owned.put(group, item.copy()));
         Map<Stat, Double> stats = plus(baseline, Map.of());
         RateBasis current = basis;
-        double start = metric(m, stats, current), total = 0;
+        double start = metric(m, stats, current), total = 0, resale = 0;
+        int unpriced = 0;
         List<Step> steps = new ArrayList<>();
         List<Candidate> taken = new ArrayList<>();
         while (steps.size() < maxSteps) {
@@ -146,8 +154,9 @@ public final class ProgressionEngine {
                 current = current.with(new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * u.cooldownFactor()));
             }
             total += u.cost();
+            if (!u.resaleNote().isEmpty()) { if (u.resale() != null) resale += u.resale(); else unpriced++; }
             double now = metric(m, stats, current);
-            steps.add(new Step(u, (now / start - 1) * 100, total, u.rateAfter()));
+            steps.add(new Step(u, (now / start - 1) * 100, total, u.rateAfter(), resale, unpriced));
         }
         return steps;
     }
@@ -263,7 +272,8 @@ public final class ProgressionEngine {
             display.modification=true;display.source=cost.detail();
             String blocked=proposal.blocked();
             if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
-            result.add(new Candidate(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after),
+            Resale.Credit credit=proposal.returned().isEmpty()?null:Resale.credit(null,proposal.returned(),Map.of(),prices);
+            result.add(new Candidate(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after).withResale(credit),
                     proposal.apply(),proposal.plan().materials()));
         }
         for (Item i : catalog) {
@@ -291,7 +301,8 @@ public final class ProgressionEngine {
             }
             String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : "";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
-            result.add(new Candidate(new Upgrade(shown, current, delta, cost, gain, have, blocked, 1, before, after), null, Map.of()));
+            Resale.Credit credit = current == null ? null : Resale.credit(current.instance.isBlank() ? null : current.instance, current.id, resale(basis), prices);
+            result.add(new Candidate(new Upgrade(shown, current, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, Map.of()));
         }
         // Full sets whose set bonus has mining stats: all four pieces at once.
         for (SetDef set : SETS) {
@@ -323,7 +334,15 @@ public final class ProgressionEngine {
             display.group = pieces.getFirst().group; display.source = "All four pieces, for the set bonus; owned pieces cost nothing.";
             String blocked = p.hotm < hotm ? "Requires HOTM " + hotm : "";
             if (!have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode))) blocked = "No market purchases on " + p.mode;
-            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, have, blocked, 1, before, after), null, Map.of(), null, null, pieces));
+            Resale.Credit credit = null;
+            for (Item i : pieces) {
+                Item old = owned.get(i.group);
+                if (old == null || old.id.equals(i.id)) continue;
+                Resale.Credit c = Resale.credit(old.instance.isBlank() ? null : old.instance, old.id, resale(basis), prices);
+                credit = credit == null ? c : new Resale.Credit(credit.credit() == null || c.credit() == null ? null : credit.credit() + c.credit(),
+                        credit.credit() == null ? credit.note() : c.credit() == null ? c.note() : "replaced pieces at their sale values");
+            }
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, Map.of(), null, null, pieces));
         }
         // Pets: option stats minus the evaluated pet's, both counted in the same context.
         if (basis != null && basis.pet() != null) for (PetUpgrades.Option o : basis.petOptions()) {
@@ -340,7 +359,8 @@ public final class ProgressionEngine {
             Price quote = prices.get(o.priceId());
             Double cost = o.owned() ? 0.0 : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? quote.buy : null;
             String blocked = !o.owned() && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
-            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after), null, Map.of(), o, null, null));
+            Resale.Credit credit = o.heldItem() ? null : Resale.credit("pet", null, resale(basis), prices);
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after).withResale(credit), null, Map.of(), o, null, null));
         }
         // Essence perks, attribute shards and HOTM perk levels: target level stats minus the chain's current stats.
         if (basis != null) for (ProfileUpgrades.Option o : basis.profile().options()) {
@@ -369,6 +389,7 @@ public final class ProgressionEngine {
         }
         return result;
     }
+    private static Map<String, Price> resale(RateBasis basis) { return basis == null ? Map.of() : basis.resale(); }
     private static Map<Stat, Double> plus(Map<Stat, Double> baseline, Map<Stat, Double> delta) {
         Map<Stat, Double> after = new EnumMap<>(Stat.class);
         for (Stat s : Stat.values()) after.put(s, stat(baseline, s) + stat(delta, s));

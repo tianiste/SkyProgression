@@ -30,6 +30,9 @@ public final class StatsReport {
     /** Essence perk, attribute and HOTM perk levels as upgrade options, with balances (see ProfileUpgrades). */
     public ProfileUpgrades.State profileUpgrades;
     public List<Ledger> stats = new ArrayList<>();
+    /** Sale queries for the evaluated copies (instance key, or "pet"), and the quotes the companion found for them. */
+    public Map<String, Resale.Query> resaleQueries = new LinkedHashMap<>();
+    public Map<String, Price> resale = new HashMap<>();
 
     public record Tool(String key, String name, String location) {}
     public static final class Ledger {
@@ -66,6 +69,9 @@ public final class StatsReport {
         for (Item item : pieces) r.loadout.add(new Tool(key(item), item.name, item.location));
         if (main.pet != null) r.loadout.add(new Tool("pet", main.pet.label(), main.pet.active() ? "active pet" : "pets menu"));
         r.accessories = main.accessories.size();
+        List<Item> sellable = new ArrayList<>(pieces); sellable.addAll(main.accessories);
+        for (Item item : sellable) if (!item.instance.isBlank()) r.resaleQueries.put(item.instance, Resale.of(item));
+        if (main.pet != null) r.resaleQueries.put("pet", Resale.of(main.pet));
         r.ability = MethodRates.ability(main.tool);
         boolean drill = main.tool != null && main.tool.category.equals("DRILL");
         r.profileUpgrades = ProfileUpgrades.state(member, r.hotmTree, context, StatBreakdown.blueCheese(main.tool));

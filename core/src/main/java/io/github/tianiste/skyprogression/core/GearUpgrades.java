@@ -21,8 +21,10 @@ public final class GearUpgrades {
      * apply records the upgrade on a copy of the gear (enchantments, parts, gems) so a sequential plan can propose
      * the next step from the new state; stat totals are updated by the caller.
      */
-    public record Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor,Consumer<Item> apply) {
-        public Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,Consumer<Item> apply){this(gear,label,delta,plan,blocked,1,apply);}
+    /** returned: item ID given back to the player by the swap (old drill part, removed gem), or "" when none. */
+    public record Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor,Consumer<Item> apply,String returned) {
+        public Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor,Consumer<Item> apply){this(gear,label,delta,plan,blocked,cooldownFactor,apply,"");}
+        public Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,Consumer<Item> apply){this(gear,label,delta,plan,blocked,1,apply,"");}
     }
     /** Fuel tanks by drill-part key and Pickaxe Ability Cooldown reduction (wiki Drill Parts); only one tank fits a drill. */
     public static final Map<String,Double> FUEL_TANKS=new LinkedHashMap<>();
@@ -114,7 +116,7 @@ public final class GearUpgrades {
                 double old=FUEL_TANKS.getOrDefault(tank,0.0);
                 for(var e:FUEL_TANKS.entrySet())if(e.getValue()>old)
                     out.add(new Proposal(gear,partName(e.getKey())+" (-"+Math.round(e.getValue()*100)+"% ability cooldown)",Map.of(),
-                            part(e.getKey(),tank),"",(1-e.getValue())/(1-old),g->g.extra.addProperty("drill_part_fuel_tank",e.getKey())));
+                            part(e.getKey(),tank),"",(1-e.getValue())/(1-old),g->g.extra.addProperty("drill_part_fuel_tank",e.getKey()),tank.toUpperCase(Locale.ROOT)));
                 parts(gear,"drill_part_engine",ENGINES,out,Map.of());
                 String module=string(at(gear.extra,"drill_part_upgrade_module"),"");
                 parts(gear,"drill_part_upgrade_module",MODULES,out,module.equals(BLUE_CHEESE)?omelette:Map.of());
@@ -123,8 +125,8 @@ public final class GearUpgrades {
                     double[] now=MODULES.getOrDefault(module,new double[2]);
                     delta.merge(Stat.MINING_SPEED,-now[0],Double::sum);delta.merge(Stat.MINING_FORTUNE,-now[1],Double::sum);
                     delta.values().removeIf(v->v==0);
-                    if(delta.values().stream().anyMatch(v->v>0))out.add(new Proposal(gear,partName(BLUE_CHEESE)+" (+1 HOTM perk levels)",delta,part(BLUE_CHEESE,module),"",
-                            g->g.extra.addProperty("drill_part_upgrade_module",BLUE_CHEESE)));
+                    if(delta.values().stream().anyMatch(v->v>0))out.add(new Proposal(gear,partName(BLUE_CHEESE)+" (+1 HOTM perk levels)",delta,part(BLUE_CHEESE,module),"",1,
+                            g->g.extra.addProperty("drill_part_upgrade_module",BLUE_CHEESE),module.toUpperCase(Locale.ROOT)));
                 }
             }
         }
@@ -238,7 +240,7 @@ public final class GearUpgrades {
             lost.forEach((s,v)->delta.merge(s,-v,Double::sum));
             delta.values().removeIf(v->v==0);
             if(e.getKey().equals(current)||delta.values().stream().noneMatch(v->v>0))continue;
-            out.add(new Proposal(gear,partName(e.getKey()),delta,part(e.getKey(),current),"",g->g.extra.addProperty(field,e.getKey())));
+            out.add(new Proposal(gear,partName(e.getKey()),delta,part(e.getKey(),current),"",1,g->g.extra.addProperty(field,e.getKey()),current.toUpperCase(Locale.ROOT)));
         }
     }
     public static double gemValue(String type,String quality,String tier,boolean accessory) {
@@ -290,8 +292,8 @@ public final class GearUpgrades {
                         else if(ingredient.type.equals("ITEM"))materials.merge(ingredient.item_id,ingredient.amount,Integer::sum);
                     }
                     out.add(new Proposal(gear,(unlocked?"Socket ":"Unlock + socket ")+target+" "+type+" ["+key+"]"+(swap?" (replaces "+quality+" "+oldType+")":""),delta,
-                            new Plan(materials,fee,"Gemstone Grinder. Includes unlock/removal fees; no assumed resale credit."),"",
-                            g->socket(g,key,target,type,!type.equals(slot.slot_type))));
+                            new Plan(materials,fee,"Gemstone Grinder. Includes unlock/removal fees"+(quality.isEmpty()?".":"; the removed gem is given back.")),"",1,
+                            g->socket(g,key,target,type,!type.equals(slot.slot_type)),quality.isEmpty()?"":quality+"_"+oldType+"_GEM"));
                 }
             }
         }

@@ -69,10 +69,21 @@ public final class Model {
      * rateBefore/rateAfter are the method rate (Flawless / hour) when the method has a rate model, else null.
      */
     public record Upgrade(Item item, Item current, Map<Stat, Double> delta, Double cost,
-                          double gain, boolean owned, String blocked, double cooldownFactor, Double rateBefore, Double rateAfter) {
+                          double gain, boolean owned, String blocked, double cooldownFactor, Double rateBefore, Double rateAfter,
+                          Double resale, String resaleNote) {
         public Upgrade(Item item, Item current, Map<Stat, Double> delta, Double cost, double gain, boolean owned, String blocked) {
             this(item, current, delta, cost, gain, owned, blocked, 1, null, null);
         }
+        public Upgrade(Item item, Item current, Map<Stat, Double> delta, Double cost, double gain, boolean owned, String blocked,
+                       double cooldownFactor, Double rateBefore, Double rateAfter) {
+            this(item, current, delta, cost, gain, owned, blocked, cooldownFactor, rateBefore, rateAfter, null, "");
+        }
+        /** Same upgrade with the sale value of what it replaces (null credit = no sale price; empty note = nothing replaced). */
+        public Upgrade withResale(Resale.Credit c) {
+            return c == null ? this : new Upgrade(item, current, delta, cost, gain, owned, blocked, cooldownFactor, rateBefore, rateAfter, c.credit(), c.note());
+        }
+        /** Cash outlay minus the replaced item's sale value; null when either is unknown or nothing is replaced. */
+        public Double net() { return cost == null || resale == null || resaleNote.isEmpty() ? null : cost - resale; }
         public double costPerUnit() { return cost == null || gain <= 0 ? Double.POSITIVE_INFINITY : cost / gain; }
     }
     public record Overview(String group, Item current, Item target, double value, double maximum) {}

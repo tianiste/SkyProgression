@@ -128,7 +128,7 @@ public final class ProgressionScreen extends Screen {
         var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
         StatsReport report=data.stats(method);var basis=report==null?new ProgressionEngine.RateBasis(data.inputs(method).efficiency,null)
-                :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions,report.profileUpgrades);
+                :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions,report.profileUpgrades,report.resale);
         analysis=ClientData.WORK.submit(()->{
             try {
                 var base=data.engine.overview(p,selectedMethod,selectedStat);
@@ -207,6 +207,8 @@ public final class ProgressionScreen extends Screen {
             if(u.cooldownFactor()!=1)changes.add("ability cooldown x"+fmt(u.cooldownFactor()));
             if(changes.length()>0)c.line(changes.toString(),CYAN);
             c.line(u.cost()==null?("GRIND".equals(u.item().category)?"Grinding (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
+            if(!u.resaleNote().isEmpty()&&u.cost()!=null)c.line(u.net()!=null?"Net "+coins(u.net())+" after selling the replaced item for "+coins(u.resale())+" ("+u.resaleNote()+")"
+                    :u.resaleNote()+"; net cost unknown",u.net()!=null?CYAN:MUTED);
             if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" Flawless / hour",GREEN);
             else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
             if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned",GREEN);
@@ -221,7 +223,7 @@ public final class ProgressionScreen extends Screen {
         double max=known.stream().mapToDouble(Upgrade::costPerUnit).max().orElse(1);
         for(var u:known){comparison.line(u.item().name,TEXT);comparison.lines.add(new Line(coins(u.costPerUnit())+(focused?" / point":" / 1%"),CYAN,u.costPerUnit()/Math.max(1,max)));}
         comparison.line("Shorter bars cost less per gain. These are separate alternatives.",MUTED);
-        card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("No assumed resale credit or transfer of modifiers onto replacement gear.",MUTED).line(rated?"Rate gains use your efficiency and the tool's Mining Speed Boost; route and travel are part of the efficiency.":"Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
+        card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("Costs are cash outlay. Net cost subtracts the replaced item's sale quote when one exists; modifiers are not transferred.",MUTED).line(rated?"Rate gains use your efficiency and the tool's Mining Speed Boost; route and travel are part of the efficiency.":"Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
     }
     private static final int PLAN_STEPS=12;
     /** Sequential plan: each step is the best value after the previous ones are applied, so gains build on each other. */
@@ -238,6 +240,8 @@ public final class ProgressionScreen extends Screen {
         var last=plan.getLast();
         c.line("After "+plan.size()+" steps: +"+fmt(last.totalGain())+"% "+(rated?"rate":"drops")+" for "+coins(last.totalCost())
                 +(plan.size()==PLAN_STEPS?" (first "+PLAN_STEPS+" steps)":""),GOLD);
+        if(last.totalResale()>0||last.unpricedResale()>0)c.line("Selling what the steps replace: "+coins(last.totalResale())+" back, net "+coins(last.totalCost()-last.totalResale())
+                +(last.unpricedResale()>0?" ("+last.unpricedResale()+" replaced item"+(last.unpricedResale()>1?"s":"")+" without a sale price)":""),CYAN);
     }
     /** Automatic Magma Fields gem rate from the effective stats, the tool's ability and the player's efficiency. */
     private void gemRateCard(){

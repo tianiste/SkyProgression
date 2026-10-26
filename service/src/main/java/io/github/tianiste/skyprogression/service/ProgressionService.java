@@ -115,9 +115,85 @@ public final class ProgressionService {
         StatsReport result = StatsReport.of(member, owned, method, tool, !"equipped".equals(q.get("gear")), context);
         result.player = ign; result.profileId = id; result.profile = string(at(entry, "cute_name"), "Profile");
         result.fetchedAt = cached.report.fetchedAt;
+        result.resale = resale(result.resaleQueries);
         return result;
     }
     private Report report(String ign) throws Exception { return fetch(ign).report; }
+    private record Timed<T>(Instant time, T value) {}
+    private final Map<String, Timed<Price>> copyQuotes = new ConcurrentHashMap<>();
+    private final Map<String, Timed<Map<String, List<String>>>> filterOptions = new ConcurrentHashMap<>();
+    private volatile Set<String> catalogIds;
+    /**
+     * Modifier-aware sale quotes for the evaluated copies: Coflnet's lowest BIN with the copy's rarity, recombobulation,
+     * reforge, coating and drill parts (pets: rarity, level, pet item). Only filters Coflnet lists for that item are
+     * used, matched case-insensitively; the quote names the filters used and left out. No listing means no quote.
+     */
+    private Map<String, Price> resale(Map<String, Resale.Query> queries) throws Exception {
+        if (catalogIds == null) { Set<String> ids = new HashSet<>(); Catalog.load().forEach(i -> ids.add(i.id)); catalogIds = ids; }
+        Map<String, Price> out = new ConcurrentHashMap<>();
+        try (var pool = Executors.newFixedThreadPool(3)) {
+            List<Future<?>> jobs = new ArrayList<>();
+            for (var e : queries.entrySet()) {
+                Resale.Query q = e.getValue();
+                if (!q.tag().matches("[A-Z0-9_]{1,64}") || !q.tag().startsWith("PET_") && !catalogIds.contains(q.tag())) continue;
+                jobs.add(pool.submit(() -> {
+                    try { Price p = copyQuote(q); if (p != null) out.put(e.getKey(), p); }
+                    catch (Exception ignored) { /* No quote: the upgrade says there is no sale price. */ }
+                }));
+            }
+            for (Future<?> job : jobs) job.get();
+        }
+        return out;
+    }
+    private Price copyQuote(Resale.Query q) throws Exception {
+        Map<String, List<String>> options = filterOptions(q.tag());
+        StringJoiner query = new StringJoiner("&"), used = new StringJoiner(", "), dropped = new StringJoiner(", ");
+        for (var f : q.filters().entrySet()) {
+            List<String> allowed = options.get(f.getKey());
+            String value = f.getValue();
+            if (allowed == null) { dropped.add(f.getKey()); continue; }
+            if (!f.getKey().equals("PetLevel")) {
+                value = allowed.stream().filter(v -> v.equalsIgnoreCase(f.getValue())).findFirst().orElse(null);
+                if (value == null) { dropped.add(f.getKey() + " " + f.getValue()); continue; }
+            }
+            query.add(f.getKey() + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8));
+            used.add(f.getKey() + " " + value);
+        }
+        String path = q.tag() + "/bin?" + query;
+        Timed<Price> hit = copyQuotes.get(path);
+        if (hit != null && hit.time().plusSeconds(900).isAfter(Instant.now())) return hit.value();
+        JsonObject response = get("https://sky.coflnet.com/api/item/price/" + path, false);
+        double lowest = number(response.get("lowest"), 0);
+        Price p = null;
+        if (lowest > 0) {
+            p = new Price(lowest, "lowest BIN with " + (used.length() == 0 ? "no filters" : used) + (dropped.length() == 0 ? "" : "; not filterable: " + dropped)
+                    + " (Coflnet, before Auction House fees)");
+            p.sell = lowest; p.updatedAt = "Current lowest BIN";
+        }
+        copyQuotes.put(path, new Timed<>(Instant.now(), p));
+        return p;
+    }
+    private Map<String, List<String>> filterOptions(String tag) throws Exception {
+        Timed<Map<String, List<String>>> hit = filterOptions.get(tag);
+        if (hit != null && hit.time().plusSeconds(3600).isAfter(Instant.now())) return hit.value();
+        var request = HttpRequest.newBuilder(URI.create("https://sky.coflnet.com/api/filter/options?itemTag=" + tag)).timeout(Duration.ofSeconds(12))
+                .header("User-Agent", "SkyProgression/0.1.0 (github.com/tianiste/SkyProgression)").header("Accept", "application/json").GET().build();
+        var response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        Map<String, List<String>> out = new HashMap<>();
+        try (var body = response.body()) {
+            if (response.statusCode() != 200) throw new IOException("Remote service returned " + response.statusCode());
+            byte[] bytes = body.readNBytes(1024 * 1024 + 1);
+            if (bytes.length > 1024 * 1024) throw new IOException("Response too large");
+            for (JsonElement f : JsonParser.parseString(new String(bytes, StandardCharsets.UTF_8)).getAsJsonArray()) {
+                List<String> values = new ArrayList<>();
+                JsonElement opts = at(f, "options");
+                if (opts.isJsonArray()) opts.getAsJsonArray().forEach(v -> values.add(string(v, "")));
+                out.put(string(at(f, "name"), ""), values);
+            }
+        }
+        filterOptions.put(tag, new Timed<>(Instant.now(), out));
+        return out;
+    }
     private Cached fetch(String ign) throws Exception {
         synchronized (profileLock) { return fetchLocked(ign); }
     }
