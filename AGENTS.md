@@ -17,7 +17,7 @@ official resources, the wiki and Coflnet prices. The companion service exposes o
 engine as our own HTTP API for the mod; it never proxies another tool. The owner has authorized autonomous implementation,
 research, fixes, tests, and incremental commits/pushes to tianiste/SkyProgression.
 When asked to continue, work on the next unfinished milestone in PROGRESS.md. Complete
-coherent, tested increments instead of stopping at plans or repeatedly asking permission.
+coherent, building increments instead of stopping at plans or repeatedly asking permission.
 Resolve ordinary implementation choices yourself. Ask only for genuinely missing user
 information, conflicting requirements, or actions outside the authorized scope.
 User instructions and actual environment permissions always take precedence.
@@ -38,6 +38,9 @@ publish credentials. Public hosting/account provisioning needs the owner's invol
   the owner explicitly changes that instruction. Build and test without doing so.
 - Inspect Git status before editing. Preserve unrelated user changes. Commit coherent
   increments with clear messages and push the authorized repository. Never force-push.
+- Tests are not required; the owner tests changes manually. Do not add tests by
+  default. If a test is genuinely needed, keep it EXTREMELY minimal (one small focused
+  case, no broad suites or test scaffolding). Existing tests must still pass the build.
 - Do not launch subagents unless the user explicitly requests them.
 - Keep network calls, disk I/O and expensive calculations off the game/render thread.
   Bound response size/time; cancel stale requests; avoid per-frame calculation or I/O.
@@ -90,7 +93,7 @@ Update PROGRESS.md with every substantive increment:
 
 Keep the top resume section short and actionable. Mark work done only when implemented
 and verified; distinguish research, partial implementation and validated parity.
-Run `./gradlew build :service:installDist` for code changes, plus targeted regression
-tests where needed. Documentation-only changes need link/path and diff checks, not a
+Run `./gradlew build :service:installDist` for code changes (no new tests required; see
+the working agreement). Documentation-only changes need link/path and diff checks, not a
 full rebuild. Keep README/setup/calculation scope consistent with the shipped behavior.
 At handoff, report the result, test status and any remaining blocker plainly.
