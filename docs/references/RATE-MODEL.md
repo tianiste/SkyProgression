@@ -1,7 +1,8 @@
 # Rate model (research, 2026-10-26)
 
-Derived from the owner's guides and Debotes's Mining Cat Coal pages. The Magma Fields gemstone part is
-implemented (`MethodRates`, docs/CALCULATIONS.md "Rates: Magma Fields gemstones"); the rest is research.
+Derived from the owner's guides and Debotes's Mining Cat Coal pages. The Magma Fields gemstone and Fairy
+Grotto parts are implemented (`MethodRates`, docs/CALCULATIONS.md "Rates: Magma Fields gemstones", "Rates: Fairy
+Grotto", "Upgrade ranking by rate"); the rest is research.
 Constants marked "fitted" match Mining Cat output but are not verified game mechanics.
 
 ## 1. Break time (ticks)

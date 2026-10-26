@@ -29,6 +29,8 @@ Combined yield is the product of those multipliers.
 Estimated improvement % = `100 * (yield after / yield before - 1)`.
 Cost per 1% = `purchase cost / estimated improvement %`.
 Speed/cold-only changes are available in stat queries, not assigned imaginary drop gains.
+This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz and
+Grotto); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
 
 Items/hour = `3600 * efficiency/100 * active blocks/sec * base drops/block * yield`.
 Coins/hour and Coleweight/hour multiply that rate by the user-entered per-item values.
@@ -232,6 +234,29 @@ before Bal's Furnace (the menu was not taken in the Magma Fields; with it 16.31)
 Block fit consumed Dwarven O's cereals (untrackable); the +15 Gemstone Fortune matches the unexplained +15
 Mining Fortune and may be one temporary source. Not tuned.
 
+## Upgrade ranking by rate
+
+Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto) rank upgrades on the Upgrades tab by
+gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour from the sections below. Before and
+after use the same effective stats as the Rates tab (automatic totals; Type Stats overrides still win), the
+efficiency from Type Stats and the evaluated tool's Mining Speed Boost; the upgrade's stat delta is added to
+those stats. Each card shows the gain and the Flawless / hour before and after. Cost per 1% = cost / gain %, as
+before, and every card stays an independent alternative against the same baseline (no sequential plan yet).
+- Mining Speed has value only when it changes the ticks per block, normally or during the ability (ticks are
+  rounded; see the break-time rule). Upgrades with no rate change are left out, as zero-gain upgrades were before.
+  The Rates tab shows the next tick threshold: Mining Speed > 30 x strength / (ticks - 0.5), or above 60 x
+  strength when already at the 4-tick soft cap.
+- Ability changes count through uptime = duration / cooldown. Fuel tanks (wiki Drill Parts,
+  <https://hypixelskyblock.minecraft.wiki/w/Drill_Parts>): Mithril-Infused 2%, Titanium-Infused 4%, Gemstone 6%,
+  Perfectly-Cut 10% Pickaxe Ability Cooldown reduction; one tank per drill. Replacing tank a with b scales the
+  cooldown by (1 - b) / (1 - a), which assumes reductions multiply (wiki Mining Speed Boost). That ratio is the
+  same whether or not the lore cooldown already includes the current tank (see the open question below), so only
+  the baseline is uncertain. Fixture check: Titanium-Infused to Gemstone gives +0.42% on MF Gems; a Mining Cat
+  MF Gems page showed +0.39% for the same change (different baseline; comparison only). The tank is priced at its
+  Coflnet buy quote; forging, the old tank and resale are not credited.
+- If the rate cannot be computed (for example Mining Speed 0), the method falls back to the drop multiplier
+  and says so. The Stats tab (cheapest stat points) is unchanged.
+
 ## Rates: Magma Fields gemstones
 
 `core/` `MethodRates` (MF Gems, MF Ruby, MF Topaz), shown on the Rates tab as "automatic rate" from the
@@ -271,3 +296,29 @@ averages at 65%; we keep the guide's own 60% for the reference and 65% as the pl
 Fixture (Debotes, best owned gear, DR-X655, Magma Fields, 65%): Mining Speed 8,000 (11 ticks on Amber, 4
 during MSB), Pristine 16.31, Fortune 1,767 + 180: about 12.0 Amber, 13.9 Ruby and 10.3 Topaz Flawless / hour.
 Not validated against a measured session yet.
+
+## Rates: Fairy Grotto
+
+`MethodRates` for Grotto applies the Magma Fields rules above to Jasper. Default efficiency 65% (the guide's
+"roughly 65%"), default zone Crystal Hollows; pick Magma Fields in the zone picker for a Magma Fields grotto
+(Bal and other Magma Fields bonuses then count).
+- Jasper strength 4,800 (wiki Block Strength, same for block and pane), Breaking Power 9, 3-5 Rough per block
+  (wiki Jasper Gemstone, <https://hypixelskyblock.minecraft.wiki/w/Jasper_Gemstone>); Flawless Jasper =
+  512,000 Rough, priced at the `FLAWLESS_JASPER_GEM` buy quote.
+- 4 ticks (the soft cap) needs Mining Speed above 30 x 4,800 / 4.5 = 32,000, matching the Fairy Grotto guide's
+  "32000 Mining Speed required to mine Japer in 4 Ticks" with Mining Speed Boost level 2. Whether exactly 32,000
+  is enough is not verified (we round 4.5 up to 5 ticks).
+- All mining time is assumed to be on Jasper with the ability used on Jasper (the guide recommends routing so).
+  Unknown and not modelled: the share of time spent on the surrounding Breaking Power 7 gems, grotto size and
+  griefed veins, the Magma Fields share of a partly Magma Fields grotto, ping and TPS. These lower the real
+  Jasper rate; they belong in the efficiency until measured.
+
+Guide reference (Fairy Grotto guide, owner-supplied, `service-data/guides/fairy-grotto.txt`; roughly 65%
+efficiency, minimal lag, 0% Magma Fields): Mansion up to 12 Flawless Jasper / hour plus 3.1 other Flawless
+gems / hour; Palace up to 11 plus 4.6; full Magma Fields grottos roughly x1.15. Estimated hypermax in the
+Crystal Hollows (Mining Speed about 9,700, MSB level 2 with 97 s cooldown, Pristine 14.8 without Bal,
+Mining + Gemstone Fortune about 2,730, Gemstone Spread 2.5): 15 ticks, 4 during MSB, about 12.8 Jasper / hour
+at 65%, against the guide's 12 for a route that also mines other gems. Not validated against a measured session.
+
+Fixture (Debotes, best owned gear, DR-X655, Crystal Hollows, 65%): Mining Speed 8,000 (18 ticks, 5 during MSB
+because 28,000 is below 32,000; next tick at 8,229), about 6.7 Flawless Jasper / hour.

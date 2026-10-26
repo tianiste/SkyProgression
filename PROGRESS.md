@@ -17,13 +17,19 @@ fix them later; do not block on the in-game test. Order:
    Gemstone 180 vs 195, Ore 100 vs 110, Block 115 vs 125 unexplained (likely untrackable consumables/buffs).
    New: Magma Fields zone (MF default; Bal Furnace +2.91 Pristine there), Block target, one method
    weighting for gear/pet/HOTM tree. Rules and sources: CALCULATIONS.md "Stat breakdown: method stats".
-2. **MF Gems rate engine implemented (`94517a1`), not validated against a measured session.** `MethodRates`
-   for MF Gems/Ruby/Topaz on the Rates tab: ticks from block strength, MSB cycle from the tool lore,
-   wiki Pristine/Fortune drop formula, Flawless = 512,000 Rough, coins at the Flawless buy quote. Hypermax
-   estimate reproduces the guide (~19.6 vs 20.1 Amber/h at 60%). Fixture: ~12.0 Amber/h at 65%.
-   **Next:** owner compares the automatic rate with a timed session (Flawless/h, blocks mined, Mining Speed,
-   ability uptime); then use `MethodRates` for the MF Gems upgrade ranking (gain% = rate after / before - 1)
-   and extend to Grotto (Jasper 4,800) and the other methods with the developer's value windows.
+2. **Gem rate engine implemented, not validated against a measured session.** `MethodRates` for MF Gems/Ruby/
+   Topaz (`94517a1`) and Grotto Jasper (`f37371c`, strength 4,800) on the Rates tab: ticks from block strength,
+   MSB cycle from the tool lore, wiki Pristine/Fortune drops, Flawless = 512,000 Rough, coins at the buy quote,
+   next tick threshold. Owner: treat the MF rate as correct for now. Fixture at 65%: ~12.0 Amber/h, ~6.7 Jasper/h
+   (Grotto 5 ticks during MSB, 28,000 < 32,000). Estimated hypermax: ~19.6 Amber/h at 60% (guide 20.1), ~12.8
+   Jasper/h at 65% (guide "up to 12" Mansion, which also mines other gems).
+   **Upgrades ranked by rate (`c8b6afb`, in-game test pending):** MF Gems/Ruby/Topaz and Grotto rank by rate after /
+   before - 1 with before/after Flawless/h on each card; other methods keep the drop multiplier; the Upgrades header
+   names the model. New fuel tank upgrades (wiki Drill Parts 2/4/6/10%) count through MSB uptime; Gemstone tank
+   +0.42% on the fixture (Mining Cat page: +0.39%). Rules: CALCULATIONS.md "Upgrade ranking by rate", "Rates: Fairy Grotto".
+   **Next:** owner checks the Upgrades tab for MF Gems and Grotto (gains, before/after, fuel tank card, model label)
+   and ideally times a session (Flawless/h, blocks/min, Mining Speed, uptime). Then drill engines/omelettes as
+   upgrades, a sequential plan (take best, recompute), and rate models for the other methods.
 3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
    prerequisites, mutual exclusions and prices. Each method values them through its rate model
    (coins/hour gained / cost); then a greedy sequential plan (take best, recompute).
@@ -146,7 +152,11 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (method stats + MF gem rates, 2026-10-26): `./gradlew build :service:installDist`
+Latest verification (rate ranking + Grotto, 2026-10-26): `./gradlew build :service:installDist` succeeded after
+each step; existing tests pass (one existing drill test now sets a maxed fuel tank; no tests added). Rankings and
+Grotto rates checked on the fixture with a scratch runner. GitHub Actions Build succeeded for `c8b6afb`
+(run 40359432674). Mod screens not run by the agent; companion not restarted against the live API.
+Earlier verification (method stats + MF gem rates, 2026-10-26): `./gradlew build :service:installDist`
 succeeded after each step; existing tests pass, no tests added. Ledgers and rates checked on the fixture with
 a scratch runner (values above). GitHub Actions Build succeeded for `d567858` (run 40353140752). The mod
 screens were not run by the agent; the companion was not restarted against the live API for this step.
@@ -277,6 +287,14 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-26 (rate ranking and Grotto): `ProgressionEngine.upgrades(..., RateBasis)` values upgrades by `MethodRates`
+for MF Gems/Ruby/Topaz and Grotto (efficiency + tool ability from `/stats`); `Upgrade` carries the cooldown factor
+and rate before/after. `GearUpgrades` proposes fuel tank swaps (item IDs from the official items resource).
+`MethodRates.Gem` now holds its guide efficiency/note; Grotto added; `nextTickSpeed` shown on the Rates tab.
+Open/unknown: whether the lore cooldown already includes the fuel tank (affects only the baseline), whether exactly
+32,000 reaches 4 ticks on Jasper, the grotto route's share of other gems and Magma Fields, drill engine and omelette
+upgrades (not proposed yet).
 
 2026-10-26 (first in-game test fixes): Load stopped at once because every report carries `"error": ""`
 (fixed `e2bdbb3`); `/sp` now auto-loads the typed player once per opening (`ca9108a`); `Start-Service.cmd`
