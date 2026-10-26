@@ -5,24 +5,49 @@ Last updated: 2026-10-26. Current release: **0.3.0**. Status: functional preview
 
 ## Resume here
 
-**Next milestone: automatic, source-attributed effective stats for MF Gems.**
+**Direction (2026-10-26): build our own Mining Cat + SkyCompass equivalent.** No
+runtime dependency on either tool; their outputs are validation evidence only.
+
+**Next milestone: our own source-attributed Stat Breakdown engine (mining).**
 Use Debotes / Zucchini and the private live snapshot described below. First inspect
 which raw fields expose the selected gear, drill parts, pet, HOTM perks, powder,
-attributes and permanent bonuses. Build a source ledger before integrating it into UI.
-Do not substitute displayed lore totals for complete effective player stats.
+attributes, collections, essence shops and permanent bonuses. Build a source ledger
+before integrating it into UI. Do not substitute displayed lore totals for complete
+effective player stats. Target scope (feature spec from SkyCompass, see
+`docs/references/SKYCOMPASS.md`):
+- Stat groups: General (Fortune, Speed, Spread, Wisdom, Breaking Power, Pickaxe Ability
+  Cooldown), Gemstone (Fortune, Speed, Spread, Pristine), Blocks & Ores (Block/Ore
+  Fortune, Speed, Spread), Dwarven Metal (Fortune, Speed), Heat/Cold Resistance, Powder
+  buffs (All/Gemstone/Mithril/Glacite).
+- Each stat: current total, attainable max, itemized per source (current / max, maxed ✓).
+- Source states: counted; owned-but-situational (location/condition); missing; trackable
+  temporary (consumables, mayor, verified live); untrackable (never in API: neither
+  confirmed nor ruled out). Only counted sources enter the total.
 
 1. Extract minimal regression fixtures from the private snapshot (no credentials/raw
    profile dumps in Git), preserving only fields used by a test.
 2. Implement a typed loadout/context and stat breakdown with each contribution's source,
    conditions and confidence (known/unknown/manual). Separate equipped from best owned.
-3. Validate MF Gems with the same method/loadout/profile as the supplied bot reference.
-4. Wire automatic totals into the existing screens; retain optional manual overrides.
-5. Document numerical discrepancies instead of tuning constants to match screenshots.
+3. Start with Mining Fortune and Mining Speed; compare against the owner's in-game stat
+   menu first, then SkyCompass totals (1,724.5 Fortune / 7,150.5 Speed observed).
+4. Expose it via our companion HTTP API (e.g. `/stats`), then wire automatic totals into
+   the existing screens with a Stats breakdown view; retain optional manual overrides.
+5. Document numerical discrepancies instead of tuning constants to match references.
 
 Acceptance: supported stats derive from API inputs with source breakdowns, bonuses are
 not double-counted, unsupported sources remain explicit, regression tests cover the
 fixture, and loading/calculation stays off the game thread. Full method validation
 still needs matching Mining Cat rates/stat totals and the owner's in-game comparison.
+
+**Method specs:** `docs/references/METHOD-GUIDES.md` (from Mining Cult guides; raw
+copies in `service-data/guides/`). Coal page evidence: fortune % = delta /
+(100 + Mining Fortune + Ore Fortune) on counted stats (see MININGCAT.md). Speed acts via
+instamine/tick thresholds and mid-air share, not linearly.
+
+**Waiting on the owner (do independent work meanwhile):** in-game stat menu screenshots
+with a same-time API snapshot; SkyCompass `/api/player/mining` JSON for Debotes captured
+in the browser into `service-data/`; complete Mining Cat pages (all progression pages,
+Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto, Coal.
 
 ## Owner decisions and available inputs
 
@@ -41,8 +66,15 @@ still needs matching Mining Cat rates/stat totals and the owner's in-game compar
   see `docs/references/MININGCAT.md` for observations and missing evidence.
 - The supplied early/mid/end progression checklist is preserved in
   `docs/references/PROGRESSION-CHECKLIST.md`. Its FALSE cells are NOT profile facts.
-- No matching bot Rates output, complete stat breakdown, exact efficiency or all
-  progression pages have been supplied yet. Do independent work while those are absent.
+- No matching bot Rates output, exact efficiency or all progression pages have been
+  supplied yet. Do independent work while those are absent.
+- SkyCompass Stat Breakdown page text for Debotes · Zucchini (Mining tab) supplied
+  2026-10-26; observations in `docs/references/SKYCOMPASS.md`. SkyCompass has no public
+  API and its terms forbid scraping/republishing output: comparison evidence only.
+- Owner messaged the Mining Cat developer (Mining Cult Discord) on 2026-10-26 asking
+  for comparison permission, rate assumptions and any public API. No reply yet. The
+  project does not depend on a reply; proceed with independent research.
+- No AI/tool attribution anywhere in commits or project files (see AGENTS.md).
 
 ## Implemented and verified
 
@@ -79,7 +111,14 @@ Recent milestones:
 
 ## Remaining roadmap, in dependency order
 
-### 1. Accurate automatic stats and loadouts — next
+### 1. Accurate automatic stats and loadouts (our Stat Breakdown) — next
+
+- [ ] Stat model covering all groups listed in "Resume here", with current/max per source
+  and the counted / situational / missing / trackable / untrackable states.
+- [ ] Trackable temporary sources from the API where available (active mayor/perks such
+  as Cole's Mining Fiesta, detectable consumables); label God Potion and other
+  never-reported effects as untrackable rather than absent.
+- [ ] Companion `/stats` endpoint and an in-game breakdown view.
 
 - [ ] Parse/evaluate selected and alternative valid loadouts; don't equip stored items
   implicitly or stack incompatible accessory/pet/gear alternatives.
@@ -151,6 +190,8 @@ Do not implement questionable mechanics solely because a reference claims them.
 Primary data entry points: official Hypixel item/skill/collection resources and profile
 API; Coflnet prices. Existing mechanics references and formulas are in docs/CALCULATIONS.md.
 SkyCompass/Mining Cat inspire the workflow; no dependency on scraping their outputs.
+Our companion service is our own API: it should grow `/stats`, `/upgrades` and `/rates`
+endpoints backed by the core engine, and later a hosted deployment (owner decision).
 
 ## Build, architecture and local workflow
 
@@ -175,3 +216,11 @@ screenshots and progression checklist. Verified Debotes/Zucchini API access; sav
 private ignored fixtures and encrypted local credential. Created this ledger and
 AGENTS.md. This increment documents the next work; it does not implement automatic
 stats or claim screenshot parity. No new mechanics were validated from the guide yet.
+
+2026-10-26 (later): owner decided to build our own Mining Cat + SkyCompass equivalent.
+Reviewed SkyCompass Stat Breakdown for Debotes and its terms (no public API; no
+scraping/republishing). Recorded it as a feature spec and comparison evidence in
+`docs/references/SKYCOMPASS.md`. Mining Cat developer contacted; no reply yet.
+AGENTS.md now requires no AI attribution anywhere and forbids calling SkyCompass's
+internal endpoints. Next milestone reframed as our own Stat Breakdown engine.
+Documentation-only change; no build was run.

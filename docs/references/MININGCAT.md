@@ -87,3 +87,39 @@ change between captures, so differences alone are not proof of a calculation bug
 
 These images support targeted regression scenarios, not a license to invent mechanics
 or clone proprietary calculations. Verify each rule independently and track discrepancies.
+
+## Second capture set (2026-10-26, ~15:04)
+
+Images in `miningcat/`: `coal-p1..p7.png` (complete Coal: 50 upgrades + 7 extras),
+`gold-p1..p4.png` (Gold pages 1-4 of 6; pages 5-6 not supplied), and
+`ingame-mining-stats.png` (owner's in-game Mining Stats tooltip, same session).
+
+In-game tooltip: Breaking Power 9, Mining Speed 7,500, Spread 300, Gemstone Spread 2.5,
+Pristine 13.4, Mining Fortune 2,248.47, Ore Fortune 110, Block Fortune 125, Dwarven Metal
+Fortune 5, Gemstone Fortune 195. Location and active buffs at capture time are unknown.
+These differ from SkyCompass's counted totals (1,724.5 Fortune / 7,150.5 Speed), so the
+tooltip likely includes situational/temporary bonuses. Ask the owner for location and
+active effects before treating either as the baseline.
+
+### Coal observations
+
+- Ranking is by marginal % gain for the method, with cost per 1%; "with the next N lines"
+  marks paired/chained upgrades evaluated together. Resale credit shown for replacements.
+- Fortune-only rows fit `gain% = delta / (100 + Mining Fortune + Ore Fortune)` using
+  SkyCompass's counted totals (1,724.5 + 100): +35 -> 1.82% (shown 1.8), +1.5 Ore -> 0.078%
+  (0.08), +5 -> 0.26% (0.26), +10 -> 0.52% (0.52), +3 -> 0.156% (0.15). Strong evidence
+  the bot uses a linear Fortune multiplier on counted (not situational) stats. Rows with
+  +15 show 0.76% vs 0.78% predicted; check rounding/baseline after prior steps.
+- Spread rows (Snoozle +8 -> 1.6%) do not fit a simple `1 + Spread/100` on 300; spread
+  model still unknown.
+- Speed: page 6 states "Mining Speed 7,380 (with your Bal pet): 1,621 short of the 9,001
+  needed to instamine coal while falling ... coal mined in the air (about 8% of the time)
+  takes 4x longer". So speed only matters via thresholds/route assumptions for Coal.
+- Maniac Miner (+500 Fortune) via a second drill with Blue Cheese Goblin Omelette; Extras
+  recommend Wisdom IV on armor for the 900 mana it needs and Wither Specter shard X.
+- HOTM read from profile: all % perks maxed; Mole 186/200 noted as non-% benefit.
+- Buffs page (7/7): God Potion (Haste IV +200 Speed, Spelunker V +25 Fortune), Century
+  Cake (+5), Filet O' Fortune (+20), Celestial Mason Jar (+15); listed as purchasable buffs.
+- Same item, different value per method: Goblin Pet 0.15% for Coal vs 22.6% for Gold;
+  Flawless Jade +35 is 1.8% for Coal but 2.9% for Gold (implied base ~1,207), so Gold's
+  fortune baseline differs (method-specific stats/pet context). Investigate.

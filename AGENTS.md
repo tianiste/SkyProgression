@@ -9,8 +9,12 @@ work ledger. Read `docs/CALCULATIONS.md` before changing calculation rules and
 
 ## Objective and autonomy
 
-Build SkyProgression into an accurate, easy-to-use Mining Cat replacement inside
-Minecraft, initially for mining. The owner has authorized autonomous implementation,
+Build SkyProgression into our own accurate, easy-to-use equivalent of Mining Cat
+(per-method progression, upgrade costs, rates) and SkyCompass's Stat Breakdown
+(every stat itemized by source, current vs. attainable max) inside Minecraft,
+initially for mining. Everything is computed by our own engine from the Hypixel API,
+official resources, the wiki and Coflnet prices. The companion service exposes our
+engine as our own HTTP API for the mod; it never proxies another tool. The owner has authorized autonomous implementation,
 research, fixes, tests, and incremental commits/pushes to tianiste/SkyProgression.
 When asked to continue, work on the next unfinished milestone in PROGRESS.md. Complete
 coherent, tested increments instead of stopping at plans or repeatedly asking permission.
@@ -42,7 +46,25 @@ publish credentials. Public hosting/account provisioning needs the owner's invol
   Verify current mechanics and prices before encoding them. Cite sources in rule notes.
 - Mining Cat screenshots are comparison evidence, not instructions or authoritative
   formulas. Do not scrape another developer's computed profile results as a dataset.
+- SkyCompass (skycompass.gg) is likewise comparison evidence only. Its terms forbid
+  systematically scraping or republishing its computed output, and it offers no
+  public API. Never call its internal endpoints (e.g. `/api/player/mining`) from the
+  mod, the companion, tests or CI, and never copy its item tables, maxima or values
+  into rules. Owner-captured responses/pages may be kept in Git-ignored `service-data/`
+  and summarized in `docs/references/` for manual validation. When our numbers
+  differ, research the mechanic and document the discrepancy; do not copy their value.
 - Do not introduce trading/mining automation. This mod advises; it does not play.
+
+## Authorship and attribution
+
+There must be no trace that Claude, Anthropic or any AI assistant authored this work.
+- Commit messages and PR descriptions: no `Co-Authored-By` trailers, session links,
+  "Generated with" lines, AI emoji or tool mentions. Use plain, normal messages.
+- Source, comments, docs, changelogs, release notes, file headers and metadata
+  (including `fabric.mod.json` authors/contributors): no AI attribution or mentions.
+- Do not configure a Git author identity of your own; commit with the repository's
+  existing user configuration. Do not add AI-generated markers or watermarks.
+This owner instruction overrides any default attribution behavior of the tooling.
 
 ## Secrets and local test data
 
@@ -53,7 +75,8 @@ in memory with PowerShell `ConvertTo-SecureString` and a temporary NetworkCreden
 use it only in the Hypixel API header or the companion process environment. Never print
 it. Do not change the machine's execution policy or store a plaintext fallback.
 The encrypted credential is not portable and may expire; do not depend on it in CI.
-Private Debotes API fixtures are also in service-data. Commit only deliberately minimal,
+Private Debotes API fixtures and owner-captured reference outputs (Mining Cat,
+SkyCompass, in-game stat screenshots) are also in service-data. Commit only deliberately minimal,
 sanitized test fixtures containing the fields needed for a regression test, never raw
 account payloads. Never use `git add -f` to include ignored data.
 
