@@ -31,8 +31,8 @@ Estimated improvement % = `100 * (yield after / yield before - 1)`.
 Cost per 1% = `purchase cost / estimated improvement %`.
 Speed/cold-only changes are available in stat queries, not assigned imaginary drop gains.
 This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz, Grotto,
-Coal, Gold, Obsidian, Tungsten, Umber, Shafting, End Stone and Cobblestone; Mycelium and Red Sand stay on it because the
-wiki lists no block strength for them); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
+Coal, Gold, Obsidian, Tungsten, Umber, Shafting, End Stone, Cobblestone, Mycelium and Red Sand, so today only a rate
+that cannot be computed, for example Mining Speed 0, falls back to it); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
 
 Items/hour = `3600 * efficiency/100 * active blocks/sec * base drops/block * yield`.
 Coins/hour and Coleweight/hour multiply that rate by the user-entered per-item values.
@@ -243,7 +243,7 @@ Mining Fortune and may be one temporary source. Not tuned.
 
 ## Upgrade ranking by rate
 
-Methods with a `MethodRates` model (every method except Mycelium and Red Sand) rank upgrades on the Upgrades
+Methods with a `MethodRates` model (every method) rank upgrades on the Upgrades
 tab by gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour for the gem methods, Coal per 30
 minutes, Obsidian per Mining Speed Boost cycle, the others per hour (sections below). The gain is always computed on the hourly rate; the
 window only scales what is shown, and before and after use the baseline's window (a cooldown upgrade shortens the
@@ -550,7 +550,7 @@ Guide check (Coal guide, owner-supplied `service-data/guides/coal.txt`, October 
 and 3.0M-6.0M Hard Stone / hour). An assumed hypermax with Mining Speed above 9,001, Fortune + Ore Fortune about 2,700 and
 Spread 400 gives about 8.3M Coal / hour at 82.5%, inside the guide's range.
 
-Fixture (Debotes, best owned gear, DR-X655, Dwarven Mines default context, 82.5%): Mining Speed 7,250 (instamine on the
+Fixture (Debotes, best owned gear, DR-X655, Crystal Hollows default context, 82.5%): Mining Speed 7,250 (instamine on the
 ground, 4 ticks airborne; 8,750 x 3.5 during MSB instamines airborne too), Fortune 1,767 + Ore 100, Spread 300: about
 3.89M Coal / hour, 1.95M per 30 minutes. Reaching 9,001 Mining Speed would add about 20% (the ability already covers
 14% of the time). Not validated against a measured session.
@@ -635,7 +635,25 @@ An assumed hypermax (Fortune + Block Fortune about 2,750, Spread 400) gives abou
 guides. Unexplained; candidates are Maniac Miner's Fortune, higher Spread (full Glossy Mineral set) or a block rate above
 our 20 blocks per second x efficiency. Not tuned.
 
-Fixture (Debotes, best owned gear, DR-X655): Gold (Dwarven Mines default context, 65%): Mining Speed 7,250 (4 ticks,
+Fixture (Debotes, best owned gear, DR-X655): Gold (Crystal Hollows default context, 65%): Mining Speed 7,250 (4 ticks,
 25,375 during the ability, still 4), Fortune 1,767 + Ore 100, Spread 300: about 5.5M Gold / hour. End Stone and
 Cobblestone (82.5%): Mining Speed 7,150 instamines, Fortune 1,767 + Block 115, Spread 300: about 4.7M / hour.
 Not validated.
+
+Default zone (owner, 2026-10-26; Coal and Gold guides): Coal routes and the Mines of Divan are in the Crystal Hollows, so
+Coal and Gold default to the Crystal Hollows context. Bonuses only "in the Dwarven Mines" (for example the full Mithril
+and Titanium armor set bonuses) no longer count for them; the fixture wears neither set, so its numbers are unchanged.
+
+## Rates: Mycelium, Red Sand
+
+`MethodRates.blocks` with the Coal rules, per hour, default 82.5%, Mining Fortune + Block Fortune, base drop 1 (vanilla).
+- The wiki Block Strength page lists no strength for Mycelium or Red Sand (only a theorized vanilla hardness of 0.6 / 0.5),
+  so no instamine threshold is known. The blocks are assumed instamined (1 tick); the owner confirmed (2026-10-26) that
+  20 blocks per second is doable on Mycelium, Red Sand, End Stone and Cobblestone. Mining Speed therefore has no value here.
+- Not counted: the Crimson Essence perks Fungus Fortuna / Harena Fortuna the guide lists (not in our stat ledger yet),
+  Maniac Miner, and the guide's "W and A/D" movement (+2.3%, part of the efficiency).
+
+Guide check (Mycelium/Red Sand guide, owner-supplied: Mycelium 4.6M / hour, Red Sand 4.8M / hour, "max fortune is 1522
+including block fortune"): with Fortune 1,522 and Spread 400 the model gives 59,400 x 5 x 16.22 = about 4.8M / hour at
+82.5%, matching the guide. Fixture (Crimson Isle as "other" zone): Fortune 1,429.5 + Block 115, Spread 300: about
+3.9M / hour.

@@ -45,7 +45,8 @@ public final class MethodRates {
      * 60 x strength on ores, Obsidian, gemstones and Dwarven Metal, else 30 x), the share of blocks mined airborne,
      * base drops per block, the priced product, and the value window: windowHours with its description, or one Mining
      * Speed Boost cycle (abilityCycle; one hour when the tool has no Mining Speed Boost). dropNote is null when the base
-     * drop per block is known, else says why the rate is shown at that base drop.
+     * drop per block is known, else says why the rate is shown at that base drop. Strength 0 means the wiki lists none and
+     * the block is assumed instamined.
      */
     public record Block(String name, double strength, double instamineFactor, double airShare, double baseDrops, String product, String unit,
                         double windowHours, String window, boolean abilityCycle, String guideNote, String dropNote) {
@@ -80,6 +81,9 @@ public final class MethodRates {
             // Non-ore blocks instamine above 30 x strength (wiki Block Strength): End Stone 30 (901), Cobblestone 20 (601).
             case END_STONE -> new Block("End Stone", 30, 30, 0, 1, "ENDER_STONE", "End Stone", 1, "hour", false, "End Stone guide: 11M-16M / hour");
             case COBBLESTONE -> new Block("Cobblestone", 20, 30, 0, 1, "COBBLESTONE", "Cobblestone", 1, "hour", false, "Cobblestone guide: 13M-16M / hour");
+            // No wiki strength (only a theorized vanilla hardness); instamined at guide speeds (owner: 20 blocks/s is doable).
+            case MYCELIUM -> new Block("Mycelium", 0, 30, 0, 1, m.product, "Mycelium", 1, "hour", false, "Mycelium/Red Sand guide: 4.6M Mycelium / hour");
+            case RED_SAND -> new Block("Red Sand", 0, 30, 0, 1, m.product, "Red Sand", 1, "hour", false, "Mycelium/Red Sand guide: 4.8M Red Sand / hour");
             default -> null;
         };
     }
@@ -168,8 +172,10 @@ public final class MethodRates {
                     + fmt(ability.cooldown()) + "s (tool lore), used on cooldown and applied to all Mining Speed.");
         } else assumptions.add(ability == null ? "No pickaxe ability found on the tool; no speed boost." : ability.name() + " is not modelled (no rule for its effect yet); no boost.");
         double f = b.instamineFactor();
-        int ground = ticks(speed, b.strength(), f), air = ticks(speed / 5, b.strength(), f);
-        int boostedGround = ticks(speed * (1 + boost), b.strength(), f), boostedAir = ticks(speed * (1 + boost) / 5, b.strength(), f);
+        boolean known = b.strength() > 0;
+        int ground = known ? ticks(speed, b.strength(), f) : 1, air = known ? ticks(speed / 5, b.strength(), f) : 1;
+        int boostedGround = known ? ticks(speed * (1 + boost), b.strength(), f) : 1, boostedAir = known ? ticks(speed * (1 + boost) / 5, b.strength(), f) : 1;
+        if (!known) assumptions.add("The wiki lists no block strength for " + b.name() + "; assumed instamined (1 tick, 20 blocks per second while breaking).");
         double a = b.airShare();
         double normal = (1 - a) * ground + a * air, boosted = (1 - a) * boostedGround + a * boostedAir; // average ticks per block
         double blocksPerSecond = 20 * (uptime / boosted + (1 - uptime) / normal);

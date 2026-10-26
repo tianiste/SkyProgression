@@ -267,7 +267,8 @@ public final class ProgressionScreen extends Screen {
     private void blockRateCard(){
         var i=data.inputs(method);var b=MethodRates.block(method);StatsReport r=data.stats(method);
         Card c=card(method.label+" | automatic rate",GOLD,0);
-        c.line(b.name()+" (block strength "+fmt(b.strength())+"; instamine above "+fmt(b.instamineFactor()*b.strength())+" Mining Speed, "+fmt(5*b.instamineFactor()*b.strength())+" airborne)",MUTED);
+        c.line(b.strength()>0?b.name()+" (block strength "+fmt(b.strength())+"; instamine above "+fmt(b.instamineFactor()*b.strength())+" Mining Speed, "+fmt(5*b.instamineFactor()*b.strength())+" airborne)"
+                :b.name()+" (block strength not listed on the wiki; assumed instamined)",MUTED);
         if(r==null&&!data.demo&&!data.inputs(method).stats.containsKey(Stat.MINING_SPEED)){c.line(data.statsLoading(method)?"Loading automatic stats...":"Load your profile (or enter stats in Type Stats) for the automatic rate.",TEXT);return;}
         try{
             var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability);
@@ -279,11 +280,11 @@ public final class ProgressionScreen extends Screen {
             c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.dropsPerBlock())+" "+b.unit()+" / block",TEXT);
             c.line("Mining Speed "+fmt(rate.speed())+": "+ticksText(rate.groundTicks())+" on the ground, "+ticksText(rate.airTicks())+" airborne"
                     +(rate.uptime()>0?"; during the ability "+ticksText(rate.boostedGroundTicks())+" / "+ticksText(rate.boostedAirTicks())+" ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
-            double nextGround=MethodRates.nextTickSpeed(rate.speed(),b.strength(),b.instamineFactor());
+            double nextGround=b.strength()>0?MethodRates.nextTickSpeed(rate.speed(),b.strength(),b.instamineFactor()):Double.NaN;
             if(Double.isFinite(nextGround))c.line("Next threshold: "+fmt(nextGround)+" Mining Speed on the ground; speed between thresholds adds nothing",MUTED);
-            else if(rate.airTicks()>1)c.line("Next threshold: "+fmt(5*MethodRates.nextTickSpeed(rate.speed()/5,b.strength(),b.instamineFactor())-4)+" Mining Speed airborne; speed between thresholds adds nothing",MUTED);
+            else if(rate.airTicks()>1&&b.strength()>0)c.line("Next threshold: "+fmt(5*MethodRates.nextTickSpeed(rate.speed()/5,b.strength(),b.instamineFactor())-4)+" Mining Speed airborne; speed between thresholds adds nothing",MUTED);
             var ab=ability();
-            if(rate.uptime()>0&&rate.boostedGroundTicks()>1)c.line("Instamine during the ability above "+fmt(Math.floor(b.instamineFactor()*b.strength()/(1+ab.boostPercent()/100))+1)+" Mining Speed",MUTED);
+            if(rate.uptime()>0&&rate.boostedGroundTicks()>1&&b.strength()>0)c.line("Instamine during the ability above "+fmt(Math.floor(b.instamineFactor()*b.strength()/(1+ab.boostPercent()/100))+1)+" Mining Speed",MUTED);
             c.line("Guide reference ("+b.guideNote()+")",MUTED);
             for(String a:rate.assumptions())c.line(a,MUTED);
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}

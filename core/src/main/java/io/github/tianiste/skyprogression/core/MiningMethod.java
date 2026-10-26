@@ -57,8 +57,8 @@ public enum MiningMethod {
     /** Usual location of the method, used as the stat-breakdown default; the player can change it. */
     public StatContext.Zone defaultZone() {
         return switch (this) {
-            case COAL, GOLD -> StatContext.Zone.DWARVEN_MINES;
-            case GROTTO, OBSIDIAN -> StatContext.Zone.CRYSTAL_HOLLOWS;
+            // Coal routes and the Mines of Divan are in the Crystal Hollows (Coal and Gold guides; owner, 2026-10-26).
+            case COAL, GOLD, GROTTO, OBSIDIAN -> StatContext.Zone.CRYSTAL_HOLLOWS;
             case MF_GEMS, MF_RUBY, MF_TOPAZ -> StatContext.Zone.MAGMA_FIELDS;
             case UMBER, TUNGSTEN -> StatContext.Zone.GLACITE_TUNNELS;
             case SHAFTING -> StatContext.Zone.GLACITE_MINESHAFTS;
