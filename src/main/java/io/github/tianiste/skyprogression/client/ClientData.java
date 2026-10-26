@@ -186,7 +186,7 @@ final class ClientData {
         demo = true; profileIndex = 0; report = new Report();
         Profile p = new Profile(); p.player = "Demo"; p.name = "Example only"; p.id = "demo"; p.inventoryEnabled = true; p.hotm = 7;
         for (String id : List.of("DIVAN_HELMET","DIVAN_CHESTPLATE","DIVAN_LEGGINGS","DIVAN_BOOTS","TITANIUM_DRILL_4","MINERAL_TALISMAN","MITHRIL_NECKLACE")) p.owned.put(id,1);
-        p.enchantingLevel = 30; p.milestones.add(new Milestone("Heart of the Mountain",7,10,"tiers")); p.milestones.add(new Milestone("Mining skill",48,60,"levels")); p.progress.put("mithril powder (spent + available)",4800000.0); p.progress.put("gemstone powder (spent + available)",6200000.0); p.progress.put("glacite powder (spent + available)",1100000.0);
+        p.enchantingLevel = 30; p.milestones.add(new Milestone("Heart of the Mountain",7,10,"tiers")); p.milestones.add(new Milestone("Mining skill",48,60,"levels")); p.progress.put("mithril powder (unspent)",480000.0); p.progress.put("gemstone powder (unspent)",620000.0); p.progress.put("glacite powder (unspent)",110000.0);
         Item drill = catalog.stream().filter(i -> i.id.equals("TITANIUM_DRILL_4")).findFirst().orElseThrow();
         p.gear.add(GearReader.read(JsonParser.parseString("""
             {"tag":{"ExtraAttributes":{"uuid":"demo-drill","enchantments":{"fortune":3,"efficiency":7,"pristine":3},

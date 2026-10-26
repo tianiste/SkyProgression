@@ -67,10 +67,11 @@ public final class ProfileParser {
             if (xp >= 0) { p.hotm = 1; for (int i = 1; i < thresholds.length; i++) if (xp >= thresholds[i]) p.hotm = i + 1; }
             p.progress.put("Heart of the Mountain tier", (double)p.hotm);
             if (xp >= 0) p.milestones.add(new Milestone("Heart of the Mountain", p.hotm, 10, "tiers"));
+            // mining_core.powder_<type> is the unspent powder (21.2M Gemstone on the owner's profile, matching the game);
+            // powder_spent_<type> is what the tree used. Only the unspent amount is shown.
             for (String powder : List.of("mithril", "gemstone", "glacite")) {
-                double spent = number(at(member, "mining_core", "powder_spent_" + powder), 0);
-                double available = number(at(member, "mining_core", "powder_" + powder), 0);
-                p.progress.put(powder + " powder (spent + available)", spent + available);
+                JsonElement available = at(member, "mining_core", "powder_" + powder);
+                if (!available.isJsonNull()) p.progress.put(powder + " powder (unspent)", number(available, 0));
             }
             JsonElement miningXp = at(member, "player_data", "experience", "SKILL_MINING");
             if (!miningXp.isJsonNull()) p.progress.put("Mining skill XP", number(miningXp, 0));

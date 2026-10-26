@@ -109,8 +109,8 @@ public final class ProfileUpgrades {
         if (!nodes.isJsonObject()) return;
         for (String powder : List.of("MITHRIL", "GEMSTONE", "GLACITE")) {
             String p = powder.toLowerCase(Locale.ROOT);
-            JsonElement total = at(member, "mining_core", "powder_" + p);
-            if (!total.isJsonNull()) available.put("POWDER_" + powder, Math.max(0, number(total, 0) - number(at(member, "mining_core", "powder_spent_" + p), 0)));
+            JsonElement unspent = at(member, "mining_core", "powder_" + p); // already net of powder_spent_<type>
+            if (!unspent.isJsonNull()) available.put("POWDER_" + powder, Math.max(0, number(unspent, 0)));
         }
         for (StatBreakdown.Perk perk : StatBreakdown.PERKS) {
             PerkCost cost = PERK_COSTS.get(perk.id());

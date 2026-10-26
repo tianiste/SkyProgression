@@ -169,11 +169,11 @@ public final class ProgressionScreen extends Screen {
         Card basic=card("Heart of the Mountain & skills",GOLD,0);
         if(p.milestones.isEmpty())basic.line("Skill progress is not available for this profile.",MUTED);
         for(var m:p.milestones)basic.meter(m.name()+"  "+fmt(m.current())+" / "+fmt(m.maximum()),m.current(),m.maximum());
-        Card powder=card("Powder totals",CYAN,0);
+        Card powder=card("Powder",CYAN,0);
         boolean hasPowder=false;
         for(var e:p.progress.entrySet())if(e.getKey().contains("powder")){powder.line(e.getKey(),MUTED).line(fmt(e.getValue()),CYAN);hasPowder=true;}
         if(!hasPowder)powder.line("Powder data unavailable.",MUTED);
-        powder.line("Spent + available. Targets depend on your HOTM build.",MUTED);
+        powder.line("Unspent powder, as shown in game. Targets depend on your HOTM build.",MUTED);
         card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Unlocking new HOTM perks and non-gem rates are not covered yet.",MUTED);
         for(var row:overview){
             Card c=card(row.group()+" | "+(row.current()==null?"Missing":row.current().name),GOLD,1);

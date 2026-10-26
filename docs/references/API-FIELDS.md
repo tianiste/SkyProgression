@@ -18,7 +18,7 @@ the inventory and a handful of accessories.
 | Extra HOTM trees | `skill_tree.nodes.mining_2..mining_5` | Trees from the Loadouts system (wiki "Loadouts", added June 24, 2026), which swaps HOTM trees. On this profile they hold only `core_of_the_mountain`. No field marks the active tree. |
 | Loadouts gear sets | `loadout.armor.<n>.<SLOT>`, `loadout.equipment.<n>.EQUIPMENT_SLOT_<k>` | Each slot is `{type, data}` holding one base64 gzip NBT item; `equipped_set` names the worn set (empty here: the worn pieces are in `inv_armor`/`equipment_contents`). Read as owned storage. |
 | Selected pickaxe ability | `skill_tree.selected_ability.mining` | e.g. `mining_speed_boost`. |
-| Powder | `mining_core.powder_<type>`, `powder_spent_<type>`, `powder_<type>_total` | `_total` is lower than spent here; do not treat it as lifetime earned without research. |
+| Powder | `mining_core.powder_<type>`, `powder_spent_<type>`, `powder_<type>_total` | `powder_<type>` is the unspent powder (owner: matches the game, 21.2M Gemstone); `_total` is lower than spent here and its meaning is unknown. |
 | Daily HOTM effect | `mining_core.current_daily_effect` | Likely the Sky Mall buff of the current SkyBlock day (20 real minutes): `powder_bonus` at the first snapshot, `dig_speed` (probably +100 Mining Speed) at a refetch on 2026-10-26. The code-to-buff mapping is not yet verified. |
 | Mining skill | `player_data.experience.SKILL_MINING` | Skill level → base Mining Fortune. |
 | Essence/other shop perks | `player_data.perks` | Mining-relevant keys observed: `dwarven_training`, `eager_miner`, `treasures_of_the_earth`, `rhinestone_infusion`, `under_pressure`. Effects still need primary-source verification. |

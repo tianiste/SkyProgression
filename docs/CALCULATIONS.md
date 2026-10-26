@@ -341,7 +341,8 @@ method's context (same conditions as the Breakdown) and the total cost from the 
   Powder per level from NEU `constants/hotmlayout.json`: floor((level + 2)^e) with e = 3 (Mining Speed), 3.05
   (Mining Fortune, Rags to Riches), 3.2 (Speedy/Fortunate Mineman), 2.3 (Professional, Strong Arm), 4 (Gem Lover,
   Old-School, Blockhead, Metal Head), 2.6 (Efficient Miner), 2.2 (Mole); Mining Master floor((level + 8)^5); level is
-  the current level. Unspent powder = `powder_<type>` - `powder_spent_<type>`. An option is free when the unspent powder
+  the current level. Unspent powder = `powder_<type>` (the API value is already net of `powder_spent_<type>`; owner check: 21.2M
+Gemstone Powder in game). An option is free when the unspent powder
   covers it, otherwise it is shown as grinding (no coin price) and the plan skips it. Unlocking new perks (tree path,
   HOTM tier, tokens) is not proposed.
 In the plan a taken level replaces the chain's stats, the chain's earlier spending is subtracted from its later
