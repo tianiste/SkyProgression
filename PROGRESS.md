@@ -73,8 +73,11 @@ fix them later; do not block on the in-game test. Order:
    End Stone 30 and Cobblestone 20 (instamine > 30 x strength). Fixture: Gold ~5.5M/h at 65%; End Stone/Cobble ~4.7M/h at
    82.5%. Hypermax estimate ~8.5M/h vs guides 11-16M / 13-16M (gap documented; Maniac Miner not modelled). Open: whether
    Mining Fortune applies to Pure Gold (2023 changelog). Mycelium/Red Sand stay on the drop multiplier (no wiki strength).
-   **Next:** owner restarts the companion (new `/stats` resale fields and prices) and checks the Upgrades tab: grinding
-   labels, craft/buy notes, net-cost lines, plan resale line. Then: rate models for non-gem methods (roadmap 2).
+   **Next:** owner restarts the companion (new `/stats` resale fields and prices, now also COAL/OBSIDIAN/GOLD_INGOT/... quotes)
+   and checks, per method, the Rates tab "automatic rate" card (ticks on the ground/airborne, thresholds, window) and the
+   Upgrades header/cards (rate unit, before -> after). Then: a measured session (blocks per minute at a known speed) to test
+   the 20 blocks/s instamine assumption and the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule; the
+   Coal/Gold default zone (guides mine them in the Crystal Hollows, the default context is the Dwarven Mines).
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
    prerequisites (HOTM tier/tokens, recipe unlocks), mutual exclusions and prices, valued by each method's model, with a
    greedy sequential plan. Remaining: recursive recipes, Core of the Mountain levels for tokens, scrolls, pet-item carry-over.
