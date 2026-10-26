@@ -99,6 +99,9 @@ Against our engine (equipped, DR-X655 selected, Dwarven Mines context): Fortune 
 Hypothesis, not encoded: 2,286.27 / 1.26 = 1,814.5 exactly, which suggests +25% Mining Fiesta
 (Cole) and +1% Auspicious Bonus combining additively on the whole total. The remaining +90 flat
 Fortune and +560 Speed would then come from temporary or situational sources (Sky Mall, potions,
-lanterns, weather, Better Together). This needs confirming with the menu's per-source details
+lanterns, weather, Better Together). The owner had a Fiesta Flask active as well. Only x1.26 yields a clean base
+(x1.51 additive gives 1,514.08; x1.25 x1.25 x1.01 gives 1,448.8), so the data fits a single +25%
+(Flask and Fiesta event not stacking, or only one active) plus Auspicious +1%.
+This needs confirming with the menu's per-source details
 and the active buffs at capture time. Note the in-game values differ from SkyCompass's capture
 (1,724.5 / 7,150.5), so buffs likely changed between captures.
