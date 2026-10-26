@@ -104,7 +104,8 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
 
 Latest verification (Step 2 breakdown): `./gradlew build :service:installDist` succeeded; one
 minimal fixture totals test added (owner asked for minimal tests; manual testing by the owner).
-No in-game comparison yet.
+GitHub Actions Build succeeded for `2092b32` (run 40342758813) and `c603977`
+(run 40342893779). No in-game comparison yet.
 Earlier verification (Step 1 fixtures): build succeeded, **33 core tests passed**.
 Verification at 0.3.0: local build succeeded; **29 core tests passed** (26 calculation/
 parser tests + 3 HTTP success/size/stalled-body tests). No in-game visual or freeze
@@ -116,6 +117,7 @@ Recent milestones:
 - `b8bdbfd`: 0.2.0 coverage documentation.
 - `c09874c`: native Stitch design and responsiveness changes (0.3.0).
 - `269f77c`: design adaptation and freeze review documentation.
+- `2092b32`: loadout model and Mining Fortune/Speed source breakdown (Step 2).
 
 ## Remaining roadmap, in dependency order
 
@@ -123,18 +125,22 @@ Recent milestones:
 
 - [ ] Stat model covering all groups listed in "Resume here", with current/max per source
   and the counted / situational / missing / trackable / untrackable states.
+  *Partial (`2092b32`):* model and states done for Mining Fortune and Mining Speed only.
 - [ ] Trackable temporary sources from the API where available (active mayor/perks such
   as Cole's Mining Fiesta, detectable consumables); label God Potion and other
   never-reported effects as untrackable rather than absent.
 - [ ] Companion `/stats` endpoint and an in-game breakdown view.
 
-- [ ] Parse/evaluate selected and alternative valid loadouts; don't equip stored items
-  implicitly or stack incompatible accessory/pet/gear alternatives.
+- [x] Parse/evaluate selected and alternative valid loadouts; don't equip stored items
+  implicitly or stack incompatible accessory/pet/gear alternatives (`Loadout`, `2092b32`).
 - [ ] Armor/equipment/tool base stats, reforges, recombobulation, gemstones, enchants,
   powder coatings, scrolls, drill engine/tank/omelette and set bonuses.
 - [ ] Mining skill, HOTM/Peak perks and allocated powder, collections, essence shops,
   accessory contributions, permanent consumables and attributes.
+  *Partial:* Fortune/Speed from skill, HOTM perks, collections, Eager Miner, accessories,
+  three attributes. Peak/powder, other essence perks and consumables not yet.
 - [ ] Pet rarity/level/abilities/items and method/location-dependent bonuses.
+  *Partial:* level from XP; Bal/Scatha/Mithril Golem/Silverfish stats and Quick Claw.
 - [ ] Model gem/ore/block/dwarven Fortune, Speed, both Spreads, Pristine and Cold
   Resistance with conditions; keep uncheckable sources explicit.
 - [ ] Full current/max breakdown with compatible, attainable targets; do not sum
