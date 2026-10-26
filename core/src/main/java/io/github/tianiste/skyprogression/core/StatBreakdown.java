@@ -73,6 +73,7 @@ public final class StatBreakdown {
         attributes(b, member);
         essence(b, member);
         temporary(b, member);
+        assumedBuffs(b, member);
         untrackable(b);
         return b;
     }
@@ -261,8 +262,10 @@ public final class StatBreakdown {
         String note;
         if (!enabled(nodes, "sky_mall")) { condition = Condition.unchecked("Perk toggled off in the HOTM tree"); note = ""; }
         else if (code != null && code.equals(today)) {
-            condition = Condition.zones(StatContext.MINING_ISLANDS, "On Mining Islands");
-            note = "Today's buff (" + today + "); changes every SkyBlock day (20 minutes).";
+            b.contributions.add(new Contribution("HOTM", "Sky Mall", b.stat, SKY_MALL.get(b.stat), SKY_MALL.get(b.stat),
+                    "On Mining Islands, today only", State.TEMPORARY, Confidence.KNOWN,
+                    "Today's buff (" + today + "); changes every SkyBlock day (20 minutes), so it is not counted."));
+            return;
         } else {
             condition = Condition.unchecked("Only on days the random Sky Mall buff is " + b.stat.label + ", on Mining Islands");
             note = today.isEmpty() ? "The day's buff is not in the API response." : "Today's buff is " + today + ".";
@@ -364,17 +367,35 @@ public final class StatBreakdown {
         }
     }
 
+    /**
+     * God Potion: Spelunker V (+25 Mining Fortune) and Haste IV (+200 Mining Speed) per the wiki God
+     * Potion, Spelunker Potion and Haste Potion pages. Not in the API, so it is an assumption the
+     * context can switch off. Booster Cookie (profile.cookie_buff_active) grants Wisdom and Magic
+     * Find only, so it is listed at zero.
+     */
+    private static void assumedBuffs(Breakdown b, JsonObject member) {
+        double god = b.stat == Stat.MINING_FORTUNE ? 25 : 200;
+        String effect = b.stat == Stat.MINING_FORTUNE ? "Spelunker V" : "Haste IV";
+        Condition condition = b.context.godPotion() ? Condition.NONE : Condition.unchecked("Requires an active God Potion");
+        add(b, "Buff", "God Potion (" + effect + ")", god, god, condition, Confidence.MANUAL,
+                "Assumed active; the API does not report potion effects.");
+        JsonElement cookie = at(member, "profile", "cookie_buff_active");
+        if (!cookie.isJsonNull())
+            b.contributions.add(new Contribution("Buff", "Booster Cookie", b.stat, 0.0, 0.0, "",
+                    "true".equals(string(cookie, "false")) ? State.COUNTED : State.MISSING, Confidence.KNOWN,
+                    "Grants Wisdom and Magic Find, no " + b.stat.label + "."));
+    }
+
     /** Sources the profile API never reports. Values are left unknown; ranges are in the note. */
     private static void untrackable(Breakdown b) {
         Map<String, String> sources = b.stat == Stat.MINING_FORTUNE ? Map.of(
-                "Spelunker potion", "+5 to +25 (Spelunker I-V, including God Potion).",
                 "Lanterns / Will-o'-wisp", "+10 to +25 for 5 minutes while deployed nearby.",
                 "Weather", "+25 (Breeze) or +50 (Mist / Rockfall) in the affected zone.",
                 "Better Together", "+20 to +100 with other players in the zone.",
-                "Mining Fiesta", "+25% Mining Fortune during Cole's event; needs election data, not the profile.",
+                "Mining Fiesta", "+25% Mining Fortune during Cole's event; temporary, not counted.",
+                "Fortunate Festivity (Doug)", "+5 to +25 during the Mining Fiesta; temporary, not counted.",
                 "Filet O' Fortune / Century Cake", "+20 / +5; whether the API reports them is not verified.")
                 : Map.of(
-                "Haste potion", "+50 to +200 (Haste I-IV) without a stronger Haste effect.",
                 "Lanterns / Will-o'-wisp", "+20 to +100 for 5 minutes while deployed nearby.",
                 "Weather", "+100 (Breeze) or +250 (Mist / Rockfall / Snowstorm) in the affected zone.",
                 "Better Together", "Up to +1,250 with other players in the zone.");

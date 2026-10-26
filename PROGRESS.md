@@ -35,8 +35,11 @@ effective player stats. Target scope (feature spec from SkyCompass, see
    Fortune 2,286.27 / Speed 7,610; 2,286.27 = 1,814.5 x 1.26 suggests Fiesta +25% and Auspicious
    +1% additive. Confirmed by the owner's detail pages: Speed matches exactly once untrackable
    weather/potion are added. Percentage buffs (flat x (1 + sum%)) and Sky Mall `dig_speed` are now
-   encoded. **Next: identify the remaining 90 flat Fortune (hidden "and 17 more" entries) and
-   compute Mining Fiesta from the election endpoint + SkyBlock calendar.** Open: Auspicious +1% mechanic, Mole/Glacite Golem
+   encoded. Owner decision: temporary buffs (Fiesta, weather, Sky Mall) are not counted; God Potion
+   is assumed (Spelunker V / Haste IV) and the Booster Cookie is read from the API (no Fortune/Speed).
+   Fixture defaults: Fortune 1,749.5 x 1.01 = 1,767.0; Speed 7,250 (Dwarven Mines), which equals the
+   in-game 7,610 minus temporary buffs. 15 Fortune is unconfirmed (likely Fortunate Festivity, temporary).
+   **Next: Step 4, the companion `/stats` endpoint.** Open: Auspicious +1% mechanic, Mole/Glacite Golem
    pet rates, Front Loaded/Mineshaft Mayhem/Eager Adventurer API keys, Blue Cheese +1 perk level.
 4. **Next task.** Expose it via our companion HTTP API (e.g. `/stats`), then wire automatic totals into
    the existing screens with a Stats breakdown view; retain optional manual overrides.

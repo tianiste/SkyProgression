@@ -140,8 +140,17 @@ Rules:
   linear per level): Fortunate Miner 2.5 Fortune, Rotten Pickaxe 3 Speed, Quartz Speed 10 Speed
   during Weather (situational).
 - Essence: Eager Miner (Gold Essence) 10 Mining Speed per level on Mining Islands.
+- Buffs (owner decision 2026-10-26): temporary buffs are never counted. Mining Fiesta, Fortunate
+  Festivity, weather (Mist +50 Fortune / +250 Speed), lanterns, Better Together and Sky Mall stay
+  out of the total, even when today's Sky Mall buff is known (shown as TEMPORARY). The God Potion
+  is assumed active and counted: Spelunker V +25 Mining Fortune, Haste IV +200 Mining Speed. It is
+  marked MANUAL because the API does not report potions, and `StatContext.withGodPotion(false)`
+  switches it off. Booster Cookie (`profile.cookie_buff_active`) is listed at 0: it grants Wisdom
+  and Magic Find only.
 - `active_effects` / `temp_stat_buffs` entries are TEMPORARY with unknown values (mapping unverified).
-  Potions, lanterns, weather, Better Together, Mining Fiesta and cakes are UNTRACKABLE.
+- Sources: https://hypixelskyblock.minecraft.wiki/w/God_Potion, https://hypixelskyblock.minecraft.wiki/w/Spelunker_Potion,
+  https://hypixelskyblock.minecraft.wiki/w/Haste_Potion, https://hypixelskyblock.minecraft.wiki/w/Booster_Cookie,
+  https://hypixelskyblock.minecraft.wiki/w/Weather.
 
 Sources (fetched 2026-10-26):
 - https://hypixelskyblock.minecraft.wiki/w/Mining_Fortune and https://hypixelskyblock.minecraft.wiki/w/Mining_Speed (source tables)

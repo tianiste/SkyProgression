@@ -5,8 +5,10 @@ import java.util.*;
 /**
  * Where the stats are evaluated. A null zone or target means "not chosen": location- or
  * block-specific sources are then reported as situational instead of being counted.
+ * Temporary buffs (Mining Fiesta, weather, Sky Mall, lanterns) are never counted; the God Potion
+ * is the one assumed buff (owner decision 2026-10-26), switchable with {@code godPotion}.
  */
-public record StatContext(Zone zone, Target target) {
+public record StatContext(Zone zone, Target target, boolean godPotion) {
     public enum Zone {
         DEEP_CAVERNS("Deep Caverns"), DWARVEN_MINES("Dwarven Mines"), GLACITE_TUNNELS("Glacite Tunnels"),
         CRYSTAL_HOLLOWS("Crystal Hollows"), GLACITE_MINESHAFTS("Glacite Mineshafts"), OTHER("Other island");
@@ -20,10 +22,11 @@ public record StatContext(Zone zone, Target target) {
             Zone.GLACITE_TUNNELS, Zone.CRYSTAL_HOLLOWS, Zone.GLACITE_MINESHAFTS);
     /** Dwarven Mines set bonuses exclude the Glacite Tunnels (wiki Mining Fortune/Speed source tables). */
     public static final Set<Zone> DWARVEN_MINES_ONLY = EnumSet.of(Zone.DWARVEN_MINES);
-    public static final StatContext UNSPECIFIED = new StatContext(null, null);
+    public static final StatContext UNSPECIFIED = new StatContext(null, null, true);
 
-    public static StatContext in(Zone zone) { return new StatContext(zone, null); }
-    public StatContext mining(Target target) { return new StatContext(zone, target); }
+    public static StatContext in(Zone zone) { return new StatContext(zone, null, true); }
+    public StatContext mining(Target target) { return new StatContext(zone, target, godPotion); }
+    public StatContext withGodPotion(boolean active) { return new StatContext(zone, target, active); }
 
     /** A requirement on the context. {@code checkable=false} marks conditions the API cannot confirm. */
     public record Condition(Set<Zone> zones, Target target, String text, boolean checkable) {

@@ -119,3 +119,14 @@ and the active buffs at capture time. Note the in-game values differ from SkyCom
   Bonus 1% = x1.26, multiplied with the flat total. The Fiesta Flask is not listed, so it did not apply.
   Our flat total is 1,724.5: 90 Fortune is still unidentified. Likely candidates are weather Mist
   (+50 per the wiki) plus a Spelunker potion, lantern or similar. This needs the hidden 17 entries.
+
+### Reconciliation with temporary buffs removed (2026-10-26)
+
+Using wiki values: Mist +50 Fortune / +250 Speed, God Potion Spelunker V +25 Fortune and Haste IV +200 Speed.
+- Speed: in-game 7,610 - Mist 250 - Sky Mall 100 - Quartz Speed 10 (needs weather) = 7,250 =
+  our default total (7,050 + God Potion 200). Exact.
+- Fortune flat: in-game 1,814.5 - Mist 50 = 1,764.5 vs our 1,749.5 (1,724.5 + God Potion 25).
+  The remaining 15 is Fortune-only (Speed is exact, so not a Titanium Lantern, which also gives +60 Speed).
+  The best candidate is Doug's Fortunate Festivity at level 3 (+5 per level, Mining Fiesta only),
+  which is temporary anyway. Unconfirmed.
+- Multiplier: in-game 1.26 - Mining Fiesta 0.25 = 1.01 (Auspicious), as encoded.
