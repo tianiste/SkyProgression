@@ -25,11 +25,16 @@ final class ClientData {
     int profileIndex, revision;
     boolean loading, demo, ready, initializing, initializationFailed;
     private int generation;
-    private Future<?> lookup, priceRequest, statsRequest;
+    private Future<?> lookup, priceRequest, statsRequest, compareRequest;
     /** Automatic stat ledger for {@link #statsKey}; requested lazily from the companion's /stats endpoint. */
     StatsReport stats;
     String statsKey = "", statsPending = "", statsError = "";
     Map<String, Price> prices = new HashMap<>();
+    /** Every method's automatic totals for the method comparison; requested from the companion's /compare endpoint. */
+    MethodComparison.Report comparison;
+    String compareKey = "", comparePending = "", compareError = "";
+    MethodComparison.PriceMode priceMode = MethodComparison.PriceMode.INSTANT_SELL;
+    boolean compareGodPotion = true;
     final Map<String, Inputs> inputs = new HashMap<>();
     private HttpClient http;
     private final Path file = FabricLoader.getInstance().getConfigDir().resolve("skyprogression-inputs.json");
@@ -116,6 +121,42 @@ final class ClientData {
             });
         });
     }
+    private String compareQuery(){Profile p=profile();return p==null||demo?"":"/compare?ign="+enc(p.player)+"&profile="+enc(p.id)+"&god="+compareGodPotion;}
+    /** Comparison for the loaded profile, or null while missing, loading or failed. */
+    MethodComparison.Report comparison(){String key=compareQuery();return !key.isEmpty()&&key.equals(compareKey)?comparison:null;}
+    boolean compareLoading(){String key=compareQuery();return !key.isEmpty()&&key.equals(comparePending);}
+    String compareError(){String key=compareQuery();return !key.isEmpty()&&key.equals(compareKey)?compareError:"";}
+    /** Rows for every method: its automatic totals overlaid by that method's Type Stats values and efficiency. */
+    List<MethodComparison.Row> comparisonRows(){
+        var r=comparison();if(r==null)return List.of();
+        List<MethodComparison.Row> rows=new ArrayList<>();
+        for(var e:r.methods){if(e==null||e.method==null||e.stats==null)continue;Inputs i=inputs(e.method);Map<Stat,Double> stats=new EnumMap<>(Stat.class);stats.putAll(e.stats);stats.putAll(i.stats);
+            rows.add(MethodComparison.row(e.method,stats,e.complete,i.efficiency,e.ability,prices,priceMode,e.tool));}
+        return MethodComparison.rank(rows);
+    }
+    /** Effective stats of one method in the comparison (automatic totals, Type Stats overrides win); null before it loads. */
+    Map<Stat,Double> comparisonStats(MiningMethod m){
+        var r=comparison();var e=r==null?null:r.entry(m);if(e==null||e.stats==null)return null;
+        Map<Stat,Double> stats=new EnumMap<>(Stat.class);stats.putAll(e.stats);stats.putAll(inputs(m).stats);return stats;
+    }
+    void ensureCompare(Consumer<Runnable> dispatch,Runnable changed) {
+        String key=compareQuery();
+        if(!ready||loading||key.isEmpty()||key.equals(compareKey)||key.equals(comparePending))return;
+        if(compareRequest!=null)compareRequest.cancel(true);
+        comparePending=key;compareError="";int requestGeneration=generation;
+        compareRequest=WORK.submit(()->{
+            MethodComparison.Report result=null;String error="";
+            try{result=Catalog.GSON.fromJson(fetch(key,45),MethodComparison.Report.class);if(result==null||result.methods==null)throw new IllegalStateException("Empty method comparison");}
+            catch(IllegalStateException e){error=e.getMessage();}
+            catch(Exception e){error="Companion unavailable or timed out. The method comparison needs the companion.";}
+            MethodComparison.Report loaded=result;String failure=error;
+            dispatch.accept(()->{
+                if(requestGeneration!=generation||!key.equals(comparePending))return;
+                comparePending="";compareKey=key;comparison=loaded;compareError=failure;revision++;changed.run();
+            });
+        });
+    }
+    void refreshCompare(){compareKey="";comparePending="";comparison=null;compareError="";if(compareRequest!=null)compareRequest.cancel(true);revision++;}
     void refreshStats(){statsKey="";statsPending="";stats=null;statsError="";if(statsRequest!=null)statsRequest.cancel(true);revision++;}
     void save(Consumer<Runnable> dispatch,Consumer<Boolean> complete) {
         Map<String,Inputs> snapshot=new HashMap<>();inputs.forEach((key,value)->snapshot.put(key,value.copy()));
@@ -135,7 +176,9 @@ final class ClientData {
         if(lookup!=null)lookup.cancel(true);
         if(priceRequest!=null)priceRequest.cancel(true);
         if(statsRequest!=null)statsRequest.cancel(true);
+        if(compareRequest!=null)compareRequest.cancel(true);
         stats=null;statsKey="";statsPending="";statsError="";
+        comparison=null;compareKey="";comparePending="";compareError="";
         message="Lookup cancelled. You can load again or use Demo.";
     }
     void load(String ign, Consumer<Runnable> dispatch, Runnable changed) {

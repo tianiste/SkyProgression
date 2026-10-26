@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -26,13 +27,18 @@ public final class ProgressionScreen extends Screen {
     private List<Item> gear=List.of();
     private List<Upgrade> upgrades=List.of();
     private List<ProgressionEngine.Step> plan=List.of();
+    /** Best method by coins/hour and each upgrade's rate gain there (same stat change on that method's stats); empty before the comparison loads. */
+    private MethodComparison.Row bestRow;
+    private Map<Upgrade,Double> bestGains=new IdentityHashMap<>();
     private final List<Card> cards=new ArrayList<>();
     private final List<Placed> placed=new ArrayList<>();
-    private static final String[] TABS={"Overview","Upgrades","Stats","Breakdown","Rates","Other"};
-    private static final int BREAKDOWN=3,RATES=4,OTHER=5;
+    private static final String[] TABS={"Overview","Upgrades","Stats","Breakdown","Rates","Compare","Other"};
+    private static final int BREAKDOWN=3,RATES=4,COMPARE=5,OTHER=6;
     private record Line(String text,int color,double progress) {}
     private static final class Card {
         ItemStack icon=ItemStack.EMPTY;
+        /** Method selected when the card is clicked (Compare tab), else null. */
+        MiningMethod pick;
         final String title;final int accent,column;final List<Line> lines=new ArrayList<>();
         Card(String title,int accent,int column){this.title=title;this.accent=accent;this.column=column;}
         Card line(String value,int color){lines.add(new Line(value,color,-1));return this;}
@@ -71,6 +77,7 @@ public final class ProgressionScreen extends Screen {
         y+=25;
         if(!wide){button(stat.label+" v",left+9,y,span-124,false,this::selectStat);button("Type Stats",left+span-110,y,101,false,this::typeStats).active=data.ready;y+=24;}
         if(tab==BREAKDOWN){breakdownControls(y+3);bodyTop=y+31;}
+        else if(tab==COMPARE){compareControls(y+3);bodyTop=y+31;}
         else bodyTop=y+(!wide&&height<330?4:31);
         bodyBottom=bottom-48;
         button("<",left+9,bottom-30,24,false,()->scroll=Math.max(0,scroll-Math.max(30,bodyBottom-bodyTop-20)));
@@ -78,6 +85,7 @@ public final class ProgressionScreen extends Screen {
         if(wide)button("Type Stats",left+span-111,bottom-30,102,false,this::typeStats).active=data.ready;
         data.initialize(minecraft::execute,this::refresh);
         data.ensureStats(method,minecraft::execute,this::refresh);
+        if(tab==COMPARE||tab==1)data.ensureCompare(minecraft::execute,this::refresh);
         lastRevision=data.revision;analyze();
     }
     @Override public void tick(){
@@ -96,6 +104,19 @@ public final class ProgressionScreen extends Screen {
         button("Zone: "+(z==null?"Not chosen":z.label)+" v",x+2*(w+4),y,w,false,this::selectZone).active=live;
         button("God Potion: "+(i.godPotion?"On":"Off"),x+3*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
         button(data.statsLoading(method)?"Loading...":"Refresh",x+4*(w+4),y,span-18-4*(w+4),false,()->{data.refreshStats();refresh();}).active=live&&!data.statsLoading(method);
+    }
+    private void compareControls(int y){
+        boolean live=data.profile()!=null&&!data.demo;int w=(span-18-12)/4,x=left+9;
+        boolean instant=data.priceMode==MethodComparison.PriceMode.INSTANT_SELL;
+        button("Price: "+(instant?"Instant-sell":"Sell offer"),x,y,w,true,()->{data.priceMode=instant?MethodComparison.PriceMode.SELL_OFFER:MethodComparison.PriceMode.INSTANT_SELL;refresh();});
+        button("God Potion: "+(data.compareGodPotion?"On":"Off"),x+w+4,y,w,data.compareGodPotion,()->{data.compareGodPotion=!data.compareGodPotion;scroll=0;refresh();}).active=live;
+        button("Pick method v",x+2*(w+4),y,w,false,this::pickRanked).active=!data.comparisonRows().isEmpty();
+        button(data.compareLoading()?"Loading...":"Refresh",x+3*(w+4),y,span-18-3*(w+4),false,()->{data.refreshCompare();data.loadPrices(minecraft::execute,this::refresh);refresh();}).active=live&&!data.compareLoading();
+    }
+    private void pickRanked(){
+        var rows=data.comparisonRows();int n=0;List<String> labels=new ArrayList<>();
+        for(var r:rows)labels.add((++n)+". "+r.method().label+" - "+(r.coinsPerHour()==null?"coins unknown":compact(r.coinsPerHour())+" coins / hour"));
+        minecraft.setScreen(new ChoiceScreen(this,"Methods by coins / hour",labels,i->{method=rows.get(i).method();scroll=0;}));
     }
     /** Tool list of the last ledger for this profile; it does not change with the selections. */
     private List<StatsReport.Tool> tools(){Profile p=data.profile();return data.stats!=null&&p!=null&&data.stats.profileId.equals(p.id)?data.stats.tools:List.of();}
@@ -122,11 +143,16 @@ public final class ProgressionScreen extends Screen {
     private void selectProfile(){if(data.report!=null)minecraft.setScreen(new ChoiceScreen(this,"SkyBlock profile",data.report.profiles.stream().map(p->p.name+" ["+p.mode+"]"+(p.selected?" - active":"")).toList(),n->{data.profileIndex=n;scroll=0;}));}
     private void analyze(){
         int generation=++analysisGeneration;if(analysis!=null)analysis.cancel(true);
-        Profile p=data.profile();overview=List.of();gear=List.of();upgrades=List.of();plan=List.of();
+        Profile p=data.profile();overview=List.of();gear=List.of();upgrades=List.of();plan=List.of();bestRow=null;bestGains=new IdentityHashMap<>();
         if(p==null||!data.ready||!p.inventoryEnabled||tab>=BREAKDOWN){calculating=false;buildCards();return;}
         calculating=true;buildCards();
         var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
+        var rows=selectedTab==1?data.comparisonRows():List.<MethodComparison.Row>of();
+        var best=rows.isEmpty()||rows.getFirst().coinsPerHour()==null?null:rows.getFirst();
+        var bestStats=best==null?null:data.comparisonStats(best.method());
+        var bestEntry=best==null?null:data.comparison().entry(best.method());
+        double bestEfficiency=best==null?0:data.inputs(best.method()).efficiency;
         StatsReport report=data.stats(method);var basis=report==null?new ProgressionEngine.RateBasis(data.inputs(method).efficiency,null)
                 :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions,report.profileUpgrades,report.resale);
         analysis=ClientData.WORK.submit(()->{
@@ -135,7 +161,9 @@ public final class ProgressionScreen extends Screen {
                 var selectedGear=new ArrayList<>(data.engine.bestOwned(p,selectedMethod,selectedStat).values());
                 var ranked=selectedTab==1||selectedTab==2?data.engine.upgrades(p,selectedMethod,selectedTab==2?selectedStat:null,effective,quotes,basis):List.<Upgrade>of();
                 var steps=selectedTab==1?data.engine.plan(p,selectedMethod,effective,quotes,basis,PLAN_STEPS):List.<ProgressionEngine.Step>of();
-                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;gear=selectedGear;upgrades=ranked;plan=steps;calculating=false;buildCards();});
+                Map<Upgrade,Double> gains=new IdentityHashMap<>();
+                if(best!=null&&bestStats!=null&&best.method()!=selectedMethod)for(var u:ranked){Double g=MethodComparison.gain(best.method(),bestStats,bestEfficiency,bestEntry.ability,u.delta(),u.cooldownFactor());if(g!=null)gains.put(u,g);}
+                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;gear=selectedGear;upgrades=ranked;plan=steps;bestRow=best;bestGains=gains;calculating=false;buildCards();});
             }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
         });
     }
@@ -148,7 +176,7 @@ public final class ProgressionScreen extends Screen {
             card("Connect your profile",CYAN,1).line("Start the local companion, then press Load. Your application key stays in the companion.",MUTED).line("Enable Inventory API in SkyBlock Settings for gear recommendations.",TEXT);
         }else if(!p.inventoryEnabled&&tab<BREAKDOWN){card("Inventory unavailable",RED,0).line("Gear recommendations are paused. Enable Inventory API in SkyBlock Settings, then reload after the profile cache expires.",TEXT);}
         else if(calculating){card("Calculating upgrades...",CYAN,0).line("You can switch tabs or close this screen while calculations run.",MUTED);}
-        else switch(tab){case 0->overviewCards(p);case 1,2->upgradeCards();case BREAKDOWN->breakdownCards();case RATES->rateCards();case OTHER->otherCards(p);}
+        else switch(tab){case 0->overviewCards(p);case 1,2->upgradeCards();case BREAKDOWN->breakdownCards();case RATES->rateCards();case COMPARE->compareCards();case OTHER->otherCards(p);}
         layoutCards();
     }
     /** The SkyBlock item's own icon (texture packs can retexture it), else a generic one for the slot. */
@@ -174,7 +202,7 @@ public final class ProgressionScreen extends Screen {
         for(var e:p.progress.entrySet())if(e.getKey().contains("powder")){powder.line(e.getKey(),MUTED).line(fmt(e.getValue()),CYAN);hasPowder=true;}
         if(!hasPowder)powder.line("Powder data unavailable.",MUTED);
         powder.line("Unspent powder, as shown in game. Targets depend on your HOTM build.",MUTED);
-        card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Rates for methods other than Magma Fields gems and the Fairy Grotto are not modelled yet.",MUTED);
+        card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Every method has a rate model (Rates tab); Compare ranks them by coins per hour. None is validated against a measured session yet.",MUTED);
         for(var row:overview){
             Card c=card(row.group()+" | "+(row.current()==null?"Missing":row.current().name),GOLD,1);
             c.icon=icon(row.current()!=null?row.current().id:row.target().id,row.group());
@@ -197,6 +225,8 @@ public final class ProgressionScreen extends Screen {
         if(!focused)head.line(rated?"Model: rate gain (automatic "+method.label+" rate, "+MethodRates.unit(method,ability())+")":ProgressionEngine.rateModel(method)?"Model: drop multiplier (rate unavailable for these stats)":"Model: drop multiplier (no rate model for "+method.label+" yet)",CYAN)
                 .line(rated?"Mining Speed counts only when it changes ticks; ability cooldown counts through uptime.":"Fortune x Spread x Pristine; Mining Speed and ability cooldown are not valued.",MUTED);
         head.line("Each recommendation compares to your current setup. Alternatives are not a combined shopping list.",MUTED);
+        if(rated&&bestRow!=null)head.line(bestRow.method()==method?method.label+" is your best method by coins / hour ("+compact(bestRow.coinsPerHour())+", "+data.priceMode.label+")."
+                :"Best method by coins / hour: "+bestRow.method().label+" ("+compact(bestRow.coinsPerHour())+", "+data.priceMode.label+"). Each card shows what the same stat change is worth there, on that method's own stats.",CYAN);
         if(upgrades.isEmpty())card("No supported upgrades found",CYAN,0).line("This does not mean your account is fully maxed. Try another method or stat.",TEXT);
         int rank=0;
         for(var u:upgrades){
@@ -211,6 +241,7 @@ public final class ProgressionScreen extends Screen {
                     :u.resaleNote()+"; net cost unknown",u.net()!=null?CYAN:MUTED);
             if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" "+MethodRates.unit(method,ability()),GREEN);
             else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
+            if(u.rateBefore()!=null&&u.rateAfter()!=null)crossMethodLine(c,u);
             if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned",GREEN);
             if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
             var quote=data.prices.get(u.item().id);
@@ -224,6 +255,15 @@ public final class ProgressionScreen extends Screen {
         for(var u:known){comparison.line(u.item().name,TEXT);comparison.lines.add(new Line(coins(u.costPerUnit())+(focused?" / point":" / 1%"),CYAN,u.costPerUnit()/Math.max(1,max)));}
         comparison.line("Shorter bars cost less per gain. These are separate alternatives.",MUTED);
         card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("Costs are cash outlay. Net cost subtracts the replaced item's sale quote when one exists; modifiers are not transferred.",MUTED).line(rated?"Rate gains use your efficiency and the tool's Mining Speed Boost; route and travel are part of the efficiency.":"Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
+    }
+    /** The upgrade's coins/hour here, and its rate gain and coins/hour in the best method (Compare tab ranking). */
+    private void crossMethodLine(Card c,Upgrade u){
+        Double each=MethodComparison.coinsPerItem(data.prices.get(MethodComparison.priceId(method)),data.priceMode);
+        double hours=MethodRates.windowHours(method,ability());
+        String here=each==null?"coins unknown":"+"+compact((u.rateAfter()-u.rateBefore())/hours*each)+" coins / hour";
+        if(bestRow==null||bestRow.method()==method){if(each!=null)c.line("Here: "+here+" ("+data.priceMode.label+")",CYAN);return;}
+        Double g=bestGains.get(u);
+        c.line("Here: +"+fmt(u.gain())+"%, "+here+" | In "+bestRow.method().label+": "+(g==null||g<=0?"no rate change":"+"+fmt(g*100)+"%, +"+compact(g*bestRow.coinsPerHour())+" coins / hour"),CYAN);
     }
     private static final int PLAN_STEPS=12;
     /** Sequential plan: each step is the best value after the previous ones are applied, so gains build on each other. */
@@ -252,9 +292,7 @@ public final class ProgressionScreen extends Screen {
         try{
             var rate=MethodRates.gems(method,data.effective(method),i.efficiency,r==null?null:r.ability);
             c.line(fmt(rate.flawlessPerHour())+" Flawless "+gem.name().split(" ")[0]+" / hour",CYAN);
-            var quote=data.prices.get(gem.flawless());
-            if(quote!=null&&quote.available)c.line("About "+coins(rate.flawlessPerHour()*quote.buy)+" / hour at the buy quote ("+coins(quote.buy)+" each; selling yields less)",GOLD);
-            else c.line("Flawless price unknown; coins/hour not shown.",MUTED);
+            coinLines(c,rate.flawlessPerHour(),gem.flawless());
             c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.roughPerBlock())+" Rough / block",TEXT);
             c.line("Mining Speed "+fmt(rate.speed())+": "+rate.ticks()+" ticks per block"+(rate.uptime()>0?", "+rate.boostedTicks()+" during the ability ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
             double next=MethodRates.nextTickSpeed(rate.speed(),gem.strength());
@@ -274,9 +312,8 @@ public final class ProgressionScreen extends Screen {
             var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability);
             String window=rate.windowHours()==1?"hour":b.abilityCycle()?"ability cycle ("+fmt(rate.windowHours()*3600)+"s)":b.window();
             c.line(fmt(rate.perWindow())+" "+b.unit()+" per "+window+(rate.windowHours()==1?"":" | "+fmt(rate.perHour())+" / hour"),CYAN);
-            var quote=data.prices.get(b.product());
-            if(quote!=null&&quote.available)c.line("About "+coins(rate.perWindow()*quote.buy)+" per "+window+" at the buy quote ("+coins(quote.buy)+" each; selling yields less)",GOLD);
-            else c.line(b.unit()+" price unknown; coins not shown.",MUTED);
+            coinLines(c,rate.perHour(),b.product());
+            if(rate.windowHours()!=1)c.line("Window: "+MethodComparison.window(method,r==null?null:r.ability),MUTED);
             c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.dropsPerBlock())+" "+b.unit()+" / block",TEXT);
             c.line("Mining Speed "+fmt(rate.speed())+": "+ticksText(rate.groundTicks())+" on the ground, "+ticksText(rate.airTicks())+" airborne"
                     +(rate.uptime()>0?"; during the ability "+ticksText(rate.boostedGroundTicks())+" / "+ticksText(rate.boostedAirTicks())+" ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
@@ -288,6 +325,14 @@ public final class ProgressionScreen extends Screen {
             c.line("Guide reference ("+b.guideNote()+")",MUTED);
             for(String a:rate.assumptions())c.line(a,MUTED);
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
+    }
+    /** Coins per hour at both Coflnet figures, labelled; an unknown figure stays unknown. */
+    private void coinLines(Card c,double perHour,String priceId){
+        var quote=data.prices.get(priceId);
+        for(var mode:MethodComparison.PriceMode.values()){Double each=MethodComparison.coinsPerItem(quote,mode);
+            c.line(each==null?"Coins / hour, "+mode.label+": unknown (no Coflnet figure for "+priceId+")"
+                    :coins(perHour*each)+" / hour, "+mode.label+" ("+fmt(each)+" each)",each==null?MUTED:mode==data.priceMode?GOLD:TEXT);}
+        if(quote!=null)c.line(quote.source+", "+quote.updatedAt+"; before Bazaar tax",MUTED);
     }
     /** Pickaxe ability of the evaluated tool, or null before the stats load. */
     private MethodRates.Ability ability(){StatsReport r=data.stats(method);return r==null?null:r.ability;}
@@ -301,6 +346,52 @@ public final class ProgressionScreen extends Screen {
             c.line(fmt(i.efficiency)+"% mining uptime",MUTED).line(fmt(r.itemsPerHour())+" items / hour",CYAN).line(i.coinsPerItem>0?coins(r.coinsPerHour())+" / hour":"Enter sale price for coins/hour",GOLD).line(i.coleweightPerItem>0?fmt(r.coleweightPerHour())+" Coleweight / hour":"Enter item weight for Coleweight/hour",GREEN);
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
         card("How to read this estimate",CYAN,1).line("Gems use rough-equivalent units. Match your sale price and item weight to those units.",TEXT).line("Spread assumes extra blocks are available. Fuel, taxes, route, abilities and shaft loot are excluded. Shafting estimates Glacite only.",MUTED);
+    }
+    private void compareCards(){
+        if(data.demo){card("Method comparison",GOLD,0).line("Demo has no API data. Load your player to compare methods.",TEXT);return;}
+        var rows=data.comparisonRows();var r=data.comparison();
+        if(r==null||rows.isEmpty()){
+            String error=data.compareError();
+            if(!error.isEmpty())card("Method comparison unavailable",RED,0).line(error,TEXT).line("Press Refresh to retry.",MUTED);
+            else card("Comparing methods...",CYAN,0).line("Computing every method's stats with its best owned gear in the companion.",MUTED);
+            return;
+        }
+        var mode=data.priceMode;
+        Card head=card("Methods by coins / hour",GOLD,0);
+        head.line("Ranked at the "+mode.label+" price ("+mode.meaning+").",CYAN);
+        head.line("Each method uses its best owned gear and tool in its usual zone"+(r.godPotion?", God Potion assumed":", no God Potion")+"; that method's Type Stats values and efficiency apply.",TEXT);
+        head.line("Click a method, or use Pick method, to select it for the other tabs.",MUTED);
+        head.line("Profile data from "+r.fetchedAt+". Each card names its Coflnet quote time (cached up to 15 minutes).",MUTED);
+        card("How coins / hour is computed",CYAN,1).line("Coins / hour = items / hour x the quote. A missing quote stays unknown and sorts last; the item rate is still shown.",TEXT)
+                .line("Windows: Coal is valued per 30 minutes with two lobby hops (x2 per hour, hop time inside the efficiency); Obsidian per Mining Speed Boost cycle (cycles per hour); gems, metals and Shafting per hour.",MUTED)
+                .line("Gross, before Bazaar tax. Not counted: Hard Stone, the grotto's other gems, mineshaft loot, NPC sale and crafting into enchanted items.",MUTED)
+                .line("Coleweight / hour is not shown: its coefficients could not be verified from a primary source.",MUTED);
+        Card same=card("Same change, different value",CYAN,1);
+        same.line("+50 Mining Fortune / +100 Mining Speed, on each method's own stats:",TEXT);
+        for(var row:rows){var stats=data.comparisonStats(row.method());var e=r.entry(row.method());if(stats==null||e==null)continue;double eff=data.inputs(row.method()).efficiency;
+            Double f=MethodComparison.gain(row.method(),stats,eff,e.ability,Map.of(Stat.MINING_FORTUNE,50.0),1),sp=MethodComparison.gain(row.method(),stats,eff,e.ability,Map.of(Stat.MINING_SPEED,100.0),1);
+            same.line(row.method().label+": "+gainText(f,row)+" / "+gainText(sp,row),row.method()==method?GREEN:MUTED);}
+        double top=rows.stream().filter(x->x.coinsPerHour()!=null).mapToDouble(MethodComparison.Row::coinsPerHour).max().orElse(1);
+        int n=0;
+        for(var row:rows){
+            var e=r.entry(row.method());boolean selected=row.method()==method;
+            Card c=card("#"+(++n)+"  "+row.method().label+" | "+(row.coinsPerHour()==null?"coins unknown":compact(row.coinsPerHour())+" coins / hour"),selected?GREEN:row.coinsPerHour()==null?MUTED:GOLD,n%2==1?0:1);
+            c.pick=row.method();ItemStack own=Icons.of(row.priceId());if(own!=null)c.icon=own;
+            if(selected)c.line("Selected method",GREEN);
+            if(!row.error().isEmpty())c.line("Rate unavailable: "+row.error(),RED);
+            else c.line((row.lowerBound()?"At least ":"")+fmt(row.itemsPerHour())+" "+row.item()+" / hour",CYAN);
+            if(row.coinsPerHour()!=null)c.lines.add(new Line(coins(row.coinsPerHour())+" / hour, "+mode.label,GOLD,row.coinsPerHour()/Math.max(1,top)));
+            c.line(row.priceNote(),MUTED);
+            c.line("Efficiency "+fmt(row.efficiency())+"% | "+row.model(),TEXT);
+            c.line("Window: "+row.window(),MUTED);
+            c.line("Drops: "+row.drops(),MUTED);
+            c.line("Tool: "+(row.tool().isEmpty()?"none readable":row.tool())+(e==null||e.zone.isEmpty()?"":" | "+e.zone),MUTED);
+            if(!row.statsComplete())c.line("Some counted stat sources have unknown values, so this rate is a lower bound.",RED);
+        }
+    }
+    private static String gainText(Double g,MethodComparison.Row row){
+        if(g==null)return "?";if(g<=0)return "+0%";
+        return "+"+fmt(g*100)+"%"+(row.coinsPerHour()==null?"":" ("+compact(g*row.coinsPerHour())+"/h)");
     }
     /** The method's effective stats in the header; "*" marks a manual value, "?" one that is neither known nor entered. */
     private String statSummary(){
@@ -390,6 +481,13 @@ public final class ProgressionScreen extends Screen {
         if(x>=left&&x<=left+span&&y>=bodyTop&&y<=bodyBottom){scroll=Math.clamp(scroll-(int)(vertical*32),0,maxScroll());return true;}
         return super.mouseScrolled(x,y,horizontal,vertical);
     }
+    @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){
+        double x=event.x(),y=event.y();
+        if(tab==COMPARE&&event.button()==0&&x>=left&&x<=left+span&&y>=bodyTop&&y<=bodyBottom)
+            for(Placed box:placed){int top=bodyTop+box.y-scroll;
+                if(box.card.pick!=null&&x>=box.x&&x<box.x+box.width&&y>=top&&y<top+box.height){method=box.card.pick;refresh();return true;}}
+        return super.mouseClicked(event,doubleClick);
+    }
     @Override public boolean keyPressed(KeyEvent event){
         if(username!=null&&username.isFocused())return super.keyPressed(event);
         if(event.key()==82){if(!data.loading)data.load(username.getValue(),minecraft::execute,this::refresh);return true;}
@@ -406,7 +504,7 @@ public final class ProgressionScreen extends Screen {
         if(wide)g.text(font,"Fabric 26.1.2",left+108,top+13,MUTED,false);
         Profile p=data.profile();String state=data.loading?"LOADING":data.demo?"DEMO":p==null?"OFFLINE":"PROFILE LOADED";
         if(wide)g.text(font,state,left+span-95-font.width(state),top+13,data.demo?GOLD:data.loading?CYAN:p==null?MUTED:GREEN,false);
-        if(tab!=BREAKDOWN&&(wide||height>=330)){panel(g,left+9,bodyTop-30,span-18,24,PANEL);
+        if(tab!=BREAKDOWN&&tab!=COMPARE&&(wide||height>=330)){panel(g,left+9,bodyTop-30,span-18,24,PANEL);
         String summary=p==null?"Mining progression":p.player+" / "+p.name+" ["+p.mode+"]";
         g.text(font,fit(font,summary,wide?span/2:span-34),left+15,bodyTop-22,TEXT,false);
         if(wide)g.text(font,fit(font,statSummary(),span/2-22),left+span/2,bodyTop-22,CYAN,false);
