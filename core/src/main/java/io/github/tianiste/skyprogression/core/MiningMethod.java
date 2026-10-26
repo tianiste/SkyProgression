@@ -23,4 +23,23 @@ public enum MiningMethod {
     }
     public double defaultEfficiency() { return instant ? 90 : 65; }
     public boolean gems() { return fortune == Stat.GEMSTONE_FORTUNE; }
+    /** Usual location of the method, used as the stat-breakdown default; the player can change it. */
+    public StatContext.Zone defaultZone() {
+        return switch (this) {
+            case COAL, GOLD -> StatContext.Zone.DWARVEN_MINES;
+            case GROTTO, OBSIDIAN, MF_GEMS, MF_RUBY, MF_TOPAZ -> StatContext.Zone.CRYSTAL_HOLLOWS;
+            case UMBER, TUNGSTEN -> StatContext.Zone.GLACITE_TUNNELS;
+            case SHAFTING -> StatContext.Zone.GLACITE_MINESHAFTS;
+            case RED_SAND, MYCELIUM, END_STONE, COBBLESTONE -> StatContext.Zone.OTHER;
+        };
+    }
+    /** Block category mined, which decides block-specific perks such as Professional and Strong Arm. */
+    public StatContext.Target target() {
+        return switch (fortune) {
+            case GEMSTONE_FORTUNE -> StatContext.Target.GEMSTONE;
+            case ORE_FORTUNE -> StatContext.Target.ORE;
+            case DWARVEN_METAL_FORTUNE -> StatContext.Target.DWARVEN_METAL;
+            default -> StatContext.Target.OTHER;
+        };
+    }
 }

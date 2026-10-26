@@ -18,9 +18,11 @@ public final class ProgressionService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
     private final String apiKey = readApiKey();
     private final Map<String, Cached> reports = new HashMap<>();
+    private final Object profileLock = new Object();
     private Map<String, Price> quotes = Map.of();
     private Instant quotedAt = Instant.EPOCH;
-    private record Cached(Instant time, Report report) {}
+    /** Parsed report plus the raw payload, which the stat ledger reads; owned items are decoded once per profile. */
+    private record Cached(Instant time, Report report, JsonObject raw, String uuid, Map<String, Loadout.Owned> owned) {}
     private static String readApiKey() {
         String configured = System.getenv("HYPIXEL_API_KEY");
         if (configured != null && !configured.isBlank()) return configured;
@@ -59,6 +61,7 @@ public final class ProgressionService {
                     if (!query.matches("ign=[A-Za-z0-9_]{1,16}")) { send(x, 400, Map.of("error", "Enter a valid Minecraft name")); return; }
                     send(x, 200, report(query.substring(4)));
                 }
+                case "/stats" -> send(x, 200, stats(query(x)));
                 case "/prices" -> send(x, 200, prices());
                 default -> send(x, 404, Map.of("error", "Unknown endpoint"));
             }
@@ -74,11 +77,53 @@ public final class ProgressionService {
         x.sendResponseHeaders(status, body.length);
         x.getResponseBody().write(body);
     }
-    private synchronized Report report(String ign) throws Exception {
+    private static Map<String, String> query(HttpExchange x) throws LookupException {
+        Map<String, String> values = new HashMap<>();
+        String raw = Objects.toString(x.getRequestURI().getRawQuery(), "");
+        if (raw.length() > 512) throw new LookupException(400, "Query too long");
+        for (String part : raw.split("&")) {
+            if (part.isEmpty()) continue;
+            int eq = part.indexOf('=');
+            if (eq <= 0) throw new LookupException(400, "Malformed query");
+            values.put(part.substring(0, eq), URLDecoder.decode(part.substring(eq + 1), StandardCharsets.UTF_8));
+        }
+        return values;
+    }
+    /** Equipped Mining Fortune / Speed ledger for one profile, held tool and zone. */
+    private StatsReport stats(Map<String, String> q) throws Exception {
+        String ign = q.getOrDefault("ign", ""), profileId = q.getOrDefault("profile", ""), tool = q.getOrDefault("tool", "");
+        String zone = q.getOrDefault("zone", ""), target = q.getOrDefault("target", "");
+        if (!ign.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
+        if (!profileId.matches("[a-fA-F0-9-]{0,40}") || !tool.matches("[A-Za-z0-9_:#. -]{0,80}")) throw new LookupException(400, "Invalid profile or tool");
+        StatContext context;
+        try {
+            context = new StatContext(zone.isEmpty() ? null : StatContext.Zone.valueOf(zone), target.isEmpty() ? null : StatContext.Target.valueOf(target),
+                    !"false".equals(q.get("god")));
+        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown zone or block target"); }
+        Cached cached = fetch(ign);
+        JsonObject entry = null;
+        for (JsonElement p : cached.raw.getAsJsonArray("profiles")) {
+            boolean match = profileId.isEmpty() ? "true".equals(string(at(p, "selected"), "false")) : profileId.equals(string(at(p, "profile_id"), ""));
+            if (match && at(p, "members", cached.uuid).isJsonObject()) { entry = p.getAsJsonObject(); break; }
+        }
+        if (entry == null) throw new LookupException(404, "Profile not found for " + ign);
+        JsonObject member = at(entry, "members", cached.uuid).getAsJsonObject();
+        String id = string(at(entry, "profile_id"), "");
+        Loadout.Owned owned = cached.owned.computeIfAbsent(id, ignored -> Loadout.read(member));
+        StatsReport result = StatsReport.of(member, owned, tool, context);
+        result.player = ign; result.profileId = id; result.profile = string(at(entry, "cute_name"), "Profile");
+        result.fetchedAt = cached.report.fetchedAt;
+        return result;
+    }
+    private Report report(String ign) throws Exception { return fetch(ign).report; }
+    private Cached fetch(String ign) throws Exception {
+        synchronized (profileLock) { return fetchLocked(ign); }
+    }
+    private Cached fetchLocked(String ign) throws Exception {
         if (apiKey == null || apiKey.isBlank()) throw new LookupException(503, "Set HYPIXEL_API_KEY for the companion service, then restart it. Never enter an API key into Minecraft chat.");
         String name = ign.toLowerCase(Locale.ROOT);
         Cached old = reports.get(name);
-        if (old != null && old.time.plusSeconds(300).isAfter(Instant.now())) return old.report;
+        if (old != null && old.time.plusSeconds(300).isAfter(Instant.now())) return old;
         JsonObject identity = get("https://api.mojang.com/users/profiles/minecraft/" + ign, false);
         String uuid = string(identity.get("id"), "");
         if (!uuid.matches("[a-fA-F0-9]{32}")) throw new LookupException(404, "Minecraft player not found");
@@ -87,9 +132,11 @@ public final class ProgressionService {
         Report result = new Report(); result.profiles = ProfileParser.parse(data, uuid, ign);
         if (result.profiles.isEmpty()) throw new LookupException(404, "No SkyBlock profiles found for " + ign);
         result.fetchedAt = Instant.now().toString();
-        if (reports.size() >= 100) reports.clear();
-        reports.put(name, new Cached(Instant.now(), result));
-        return result;
+        // Raw payloads are several megabytes each, so only a few players are kept.
+        if (reports.size() >= 8) reports.clear();
+        Cached fresh = new Cached(Instant.now(), result, data, uuid, new ConcurrentHashMap<>());
+        reports.put(name, fresh);
+        return fresh;
     }
     private synchronized Map<String, Price> prices() throws Exception {
         if (quotedAt.plusSeconds(900).isAfter(Instant.now())) return quotes;
