@@ -15,3 +15,10 @@ tasks.register('extractFixture', JavaExec) {
     mainClass = 'io.github.tianiste.skyprogression.core.FixtureExtractor'
     workingDir = rootProject.projectDir
 }
+
+tasks.register('extractIcons', JavaExec) {
+    description = 'Regenerates the mod item icon table from the official Hypixel items resource.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.tianiste.skyprogression.core.IconExtractor'
+    workingDir = rootProject.projectDir
+}

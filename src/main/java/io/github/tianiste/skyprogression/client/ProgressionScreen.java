@@ -147,7 +147,9 @@ public final class ProgressionScreen extends Screen {
         else switch(tab){case 0->overviewCards(p);case 1,2->upgradeCards();case BREAKDOWN->breakdownCards();case RATES->rateCards();case OTHER->otherCards(p);}
         layoutCards();
     }
-    private ItemStack icon(String group){
+    /** The SkyBlock item's own icon (texture packs can retexture it), else a generic one for the slot. */
+    private ItemStack icon(String id,String group){
+        ItemStack own=Icons.of(id);if(own!=null)return own;
         return new ItemStack(switch(group){
             case "Tool" -> Items.DIAMOND_PICKAXE;
             case "Helmet" -> Items.DIAMOND_HELMET;
@@ -170,7 +172,7 @@ public final class ProgressionScreen extends Screen {
         card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Pets, full HOTM stat math and reforge upgrades still need manual checks.",MUTED);
         for(var row:overview){
             Card c=card(row.group()+" | "+(row.current()==null?"Missing":row.current().name),GOLD,1);
-            c.icon=icon(row.group());
+            c.icon=icon(row.current()!=null?row.current().id:row.target().id,row.group());
             c.meter(stat.label+" (base)  "+fmt(row.value())+" / "+fmt(row.maximum()),row.value(),row.maximum());
             if(row.value()<row.maximum())c.line("Target: "+row.target().name,MUTED);
             if(row.current()!=null){
@@ -190,7 +192,7 @@ public final class ProgressionScreen extends Screen {
         int rank=0;
         for(var u:upgrades){
             Card c=card("#"+(++rank)+"  "+u.item().name,u.blocked().isEmpty()?GOLD:RED,0);
-            c.icon=icon(u.current()!=null?u.current().group:u.item().group);
+            c.icon=icon(u.item().modification&&u.current()!=null?u.current().id:u.item().id,u.current()!=null?u.current().group:u.item().group);
             if(u.current()!=null)c.line((u.item().modification?"On: ":"Replaces: ")+u.current().name,MUTED);
             StringJoiner changes=new StringJoiner(" / ");u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});c.line(changes.toString(),CYAN);
             c.line(u.cost()==null?"Price unknown":coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);

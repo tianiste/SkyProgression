@@ -55,7 +55,7 @@ final class ClientData {
         initializing=true;message="Preparing SkyProgression...";
         WORK.submit(()->{
             try {
-                var items=Catalog.load();var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+                var items=Catalog.load();Icons.load();var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
                 Map<String,Inputs> saved=new HashMap<>();String warning="";
                 try {
                     if(Files.exists(file))try(var stream=Files.newInputStream(file)) {
