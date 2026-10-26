@@ -1,0 +1,956 @@
+[
+  {
+    "id": "GLACITE_HELMET",
+    "name": "Glacite Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "SORROW_HELMET",
+    "name": "Sorrow Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 50,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "DIVAN_HELMET",
+    "name": "Helmet of Divan",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 80,
+      "MINING_FORTUNE": 30
+    },
+    "hotm": 6,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MINERAL_HELMET",
+    "name": "Mineral Helmet",
+    "group": "Helmet",
+    "stats": {
+      "BLOCK_FORTUNE": 25
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLOSSY_MINERAL_HELMET",
+    "name": "Glossy Mineral Helmet",
+    "group": "Helmet",
+    "stats": {
+      "BLOCK_FORTUNE": 50
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLACITE_CHESTPLATE",
+    "name": "Glacite Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "SORROW_CHESTPLATE",
+    "name": "Sorrow Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 50,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "DIVAN_CHESTPLATE",
+    "name": "Chestplate of Divan",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 80,
+      "MINING_FORTUNE": 30
+    },
+    "hotm": 6,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MINERAL_CHESTPLATE",
+    "name": "Mineral Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "BLOCK_FORTUNE": 25
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLOSSY_MINERAL_CHESTPLATE",
+    "name": "Glossy Mineral Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "BLOCK_FORTUNE": 50
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLACITE_LEGGINGS",
+    "name": "Glacite Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "SORROW_LEGGINGS",
+    "name": "Sorrow Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 50,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "DIVAN_LEGGINGS",
+    "name": "Leggings of Divan",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 80,
+      "MINING_FORTUNE": 30
+    },
+    "hotm": 6,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MINERAL_LEGGINGS",
+    "name": "Mineral Leggings",
+    "group": "Leggings",
+    "stats": {
+      "BLOCK_FORTUNE": 25
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLOSSY_MINERAL_LEGGINGS",
+    "name": "Glossy Mineral Leggings",
+    "group": "Leggings",
+    "stats": {
+      "BLOCK_FORTUNE": 50
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLACITE_BOOTS",
+    "name": "Glacite Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "SORROW_BOOTS",
+    "name": "Sorrow Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 50,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "DIVAN_BOOTS",
+    "name": "Boots of Divan",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 80,
+      "MINING_FORTUNE": 30
+    },
+    "hotm": 6,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MINERAL_BOOTS",
+    "name": "Mineral Boots",
+    "group": "Boots",
+    "stats": {
+      "BLOCK_FORTUNE": 25
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLOSSY_MINERAL_BOOTS",
+    "name": "Glossy Mineral Boots",
+    "group": "Boots",
+    "stats": {
+      "BLOCK_FORTUNE": 50
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "FRACTURED_MITHRIL_PICKAXE",
+    "name": "Fractured Mithril Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 225,
+      "MINING_FORTUNE": 2
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "BANDAGED_MITHRIL_PICKAXE",
+    "name": "Bandaged Mithril Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 250,
+      "MINING_FORTUNE": 4
+    },
+    "hotm": 2,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_PICKAXE",
+    "name": "Mithril Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 300,
+      "MINING_FORTUNE": 7
+    },
+    "hotm": 2,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "REFINED_MITHRIL_PICKAXE",
+    "name": "Refined Mithril Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 350,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 3,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_PICKAXE",
+    "name": "Titanium Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 140
+    },
+    "hotm": 3,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "REFINED_TITANIUM_PICKAXE",
+    "name": "Polished Titanium Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 200
+    },
+    "hotm": 4,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_DRILL_1",
+    "name": "Mithril Drill SX-R226",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 450,
+      "MINING_FORTUNE": 15
+    },
+    "hotm": 2,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_DRILL_2",
+    "name": "Mithril Drill SX-R326",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 600,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 3,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GEMSTONE_DRILL_1",
+    "name": "Ruby Drill TX-15",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 150,
+      "GEMSTONE_FORTUNE": 60,
+      "PRISTINE": 0.5
+    },
+    "hotm": 4,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GEMSTONE_DRILL_2",
+    "name": "Gemstone Drill LT-522",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 300,
+      "GEMSTONE_FORTUNE": 80,
+      "PRISTINE": 1
+    },
+    "hotm": 4,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GEMSTONE_DRILL_3",
+    "name": "Topaz Drill KGR-12",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 450,
+      "GEMSTONE_FORTUNE": 100,
+      "PRISTINE": 1.5
+    },
+    "hotm": 5,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GEMSTONE_DRILL_4",
+    "name": "Jasper Drill X",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 600,
+      "GEMSTONE_FORTUNE": 120,
+      "PRISTINE": 2
+    },
+    "hotm": 6,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_DRILL_1",
+    "name": "Titanium Drill DR-X355",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 700,
+      "MINING_FORTUNE": 25
+    },
+    "hotm": 5,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_DRILL_2",
+    "name": "Titanium Drill DR-X455",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 900,
+      "MINING_FORTUNE": 40
+    },
+    "hotm": 5,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_DRILL_3",
+    "name": "Titanium Drill DR-X555",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 1200,
+      "MINING_FORTUNE": 70
+    },
+    "hotm": 5,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_DRILL_4",
+    "name": "Titanium Drill DR-X655",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 1600,
+      "MINING_FORTUNE": 120
+    },
+    "hotm": 6,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "DIVAN_DRILL",
+    "name": "Divan's Drill",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 1800,
+      "MINING_FORTUNE": 150
+    },
+    "hotm": 7,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GEMSTONE_GAUNTLET",
+    "name": "Gemstone Gauntlet",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 800
+    },
+    "hotm": 6,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_NECKLACE",
+    "name": "Mithril Necklace",
+    "group": "Necklace",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 2,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_NECKLACE",
+    "name": "Titanium Necklace",
+    "group": "Necklace",
+    "stats": {
+      "MINING_SPEED": 30,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 3,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_CLOAK",
+    "name": "Mithril Cloak",
+    "group": "Cloak",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 2,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_CLOAK",
+    "name": "Titanium Cloak",
+    "group": "Cloak",
+    "stats": {
+      "MINING_SPEED": 30,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 3,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_BELT",
+    "name": "Mithril Belt",
+    "group": "Belt",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 2,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_BELT",
+    "name": "Titanium Belt",
+    "group": "Belt",
+    "stats": {
+      "MINING_SPEED": 30,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 3,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_GAUNTLET",
+    "name": "Mithril Gauntlet",
+    "group": "Gloves",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 2,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_GAUNTLET",
+    "name": "Titanium Gauntlet",
+    "group": "Gloves",
+    "stats": {
+      "MINING_SPEED": 30,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 3,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "DWARVEN_HANDWARMERS",
+    "name": "Dwarven Handwarmers",
+    "group": "Gloves",
+    "stats": {
+      "MINING_SPEED": 45,
+      "MINING_FORTUNE": 30,
+      "COLD_RESISTANCE": 5
+    },
+    "hotm": 8,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MINERAL_TALISMAN",
+    "name": "Mineral Talisman",
+    "group": "Mineral accessory",
+    "stats": {
+      "MINING_FORTUNE": 3
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "GLOSSY_MINERAL_TALISMAN",
+    "name": "Glossy Mineral Talisman",
+    "group": "Mineral accessory",
+    "stats": {
+      "MINING_FORTUNE": 6
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_TALISMAN",
+    "name": "Titanium Talisman",
+    "group": "Titanium accessory",
+    "stats": {
+      "MINING_SPEED": 15
+    },
+    "hotm": 2,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_RING",
+    "name": "Titanium Ring",
+    "group": "Titanium accessory",
+    "stats": {
+      "MINING_SPEED": 30
+    },
+    "hotm": 3,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_ARTIFACT",
+    "name": "Titanium Artifact",
+    "group": "Titanium accessory",
+    "stats": {
+      "MINING_SPEED": 45
+    },
+    "hotm": 4,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "TITANIUM_RELIC",
+    "name": "Titanium Relic",
+    "group": "Titanium accessory",
+    "stats": {
+      "MINING_SPEED": 60
+    },
+    "hotm": 5,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements"
+  },
+  {
+    "id": "MITHRIL_LANTERN",
+    "name": "Mithril Lantern",
+    "group": "Lantern",
+    "stats": {
+      "GEMSTONE_SPREAD": 0,
+      "MINING_SPEED": 40,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 2,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ"
+    ],
+    "source": "Auction House / Forge; deploy lantern to receive bonus"
+  },
+  {
+    "id": "TITANIUM_LANTERN",
+    "name": "Titanium Lantern",
+    "group": "Lantern",
+    "stats": {
+      "GEMSTONE_SPREAD": 0,
+      "MINING_SPEED": 60,
+      "MINING_FORTUNE": 15
+    },
+    "hotm": 5,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ"
+    ],
+    "source": "Auction House / Forge; deploy lantern to receive bonus"
+  },
+  {
+    "id": "GLACITE_LANTERN",
+    "name": "Glacite Lantern",
+    "group": "Lantern",
+    "stats": {
+      "GEMSTONE_SPREAD": 0,
+      "MINING_SPEED": 80,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 8,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ"
+    ],
+    "source": "Auction House / Forge; deploy lantern to receive bonus"
+  },
+  {
+    "id": "WILL_O_WISP",
+    "name": "Will-o'-wisp",
+    "group": "Lantern",
+    "stats": {
+      "GEMSTONE_SPREAD": 2.5,
+      "MINING_SPEED": 100,
+      "MINING_FORTUNE": 25
+    },
+    "hotm": 10,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "GROTTO",
+      "UMBER",
+      "SHAFTING",
+      "OBSIDIAN",
+      "TUNGSTEN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ"
+    ],
+    "source": "Auction House / Forge; deploy lantern to receive bonus"
+  }
+]
