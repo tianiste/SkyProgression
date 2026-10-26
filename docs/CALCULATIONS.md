@@ -16,8 +16,9 @@ to the same baseline; do not sum every recommendation into one shopping list. Un
 requirements appear after available upgrades. Missing prices sort last. Corrupt or absent
 inventory data disables recommendations rather than interpreting the inventory as empty.
 
-Cost per stat point = full quoted purchase cost / positive stat delta.
-No resale credits, recipe discounts or modifier transfers are assumed. Supported socket fees are included.
+Cost per stat point = cash outlay / positive stat delta. The outlay uses the cheaper of buying and the item's recipe
+("Buy or craft/forge" below). Net cost after selling the replaced item is shown next to it ("Replacement resale
+credit"); ranking stays on the outlay. Modifier transfers are not assumed. Supported socket fees are included.
 
 ## Drop and rate model
 
@@ -77,7 +78,8 @@ Gemstone deltas use quality and item rarity, including recombobulation and acces
 Occupied flexible slots retain their current gem type. Unknown qualities are skipped.
 Costs deduct owned materials independently per alternative; no shared shopping-list allocation.
 Slot unlock ingredients and coins come from official Hypixel item metadata. Removal fees
-are included, and removed gems receive no resale credit. Missing ingredient prices make
+are included; a removed gem is given back to the player (wiki Gemstone, <https://hypixel-skyblock.fandom.com/wiki/Gemstone>:
+"this will return the gemstone to the player") and is credited at its sale value in the net cost. Missing ingredient prices make
 the whole cost unknown. Enchantment XP costs are not converted to coins.
 
 Rule references:
@@ -148,7 +150,10 @@ Rules:
   is `mining_core.current_daily_effect`: `dig_speed` counts +100 Speed on Mining Islands (matched
   in game 2026-10-26); the Fortune code is not yet observed, so that buff stays situational.
   Front Loaded, Mineshaft Mayhem and Eager Adventurer are not encoded: their API keys are unobserved.
-  The Blue Cheese omelette's +1 perk level is not applied.
+  A drill holding the Blue Cheese Goblin Omelette (`drill_part_upgrade_module` = `goblin_omelette_blue_cheese`) adds
+  +1 level to every unlocked perk above, past the level cap (wiki <https://hypixelskyblock.minecraft.wiki/w/Blue_Cheese_Goblin_Omelette>:
+  "adds +1 level to all unlocked Heart of the Mountain perks; it's able to bypass the level cap"); the maximum shown
+  is therefore max level + 1. The wiki lists capped maxima with it, e.g. Mining Speed level 51 (1,020 Mining Speed).
 - Mining skill: 4 Mining Fortune per level (level from the official skills resource).
 - Collections: "+N Mining Fortune" unlock rewards for reached tiers from the official collections resource.
 - Attributes (`attributes.stacks` = shards syphoned, levelled by the wiki rarity table; effect
@@ -255,7 +260,7 @@ is the cumulative view.
   same whether or not the lore cooldown already includes the current tank (see the open question below), so only
   the baseline is uncertain. Fixture check: Titanium-Infused to Gemstone gives +0.42% on MF Gems; a Mining Cat
   MF Gems page showed +0.39% for the same change (different baseline; comparison only). The tank is priced at its
-  Coflnet buy quote; forging, the old tank and resale are not credited.
+  cheaper of its buy quote and its forge recipe; the old tank is given back and credited in the net cost.
 - If the rate cannot be computed (for example Mining Speed 0), the method falls back to the drop multiplier
   and says so. The Stats tab (cheapest stat points) is unchanged.
 - Drill engines and upgrade modules (wiki Drill Parts): Mithril-Plated +75 Speed/+5 Fortune, Titanium-Plated
@@ -263,9 +268,17 @@ is the cumulative view.
   +50 Fortune (quadruple fuel use, not priced); Starfall Seasoning +25/+10 (doubled within 20 blocks of a fallen star,
   not counted). One engine and one module per drill, so a swap's delta is new part minus current part. The fixture's
   Ruby-Polished +250/+30 matches its lore, and the Mining Cat MF Gems page's engine deltas (+150/+20 to Sapphire,
-  +200/+50 Sapphire to Amber) match these tables. Blue Cheese (+1 level to unlocked HOTM perks) and the fuel-only
-  omelettes are not proposed: Blue Cheese needs a HOTM recompute (not implemented). Which drills accept which parts is
-  not stated on the wiki; every drill is assumed to accept every part.
+  +200/+50 Sapphire to Amber) match these tables. Fuel-only omelettes are not proposed. Which drills accept which
+  parts is not stated on the wiki; every drill is assumed to accept every part.
+- Swapping a part: the current part of that kind is removed first for 9,999 coins and given back (wiki
+  <https://hypixelskyblock.minecraft.wiki/w/Amber-Polished_Drill_Engine> and the Blue Cheese page: "can then be removed
+  via the same menu for 9,999 Coins, which gives the item back to the player"). The fee is added to the outlay; the
+  returned part is credited at its Coflnet sell value in the net cost. The fee for fuel tanks is assumed to be the same.
+- Blue Cheese Goblin Omelette (module; forge, HOTM 5, 20 h): delta = the +1 level on every unlocked HOTM perk in the
+  evaluated tree, counted in the method's context, minus the current module's stats (Sunny Side's +50 Mining Fortune is
+  lost). Fixture (MF Gems): +65 Mining Speed, +5 Mining Fortune, +4 Gemstone Fortune, +0.1 Pristine, so with the -50
+  Fortune it loses to the fixture's Sunny Side and is not listed. When the drill already holds it, other modules lose
+  that gain. In the plan, fitting or removing it switches every HOTM option to the level +1 values.
 
 ## Step-by-step upgrade plan
 
@@ -279,7 +292,8 @@ known cost per 1% (ties: larger gain), applies it and recomputes every candidate
 Gain per step is against the state after the previous step; the total is rate (or drop multiplier) now / at the
 start - 1. Blocked and unpriced upgrades are skipped, not assumed free. A replacement base item has no known
 modifiers, so no in-place upgrades are proposed for it afterwards. Prices are the current quotes for every step
-(no market impact), and no resale of replaced items is credited. The plan never pays twice for one slot: when the
+(no market impact). Steps are chosen on cash outlay; the plan card also totals the sale value of what the steps
+replace and the net cost, and counts replaced items without a sale price. The plan never pays twice for one slot: when the
 best next step would replace what an earlier step bought (a second reforge, gem, fuel tank, engine or module on one
 item; a new item in a slot whose item an earlier step enchanted, coated or replaced; a new pet after a pet step or
 Quick Claw), the earlier step is banned and the plan is recomputed, so the later choice is taken directly. Added
@@ -288,6 +302,41 @@ levels (Efficiency, Prismatic, Polarvoid, HOTM, essence, attributes) build on ea
 The Upgrades list shows one entry per level chain (each HOTM perk, essence perk, attribute, Efficiency, Prismatic,
 Polarvoid and gem slot): the lowest cost per 1% among its levels, with a note of how many were hidden. Different
 reforges, drill parts, items and pets stay separate entries.
+
+## Buy or craft/forge
+
+`mining-recipes.json` is generated by `./gradlew :core:extractRecipes` (pinned to NEU commit `f19539bb`) from the
+NotEnoughUpdates repository `items/<ID>.json` (MIT, Copyright (c) 2020 Moulberry) for every priced item: its forge recipe
+(inputs, count, duration) or crafting-table recipe, and its `crafttext` unlock. "HotM N" becomes a HOTM tier; "<Collection>
+<tier>" becomes the amount from the official collections resource (<https://api.hypixel.net/v2/resources/skyblock/collections>).
+For each item or material to get, the cost is the cheaper known of:
+- buying: the Coflnet buy quote x amount;
+- crafting/forging: ceil(amount / recipe count) crafts, each input from owned items first, the rest at its buy quote.
+The recipe is used only when its unlock is met (HOTM tier from the profile; collection count from `collection`; a
+collection requirement with the Collections API off is not checked and the recipe is not used). An unknown input price
+makes the recipe unknown; if both paths are unknown the price stays unknown. The card says which path was taken, both
+totals and the forge time. Limits: one recipe level (inputs are bought, not crafted in turn); inputs used by a recipe
+are not removed from the plan's owned materials; forge slots, forge time value and bazaar order prices are not modelled.
+Prices change, so no guide's buy-vs-craft claim is assumed. Live check 2026-10-26: Gemstone Fuel Tank forge 48.3M vs
+buy 53.7M; Amber-Polished engine buy 260M vs forge 286M; Glossy Mineral Talisman craft 26.9M with an owned Mineral
+Talisman vs buy 32.0M.
+
+## Replacement resale credit
+
+Cards show the cash outlay and, when the upgrade replaces something, the net cost = outlay - sale value of what it
+replaces. Ranking and the plan's choices use the outlay; the net is shown beside it.
+- Replaced gear (armor, equipment, tool, accessories) and the replaced pet: the companion asks Coflnet for the lowest
+  BIN listing matching the evaluated copy (`/api/item/price/<tag>/bin`): Rarity, Recombobulated, Reforge,
+  PowderCoating (drills and Divan items), DrillPartEngine/FuelTank/UpgradeModule; pets Rarity, PetLevel (exact) and
+  PetItem. Only filters listed by `/api/filter/options?itemTag=` for that item are used, matched case-insensitively
+  (Coflnet writes reforges as "jaded" on Divan armor and "Auspicious" on drills); the card names the filters used and
+  those that could not be applied. Gems and enchantments are not filtered. This is an asking price, before Auction
+  House fees; a sale may fetch less.
+- Without a matching listing, gear falls back to Coflnet's `sell` value for the plain item ID, labelled "your copy's
+  modifiers not priced". A pet without a matching listing has no sale price.
+- Returned drill parts and removed gems: Coflnet's `sell` value for that item ID (bazaar instant sell; for auction items
+  the value Coflnet reports).
+- No sale price: the card says so and shows no net cost. Pet items moved off a replaced pet are not credited.
 
 ## Item catalog
 
@@ -350,8 +399,21 @@ method's context (same conditions as the Breakdown) and the total cost from the 
   Old-School, Blockhead, Metal Head), 2.6 (Efficient Miner), 2.2 (Mole); Mining Master floor((level + 8)^5); level is
   the current level. Unspent powder = `powder_<type>` (the API value is already net of `powder_spent_<type>`; owner check: 21.2M
 Gemstone Powder in game). An option is free when the unspent powder
-  covers it, otherwise it is shown as grinding (no coin price) and the plan skips it. Unlocking new perks (tree path,
-  HOTM tier, tokens) is not proposed.
+  covers it, otherwise it is shown as grinding (no coin price) and the plan skips it.
+- HOTM perk unlocks: a locked perk with a mining stat is unlocked along the shortest path of locked nodes from an
+  unlocked one (orthogonal neighbours on the tree grid; positions from NEU `constants/hotmlayout.json`, tier = 10 - row).
+  Each unlocked node costs one Token of the Mountain; the path needs the highest tier on it. Tokens (wiki Heart of the
+  Mountain): tiers 1..10 give 1, 2, 2, 2, 2, 2, 3, 2, 2, 2 (20 in total) and Core of the Mountain levels 1, 5 and 7 give 1
+  and level 10 gives 2; unspent = earned - unlocked perks other than Core of the Mountain (fixture check: tier 10, Core
+  10, 26 unlocked perks -> 25 = `tokens_spent.mountain`). Options: unlock (level 1, tokens only), then levels 5, 10, 25
+  and max with powder from level 1 (same formula). Free when the tokens and unspent powder cover it, otherwise grinding;
+  below the path's tier it is blocked as "Reach HOTM N first (grinding)". The plan tracks unlocked nodes and tokens, so
+  a shared path is paid once. Not modelled: levelling Core of the Mountain for tokens, resetting the tree.
+- Mining skill (grinding): +4 Mining Fortune per level; options for the next level, +5, +10 and 60, with the Mining XP
+  still needed (official skills resource). Collections (grinding): tiers whose rewards include a mining stat. In the
+  official collections resource (checked 2026-10-26) these are only Tungsten, Umber, Glacite and Obsidian (+1 Mining
+  Fortune at some tiers); each option shows the items still needed. Grinding entries have no coin price, sort after
+  priced ones and are skipped by the plan; the list shows each chain's nearest level.
 In the plan a taken level replaces the chain's stats, the chain's earlier spending is subtracted from its later
 levels, and balances shrink by what was used.
 

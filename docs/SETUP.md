@@ -78,8 +78,9 @@ Displayed item lore is not your effective total. Base-item bars compare catalog 
 stats; modifier bars show supported upgrades separately. Stored gear is not necessarily
 equipped. New-item comparisons do not assume modifiers transfer from your old item.
 
-Prices are purchase quotes, not exact matching auction listings. No resale credits or
-full crafting optimization. Unknown prices stay unknown. HOTM and Prismatic's Enchanting
+Prices are purchase quotes, not exact matching auction listings. Crafting and forging are compared
+one recipe level deep; net cost subtracts a replaced item's sale quote (lowest matching BIN for your copy's
+modifiers, or Coflnet's sell value) only when one exists. Unknown prices stay unknown. HOTM and Prismatic's Enchanting
 requirement are checked; other requirements and soulbinding need manual checks.
 Ironman/Bingo missing materials are flagged for gathering.
 Rates are scenario estimates, not Mining Cat's exact formulas. Speed thresholds, mining

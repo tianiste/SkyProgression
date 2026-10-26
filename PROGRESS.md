@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-26. Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-26 (upgrade coverage). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -48,11 +48,19 @@ fix them later; do not block on the in-game test. Order:
    earlier step that a later one would replace (fixture Grotto now goes straight to Ambered instead of Lustrous then
    Ambered); powder fix: `powder_<type>` is the unspent amount (owner: 21.2M Gemstone; the overview showed ~42M and the
    HOTM options used ~377k), so fixture Mining Master 9 -> 10 is now free from 4.6M Glacite Powder.
-   **Next:** owner checks the Upgrades tab (new cards, grinding label, plan) after restarting the companion. Then:
-   unlocking new HOTM perks, Blue Cheese omelette, collections/skill as grinding; rate models for non-gem methods.
-3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
-   prerequisites, mutual exclusions and prices. Each method values them through its rate model
-   (coins/hour gained / cost); then a greedy sequential plan (take best, recompute).
+   **Coverage completed (`c2fbd33`, `e0527a0`, `0c2db1e`, in-game test pending):** HOTM perk unlocks along the
+   shortest tree path (1 token per node, path tier gate; fixture with 4 perks removed: 4 tokens, Gem Lover 1 token,
+   Mining Master via Rags to Riches 2); Blue Cheese omelette as a module (+1 level on unlocked perks, also counted in the
+   Breakdown when fitted; loses to the fixture's Sunny Side); Mining skill and Tungsten/Umber/Glacite/Obsidian
+   collection tiers as grinding steps with the distance left; buy vs craft/forge from NEU recipes (`mining-recipes.json`,
+   HOTM/collection unlocks, forge time); net cost after selling the replaced item (modifier-aware lowest BIN per copy,
+   else Coflnet sell, else "no sale price"); drill part swaps add the 9,999 removal fee. Rules: CALCULATIONS.md
+   "Essence perks, attributes, HOTM perk levels", "Buy or craft/forge", "Replacement resale credit".
+   **Next:** owner restarts the companion (new `/stats` resale fields and prices) and checks the Upgrades tab: grinding
+   labels, craft/buy notes, net-cost lines, plan resale line. Then: rate models for non-gem methods (roadmap 2).
+3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
+   prerequisites (HOTM tier/tokens, recipe unlocks), mutual exclusions and prices, valued by each method's model, with a
+   greedy sequential plan. Remaining: recursive recipes, Core of the Mountain levels for tokens, scrolls, pet-item carry-over.
 
 **Stat Breakdown engine (mining)**: background and history below.
 Use Debotes / Zucchini and the private live snapshot described below. First inspect
@@ -172,7 +180,15 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (recomb, coating, gem swaps, profile perks, set bonuses, 2026-10-26): `./gradlew build
+Latest verification (HOTM unlocks, Blue Cheese, grinding, buy vs craft, resale, 2026-10-26): `./gradlew build
+:service:installDist` succeeded after each step; existing tests pass, no tests added. GitHub Actions Build succeeded for
+`c2fbd33` and `e0527a0`. Scratch runner on the fixture with live Coflnet quotes for all 257 price IDs (fetched directly;
+the owner's running companion was not restarted or touched): unlock paths, tokens and tier gates on a tree with four
+perks removed; Mining 27 -> 28.. and Tungsten tier 9 as grinding on a lowered copy; craft/buy choices and resale credits
+(old engine 71.0M, old tank 27.0M, Mineral Talisman 1.1M) as quoted in CALCULATIONS.md. Coflnet copy filters checked with
+curl (DR-X655 with its parts 480M; Divan helmet with Jaded and recombobulation 50M; L97 Bal with Quick Claw: no listing).
+The companion's new `/stats` resale fetch was compiled but not run against the live service. Mod screens not run by the agent.
+Earlier verification (recomb, coating, gem swaps, profile perks, set bonuses, 2026-10-26): `./gradlew build
 :service:installDist` succeeded after each step; existing tests pass (the maxed-drill test now also sets coating and
 recombobulation; no tests added). Plans checked on the fixture (MF Gems, Obsidian) with a scratch runner: coating
 +6.9% on the drill once Will-o'-wisp crosses the tick; Mining Master 9 -> 10 needs 1,419,857 Glacite Powder (first
@@ -229,20 +245,23 @@ Recent milestones:
   implicitly or stack incompatible accessory/pet/gear alternatives (`Loadout`, `2092b32`).
 - [ ] Armor/equipment/tool base stats, reforges, recombobulation, gemstones, enchants,
   powder coatings, scrolls, drill engine/tank/omelette and set bonuses.
+  *Partial:* all of these except scrolls are in the ledger (Blue Cheese +1 HOTM level since `c2fbd33`).
 - [ ] Mining skill, HOTM/Peak perks and allocated powder, collections, essence shops,
   accessory contributions, permanent consumables and attributes.
-  *Partial:* Fortune/Speed from skill, HOTM perks, collections, Eager Miner, accessories,
-  three attributes. Peak/powder, other essence perks and consumables not yet.
+  *Partial:* every mining stat from skill, HOTM perks (with Blue Cheese), collections, Eager Miner, Rhinestone
+  Infusion, accessories and six attributes. Powder buffs, Peak of the Mountain and consumables not yet.
 - [ ] Pet rarity/level/abilities/items and method/location-dependent bonuses.
   *Partial:* level from XP; Bal/Scatha/Mithril Golem/Silverfish stats and Quick Claw.
 - [ ] Model gem/ore/block/dwarven Fortune, Speed, both Spreads, Pristine and Cold
   Resistance with conditions; keep uncheckable sources explicit.
+  *Partial (`d567858`):* all of these except Cold Resistance (manual).
 - [ ] Full current/max breakdown with compatible, attainable targets; do not sum
   mutually exclusive maxima or call a base-item bar a maxed account.
 
 ### 2. Method-specific yield and rate engine
 
 - [ ] MF Gems end-to-end first; Ruby and Topaz variants next; Grotto comparison next.
+  *Implemented, not validated against a measured session:* `MethodRates` for MF Gems/Ruby/Topaz and Grotto.
 - [ ] Coal, Gold, Umber, Shafting, Obsidian, Tungsten, Red Sand, Mycelium, End Stone,
   Cobblestone: correct blocks, gear constraints, bonuses and default efficiency.
 - [ ] Speed breakpoints/instant mining, abilities/cooldown uptime, spread availability,
@@ -255,22 +274,25 @@ Recent milestones:
 
 - [ ] Expand rule coverage from the supplied checklist, with verified names/IDs,
   requirements, applicability, delta formulas and acquisition paths.
-- [ ] Occupied universal-slot gem swaps (e.g. Topaz to Jade for Coal).
-- [ ] Reforges, recombobulation, coatings, attributes, pets/items, drill modules,
-  accessories, equipment and permanent bonuses.
-- [ ] Buying vs crafting/forging, reusable inputs, owned recipe materials, required
-  unlocks and forge time; avoid assuming a guide's AH-vs-craft claim stays true.
-- [ ] Replacement resale credit and exact modifier-aware prices where available;
-  distinguish cash outlay, net cost and uncertainty; no invented sale values.
+  *Partial:* catalog (112 items), parts, reforges, pets, profile perks, HOTM unlocks, skill/collections; not scrolls.
+- [x] Occupied universal-slot gem swaps (e.g. Topaz to Jade for Coal) (`628c77c`; in-game test pending).
+- [x] Reforges, recombobulation, coatings, attributes, pets/items, drill modules (incl. Blue Cheese),
+  accessories, equipment and permanent bonuses (implemented; in-game test pending).
+- [x] Buying vs crafting/forging, owned recipe materials, required unlocks and forge time; prices compared live
+  (`e0527a0`; one recipe level, inputs not crafted in turn; in-game test pending).
+- [x] Replacement resale credit and modifier-aware prices where Coflnet has them; cash outlay vs net cost; "no sale
+  price" when none (`0c2db1e`; in-game test pending).
 - [ ] Explicit prerequisites and dependent chains; paired upgrades and transferable
   pet items; no double spending materials or reusing the same pet item twice.
-- [ ] True marginal gain/value ranking and an optional sequential plan with baseline
-  recalculation after each step. Keep independent alternatives separately labeled.
+  *Partial:* HOTM tier/token paths, recipe unlocks, level chains and plan conflict bans; pet items are not carried over.
+- [x] True marginal gain/value ranking and an optional sequential plan with baseline
+  recalculation after each step; independent alternatives separately labeled (in-game test pending).
 
 ### 4. Other Upgrades and general progression
 
 - [ ] Separate purchasable recommendations, uncheckable/manual bonuses, and things
   that require grinding/unlocks (pet levels, Compact, collections, HOTM, etc.).
+  *Partial:* HOTM powder/tokens/tiers, Mining skill and collections are labelled "Grinding" with the distance left.
 - [ ] Use early/mid/end guide stages for orientation; personalize actual next steps.
 - [ ] Explain prerequisites, where/how to acquire, owned/missing quantities, source
   confidence and distance from a validated method-specific max.
@@ -318,6 +340,14 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-26 (upgrade coverage): `ProfileUpgrades` gains HOTM unlock options (LAYOUT from NEU hotmlayout, BFS `path`, token
+count, `Option.unlock/tier/bonus`, `State.unlocked/alternate/omelette`, `omeletteGain`), `skill` and `collections` grinding
+chains. `StatBreakdown.blueCheese` applies +1 HOTM level. `GearUpgrades` adds the Blue Cheese module, the 9,999 part
+removal fee and `Proposal.returned`. New `Recipes` (+ `RecipeExtractor`, `:core:extractRecipes`, `mining-recipes.json`,
+`Profile.collections`) and `Resale` (`StatsReport.resaleQueries/resale`, `Upgrade.resale/resaleNote/net`,
+`Step.totalResale`, companion `copyQuote` with cached Coflnet filter options, `Price.sell`). Open: fuel tank removal fee
+assumed equal to engines'; PetLevel exact match rarely lists; Core of the Mountain levels as a token source.
 
 2026-10-26 (more upgrade sources): `GearUpgrades` adds recombobulate/coating/gem swaps; Power accessories via
 `CatalogExtractor.GEM_ONLY` (stat key order now follows the resource). `ProfileUpgrades` (Option/State chains with

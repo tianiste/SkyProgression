@@ -33,11 +33,12 @@ items resource (every obtainable item with a mining stat). The mod reads individ
 displayed stats, enchantments, gemstone slots, drill parts, reforges and rarity, and recommends
 enchantments, Polarvoid, gemstones and gem type swaps, drill parts, reforge stones (NEU reforge
 table), recombobulation, Divan's Powder Coating, better base items and full mining sets, level-100
-pets or a Quick Claw, essence perks, attribute shards and HOTM perk levels (powder shown as grinding),
-using owned materials and balances before buying. Gem methods rank
+pets or a Quick Claw, essence perks, attribute shards and HOTM perk levels and unlocks, the Blue Cheese
+omelette, and Mining skill/collection tiers (powder, tokens, XP and collections shown as grinding), using owned
+materials and balances before buying. Craftable or forgeable items use the cheaper of buying and crafting, and
+cards show the net cost after selling what an upgrade replaces when a sale quote exists. Gem methods rank
 upgrades by their Flawless/hour gain, other methods by drops, with a step-by-step plan. Unknown
-prices remain unknown. Unlocking new HOTM perks, recipe/resale costing and rates for non-gem methods still need further
-implementation. Method stats are computed automatically from
+prices remain unknown. Rates for non-gem methods still need further implementation. Method stats are computed automatically from
 the profile using the best gear and tool you own for the method (Breakdown tab; you can switch to your
 equipped gear or a specific tool); Type Stats overrides them.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API
