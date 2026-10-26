@@ -21,7 +21,8 @@ public enum MiningMethod {
     MiningMethod(String label, Stat fortune, String product, boolean instant) {
         this.label = label; this.fortune = fortune; this.product = product; this.instant = instant;
     }
-    public double defaultEfficiency() { return instant ? 90 : 65; }
+    /** Uptime defaults per the Mining Cat developer (2026-10-26): about 80-85% for instant-mine blocks, 65-70% otherwise. */
+    public double defaultEfficiency() { return instant ? 82.5 : 65; }
     public boolean gems() { return fortune == Stat.GEMSTONE_FORTUNE; }
     /** Usual location of the method, used as the stat-breakdown default; the player can change it. */
     public StatContext.Zone defaultZone() {

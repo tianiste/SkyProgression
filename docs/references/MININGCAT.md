@@ -123,3 +123,23 @@ active effects before treating either as the baseline.
 - Same item, different value per method: Goblin Pet 0.15% for Coal vs 22.6% for Gold;
   Flawless Jade +35 is 1.8% for Coal but 2.9% for Gold (implied base ~1,207), so Gold's
   fortune baseline differs (method-specific stats/pet context). Investigate.
+
+## Developer's description of the bot (2026-10-26)
+
+Relayed by the owner from the Mining Cat developer's reply in the Mining Cult Discord. The developer
+does not mind the comparison. The bot's code is not shared (one file per method), so this is a
+description of its approach, not formulas. Treat it as comparison evidence, not as rules to copy.
+
+- Rates: the bot was given the average rates for a hypermax setup from the method guides at 65%
+  efficiency and scales from there. Not tuned to be exact for every method (Coal especially, because
+  average efficiency is hard to judge).
+- Efficiency guidance: about 80-85% for instant-mine blocks, 65-70% for the rest. SkyProgression's
+  defaults are now 82.5% (instant) and 65% (others); the player can change them in Type Stats.
+- Value window per method: Obsidian values an item over one full Mining Speed Boost cycle (from full
+  cooldown until it ends); Shafting and the Dwarven Metals over a whole hour; Coal over 30 minutes
+  assuming two lobby hops.
+- Temporary buffs belong in an "extras" list; weather and Sky Mall are left out. This matches the
+  owner's decision: temporary buffs are listed but not counted.
+- HOTM: read the player's current perks; when the player has several trees, use the one that fits
+  the method best.
+

@@ -51,6 +51,11 @@ effective player stats. Target scope (feature spec from SkyCompass, see
    hold all ten stats, so they act as overrides until cleared. Live check: `/stats` for Debotes with
    TITANIUM_DRILL_4 in the Dwarven Mines returned Speed 7,250 and Fortune 1,767.0 (= fixture). With the
    automatic best gear (Coal) the tool resolved to the DR-X655 and the gear to the worn Divan set, same totals.
+   Following the Mining Cat developer's notes: the best HOTM tree for the method is used (`mining_2..5`
+   are Loadouts trees; none is marked active), Loadouts armor/equipment sets count as owned storage, and
+   default efficiency is 82.5% for instant-mine blocks (was 90%), 65% otherwise. The developer's value
+   windows (Obsidian per MSB cycle, Shafting/metals per hour, Coal per 30 min with two lobby hops) are
+   recorded for the rate engine (roadmap 2) but not implemented yet.
    **Next:** owner tests the Breakdown tab in-game (tool/zone/God Potion changes update totals without
    stutter; overrides win; Demo and companion-offline show clear messages). Then extend the ledger to
    Gemstone/Ore/Dwarven Metal/Block Fortune and Pristine so method yield stops needing typed values.
@@ -93,9 +98,10 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
 - SkyCompass Stat Breakdown page text for Debotes · Zucchini (Mining tab) supplied
   2026-10-26; observations in `docs/references/SKYCOMPASS.md`. SkyCompass has no public
   API and its terms forbid scraping/republishing output: comparison evidence only.
-- Owner messaged the Mining Cat developer (Mining Cult Discord) on 2026-10-26 asking
-  for comparison permission, rate assumptions and any public API. No reply yet. The
-  project does not depend on a reply; proceed with independent research.
+- Owner messaged the Mining Cat developer (Mining Cult Discord) on 2026-10-26. Reply: comparison is
+  fine; code is not shared; rates are guide averages for a hypermax setup at 65% efficiency; value
+  windows per method; efficiency guidance; best HOTM tree per method. Summary in
+  `docs/references/MININGCAT.md` ("Developer's description"). Still comparison evidence only.
 - No AI/tool attribution anywhere in commits or project files (see AGENTS.md).
 
 ## Implemented and verified

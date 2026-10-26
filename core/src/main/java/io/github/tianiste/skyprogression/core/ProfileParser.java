@@ -19,6 +19,21 @@ public final class ProfileParser {
         try { double n = value.getAsDouble(); return Double.isFinite(n) ? n : fallback; }
         catch (RuntimeException e) { return fallback; }
     }
+    /**
+     * Pieces saved in Loadouts armor/equipment sets (`loadout.armor.<n>.<SLOT>`, one item per slot).
+     * The worn set is also in inv_armor/equipment_contents; UUID deduplication drops the copy.
+     */
+    public static void loadoutPieces(JsonElement member, java.util.function.BiConsumer<String, JsonElement> piece) {
+        for (String kind : List.of("armor", "equipment")) {
+            JsonElement sets = at(member, "loadout", kind);
+            if (!sets.isJsonObject()) continue;
+            for (var set : sets.getAsJsonObject().entrySet()) {
+                if (!set.getValue().isJsonObject()) continue;
+                for (var slot : set.getValue().getAsJsonObject().entrySet())
+                    if (slot.getValue().isJsonObject()) piece.accept("loadout " + kind + " set " + set.getKey() + " " + slot.getKey(), slot.getValue());
+            }
+        }
+    }
     public static List<Profile> parse(JsonObject root, String uuid, String ign) {
         List<Profile> result = new ArrayList<>();
         JsonElement profiles = root.get("profiles");
@@ -41,6 +56,7 @@ public final class ProfileParser {
                 if (bags.isJsonObject()) bags.getAsJsonObject().entrySet().forEach(e -> readContainer(e.getValue(), p, e.getKey()));
                 JsonElement backpacks = at(inventory, "backpack_contents");
                 if (backpacks.isJsonObject()) backpacks.getAsJsonObject().entrySet().forEach(e -> readContainer(e.getValue(), p, "backpack " + e.getKey()));
+                loadoutPieces(member, (label, piece) -> readContainer(piece, p, label));
                 JsonElement sacks = at(inventory, "sacks_counts");
                 if (!sacks.isJsonObject()) sacks = at(member, "sacks_counts");
                 if (sacks.isJsonObject()) sacks.getAsJsonObject().entrySet().forEach(e -> p.owned.merge(e.getKey(), (int)number(e.getValue(), 0), Integer::sum));

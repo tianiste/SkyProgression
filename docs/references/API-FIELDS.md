@@ -14,7 +14,9 @@ the inventory and a handful of accessories.
 | Source | Raw field | Notes |
 | --- | --- | --- |
 | HOTM tier / perks | `skill_tree.experience.mining`, `skill_tree.nodes.mining.<perk>` | Current location. Each perk has a `toggle_<perk>` flag (false = disabled, counts nothing). `mining_core.experience`/`nodes` are absent on this profile; the parser keeps them only as a legacy fallback. |
-| Peak/core level | `skill_tree.nodes.mining.core_of_the_mountain`; `mining_2..5` | Extra trees each hold `core_of_the_mountain`; meaning not yet researched. |
+| Peak/core level | `skill_tree.nodes.mining.core_of_the_mountain` | |
+| Extra HOTM trees | `skill_tree.nodes.mining_2..mining_5` | Trees from the Loadouts system (wiki "Loadouts", added June 24, 2026), which swaps HOTM trees. On this profile they hold only `core_of_the_mountain`. No field marks the active tree. |
+| Loadouts gear sets | `loadout.armor.<n>.<SLOT>`, `loadout.equipment.<n>.EQUIPMENT_SLOT_<k>` | Each slot is `{type, data}` holding one base64 gzip NBT item; `equipped_set` names the worn set (empty here: the worn pieces are in `inv_armor`/`equipment_contents`). Read as owned storage. |
 | Selected pickaxe ability | `skill_tree.selected_ability.mining` | e.g. `mining_speed_boost`. |
 | Powder | `mining_core.powder_<type>`, `powder_spent_<type>`, `powder_<type>_total` | `_total` is lower than spent here; do not treat it as lifetime earned without research. |
 | Daily HOTM effect | `mining_core.current_daily_effect` | Likely the Sky Mall buff of the current SkyBlock day (20 real minutes): `powder_bonus` at the first snapshot, `dig_speed` (probably +100 Mining Speed) at a refetch on 2026-10-26. The code-to-buff mapping is not yet verified. |

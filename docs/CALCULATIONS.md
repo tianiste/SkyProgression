@@ -94,7 +94,8 @@ ledger per supported stat, equipped and best-owned totals, the gear used, owned 
 2026-10-26: by default the gear is the best owned for the method (`Loadout.bestFor`) and the tool is the
 best owned tool (`Loadout.bestTool`). Items are scored like the upgrade ranking: Mining Fortune + the
 method's fortune type + Pristine x 100 / Spread + Mining Speed x 0.01 (speed ignored for instant blocks).
-Slots are chosen independently, so a set bonus can be broken. The best catalogued pet is chosen; an
+Slots are chosen independently, so a set bonus can be broken. Owned storage includes the Loadouts
+armor/equipment sets. The best catalogued pet is chosen; an
 active pet whose stats are not catalogued is kept because it cannot be compared. The mod's Breakdown tab shows it; automatic totals feed
 Upgrades and Rates unless the player typed a manual value for that stat. The zone defaults to the
 method's usual location and the block target follows the method's fortune type (`MiningMethod`).
@@ -134,7 +135,10 @@ Rules:
   1.25 Fortune / 1 Speed per level), Mithril Golem (0.25 Fortune), Silverfish (0.2 Fortune). Mole
   and Glacite Golem stay unknown because the wiki's level 1 and level 100 values disagree with a
   linear rate. Quick Claw: +1 Fortune and +1 Speed per 2 pet levels. Other held items are unknown.
-- HOTM (`skill_tree.nodes.mining`; `toggle_<perk>` false = situational, not counted): Mining Speed
+- HOTM tree: the profile can hold several trees (`mining`, `mining_2`..`mining_5`, from Loadouts) and
+  the API does not say which is active. The tree with the most value for the method (Mining Fortune +
+  Speed x 0.01, speed ignored for instant blocks) is used, as the Mining Cat developer also does.
+- HOTM (`skill_tree.nodes.<tree>`; `toggle_<perk>` false = situational, not counted): Mining Speed
   20/level, Speedy Mineman 40/level, Professional 50+5/level on Gemstones, Strong Arm 5/level on
   Dwarven Metals, Mining Fortune 2/level, Fortunate Mineman 3/level, Rags to Riches 4/level in
   Glacite Mineshafts, Sky Mall +50 Fortune / +100 Speed on the matching random day. The day's buff

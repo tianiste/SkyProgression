@@ -19,6 +19,9 @@ public final class StatsReport {
     /** Armor, equipment, tool and pet of the evaluated loadout, with where each copy is stored. */
     public List<Tool> loadout = new ArrayList<>();
     public int accessories;
+    /** HOTM tree used ("mining", "mining_2"..) and how many trees the profile has. */
+    public String hotmTree = "mining";
+    public int hotmTrees = 1;
     public List<Ledger> stats = new ArrayList<>();
 
     public record Tool(String key, String name, String location) {}
@@ -43,6 +46,9 @@ public final class StatsReport {
         String chosen = r.toolAuto ? Loadout.bestTool(owned, method) : tool;
         Loadout equipped = Loadout.equipped(owned, chosen), best = Loadout.bestFor(owned, method, chosen);
         Loadout main = bestGear ? best : equipped;
+        r.hotmTree = StatBreakdown.chooseTree(member, main, context, method);
+        StatBreakdown.chooseTree(member, bestGear ? equipped : best, context, method);
+        r.hotmTrees = StatBreakdown.hotmTrees(member).size();
         r.method = method.name(); r.bestGear = bestGear;
         r.tool = main.tool == null ? "" : key(main.tool);
         r.zone = context.zone() == null ? "" : context.zone().name();

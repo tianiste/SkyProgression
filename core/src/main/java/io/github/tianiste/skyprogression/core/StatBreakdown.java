@@ -68,7 +68,7 @@ public final class StatBreakdown {
         b.notes.addAll(loadout.notes);
         gear(b, loadout);
         pet(b, loadout);
-        hotm(b, member);
+        hotm(b, member, loadout.hotmTree);
         if (stat == Stat.MINING_FORTUNE) { skill(b, member); collections(b, member); }
         attributes(b, member);
         essence(b, member);
@@ -235,8 +235,31 @@ public final class StatBreakdown {
 
     // ---- profile-wide sources ------------------------------------------------------------------
 
-    private static void hotm(Breakdown b, JsonObject member) {
-        JsonElement nodes = at(member, "skill_tree", "nodes", "mining");
+    /** HOTM trees in the response: "mining" plus the extra Loadouts trees "mining_2".. (Loadouts, June 2026). */
+    public static List<String> hotmTrees(JsonObject member) {
+        JsonElement nodes = at(member, "skill_tree", "nodes");
+        if (!nodes.isJsonObject()) return List.of("mining");
+        List<String> trees = new ArrayList<>(nodes.getAsJsonObject().keySet().stream().filter(k -> k.matches("mining(_[0-9]+)?")).sorted().toList());
+        return trees.isEmpty() ? List.of("mining") : trees;
+    }
+    public static String treeLabel(String tree) { return "HOTM tree " + (tree.equals("mining") ? "1" : tree.substring(tree.indexOf('_') + 1)); }
+    /**
+     * Picks the HOTM tree that gives the method the most value (Mining Fortune + Speed x 0.01, speed ignored
+     * for instant blocks) and stores it on the loadout. The API does not say which tree is active.
+     */
+    public static String chooseTree(JsonObject member, Loadout l, StatContext context, MiningMethod m) {
+        String best = "mining"; double bestScore = Double.NEGATIVE_INFINITY;
+        for (String tree : hotmTrees(member)) {
+            l.hotmTree = tree;
+            double score = compute(member, l, context, Stat.MINING_FORTUNE).total()
+                    + (m.instant ? 0 : compute(member, l, context, Stat.MINING_SPEED).total() * .01);
+            if (score > bestScore + 1e-9) { best = tree; bestScore = score; }
+        }
+        l.hotmTree = best;
+        return best;
+    }
+    private static void hotm(Breakdown b, JsonObject member, String tree) {
+        JsonElement nodes = at(member, "skill_tree", "nodes", tree);
         if (!nodes.isJsonObject()) nodes = at(member, "mining_core", "nodes");
         if (!nodes.isJsonObject()) {
             b.contributions.add(new Contribution("HOTM", "Heart of the Mountain perks", b.stat, null, null, "", State.COUNTED,

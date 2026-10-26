@@ -232,6 +232,7 @@ public final class ProgressionScreen extends Screen {
         if(r.loadout.isEmpty())used.line("No readable gear.",MUTED);
         for(var piece:r.loadout)used.line(piece.name()+"  ("+piece.location()+")",TEXT);
         used.line(r.accessories+" accessories from the accessory bag, one per family.",MUTED);
+        if(r.hotmTrees>1)used.line(StatBreakdown.treeLabel(r.hotmTree)+" of "+r.hotmTrees+": best for "+method.label+" (the API does not show which tree is active).",CYAN);
         if(r.bestGear)used.line("Picked from all readable storage; equip these pieces to reach this total. Gear: Equipped shows what you wear now.",MUTED);
         var ledgers=new ArrayList<>(r.stats);ledgers.sort(Comparator.comparing(l->l.stat!=stat));
         int column=0;

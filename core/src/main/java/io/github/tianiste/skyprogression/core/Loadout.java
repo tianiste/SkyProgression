@@ -42,6 +42,8 @@ public final class Loadout {
     public final List<Item> armor = new ArrayList<>(), equipment = new ArrayList<>(), accessories = new ArrayList<>();
     public Item tool;
     public Pet pet;
+    /** HOTM tree read for perks: `skill_tree.nodes.<key>`, "mining" or "mining_2".."mining_5" (Loadouts trees). */
+    public String hotmTree = "mining";
     public boolean inventoryKnown, petsKnown;
     public final List<String> notes = new ArrayList<>();
     private Loadout(Kind kind, Owned owned) {
@@ -68,6 +70,7 @@ public final class Loadout {
                 if (bags.isJsonObject()) bags.getAsJsonObject().entrySet()
                         .forEach(e -> readContainer(e.getValue(), group.equals("bag_contents") ? e.getKey() : "backpack " + e.getKey(), catalog, uuids, owned));
             }
+            loadoutPieces(member, (label, piece) -> readContainer(piece, label, catalog, uuids, owned));
         }
         JsonElement pets = at(member, "pets_data", "pets");
         owned.petsKnown = pets.isJsonArray();
