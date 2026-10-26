@@ -53,8 +53,14 @@ this development companion is designed for the project owner's machine.
   missing, temporary, not in the API). By default it uses the best gear and tool you own for the method,
   listed with where each piece is stored; **Gear** switches to what you wear now, and **Tool** picks a
   specific tool. Choose the zone; God Potion is assumed on and can be switched off. Refresh retries.
-- **Rates:** enter effective stats, active blocks per second, base drops per block, efficiency,
-  sale price per item and optionally Coleweight per item. Inputs are saved per profile/method.
+- **Rates:** the automatic rate for the method (ticks, ability uptime, items per hour or per the method's window)
+  with coins per hour at both Coflnet figures (instant-sell and sell offer, labelled, with the quote time). The
+  manual scenario next to it takes active blocks per second, base drops, efficiency, a sale price and optionally
+  your own Coleweight per item. Inputs are saved per profile/method.
+- **Compare:** every method ranked by coins per hour, each with its own best owned gear and tool in its usual zone
+  (that method's Type Stats values and efficiency apply). **Price** switches instant-sell / sell offer, **God Potion**
+  toggles the assumption, **Pick method** or a click on a card selects the method. A missing price stays unknown
+  and sorts last. The Upgrades tab then also shows each upgrade's coins per hour here and in the best method.
 - **Other:** known profile milestones plus a checklist of bonuses not modeled automatically.
 
 Use the mouse wheel, Page Up/Down or footer arrows to scroll results. Selectors have search fields. Nothing purchases items, equips gear, or mines for you.
@@ -88,7 +94,8 @@ abilities, cooldowns, fuel costs, taxes, route density and mineshaft loot are no
 Supply measured active blocks/sec to account for speed. Spread assumes enough extra
 blocks. Gems use rough-equivalent units; match the price and Coleweight units to them.
 Shafting estimates Glacite, not an entire mixed mineshaft. MF Gems uses the gem inputs you enter.
-No automatic Coleweight coefficient is invented: enter one or the result stays unavailable.
+No automatic Coleweight coefficient is invented (none could be verified; see CALCULATIONS.md): enter one or the
+result stays unavailable. The automatic rate cards and the Compare tab use the rate models in CALCULATIONS.md.
 
 ## Troubleshooting
 

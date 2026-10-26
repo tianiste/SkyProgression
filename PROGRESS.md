@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-26 (Coal rate model). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (coins/hour across methods). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -76,11 +76,19 @@ fix them later; do not block on the in-game test. Order:
    **Mycelium / Red Sand (in-game test pending):** no wiki strength, assumed instamined (owner: 20 blocks/s is doable);
    guide-max Fortune 1,522 + Spread 400 gives ~4.8M/h, matching the guide's 4.6M / 4.8M. Every method now has a rate model.
    Coal and Gold default to the Crystal Hollows (owner); fixture numbers unchanged.
-   **Next:** owner restarts the companion (new `/stats` resale fields and prices, now also COAL/OBSIDIAN/GOLD_INGOT/... quotes)
-   and checks, per method, the Rates tab "automatic rate" card (ticks on the ground/airborne, thresholds, window) and the
-   Upgrades header/cards (rate unit, before -> after). Then: a measured session (blocks per minute at a known speed) to test
-   the End Stone/Cobble/Obsidian guide gaps (20 blocks/s while instamining is confirmed doable by the owner); Maniac Miner's
-   Fortune rule; Fungus/Harena Fortuna in the stat ledger.
+   **Owner in-game check (2026-10-27):** the stat breakdown and every method's rate model work well; treat them as correct for now.
+   **Coins/hour across methods (`c4a67e6`, `4cf9fb0`, in-game test pending):** `MethodComparison` + companion `/compare` (every
+   method's totals with its own best owned gear/tool in its usual zone) and a new **Compare** tab: methods ranked by coins/hour
+   with items/h, efficiency, model label, value window, drops note, tool/zone and the Coflnet quote (source, time); Price toggles
+   instant-sell (default, Coflnet `sell`) / sell offer (Coflnet `buy`), God Potion toggle, Pick method or click a card to select.
+   Unknown prices stay "coins unknown" and sort last (End Stone had no sell figure). Rates tab cards show both figures. Upgrades
+   cards show coins/h here and the same change's gain/coins in the best method; Compare lists +50 Fortune / +100 Speed per method.
+   Coleweight: no verifiable coefficients (module archived, no weights in its repo), recorded unknown and not shown.
+   Rules: CALCULATIONS.md "Coins per hour across methods".
+   **Next:** owner restarts the companion (new `/compare`) and checks the Compare tab (ranking, both price modes, click/Pick,
+   God Potion, Refresh, companion offline message) and the Upgrades cross-method line. Then the scheduled "Start with" gear tab
+   (roadmap 4). Open: a measured session for the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule;
+   Fungus/Harena Fortuna in the stat ledger; Bazaar tax and NPC sale prices in coins/hour.
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
    prerequisites (HOTM tier/tokens, recipe unlocks), mutual exclusions and prices, valued by each method's model, with a
    greedy sequential plan. Remaining: recursive recipes, Core of the Mountain levels for tokens, scrolls, pet-item carry-over.
@@ -203,7 +211,12 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (HOTM unlocks, Blue Cheese, grinding, buy vs craft, resale, 2026-10-26): `./gradlew build
+Latest verification (coins/hour across methods, 2026-10-27): `./gradlew build :service:installDist` succeeded after each
+step; existing tests pass, no tests added. Scratch runner on the fixture with live Coflnet quotes: `MethodComparison.of` for
+all 14 methods, a Gson round-trip of the `/compare` payload (8.9 KB, same ranking), both price modes and `gain` (numbers in
+CALCULATIONS.md). The companion's `/compare` was compiled but not run as a service (the owner's companion on 18475 was not
+touched); the mod's Compare tab and Upgrades line were not run by the agent.
+Earlier verification (HOTM unlocks, Blue Cheese, grinding, buy vs craft, resale, 2026-10-26): `./gradlew build
 :service:installDist` succeeded after each step; existing tests pass, no tests added. GitHub Actions Build succeeded for
 `c2fbd33` and `e0527a0`. Scratch runner on the fixture with live Coflnet quotes for all 257 price IDs (fetched directly;
 the owner's running companion was not restarted or touched): unlock paths, tokens and tier gates on a tree with four
@@ -258,7 +271,8 @@ Recent milestones:
 
 - [ ] Stat model covering all groups listed in "Resume here", with current/max per source
   and the counted / situational / missing / trackable / untrackable states.
-  *Partial (`2092b32`):* model and states done for Mining Fortune and Mining Speed only.
+  *Partial:* Fortune/Speed (`2092b32`), the four type Fortunes, both Spreads and Pristine (`d567858`); Wisdom, Breaking
+  Power and Cooldown as stats, Heat/Cold Resistance and powder buffs not yet.
 - [ ] Trackable temporary sources from the API where available (active mayor/perks such
   as Cole's Mining Fiesta, detectable consumables); label God Potion and other
   never-reported effects as untrackable rather than absent.
@@ -283,15 +297,18 @@ Recent milestones:
 
 ### 2. Method-specific yield and rate engine
 
-- [ ] MF Gems end-to-end first; Ruby and Topaz variants next; Grotto comparison next.
-  *Implemented, not validated against a measured session:* `MethodRates` for MF Gems/Ruby/Topaz and Grotto.
-- [ ] Coal, Gold, Umber, Shafting, Obsidian, Tungsten, Red Sand, Mycelium, End Stone,
-  Cobblestone: correct blocks, gear constraints, bonuses and default efficiency.
+- [x] MF Gems end-to-end first; Ruby and Topaz variants next; Grotto comparison next (`MethodRates`; owner's in-game
+  check 2026-10-27 works; not validated against a measured session).
+- [x] Coal, Gold, Umber, Shafting, Obsidian, Tungsten, Red Sand, Mycelium, End Stone,
+  Cobblestone: correct blocks, gear constraints, bonuses and default efficiency (same status; guide gaps documented).
 - [ ] Speed breakpoints/instant mining, abilities/cooldown uptime, spread availability,
   heat/cold, drops and Pristine effects. Document simplified route assumptions.
-- [ ] Automatically sourced coins/hour and verified Coleweight coefficients; correct
-  units, price source/time and explicit rate assumptions. Manual scenario overrides.
-- [ ] Validate equal gear deltas producing different value in different methods.
+  *Partial:* tick thresholds, instamine, airborne share, Mining Speed Boost uptime, Spread and Pristine are modelled;
+  heat/cold, Maniac Miner and secondary drops (Hard Stone, other grotto gems, mineshaft loot) are not.
+- [x] Automatically sourced coins/hour; correct units, price source/time and explicit rate assumptions; manual scenario
+  kept (`c4a67e6`, `4cf9fb0`; in-game test pending). Coleweight coefficients could not be verified: documented as unknown.
+- [x] Show equal gear deltas producing different value in different methods (Upgrades cross-method line, Compare
+  "Same change, different value"; fixture: +50 Fortune +2.5% Coal vs +2.4% MF Gems, +100 Speed 0% between thresholds).
 
 ### 3. Complete upgrades, costs and ordering
 
@@ -367,6 +384,13 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-27 (coins/hour across methods): new `MethodComparison` (Report/Entry wire format, PriceMode, Row, `row`, `rank`,
+`gain`, `of`), companion `/compare` (shared `member` lookup with `/stats`), `ClientData` comparison request (cancelled with
+the other requests, stale responses rejected, 45 s cap, 4 MB body cap), `ProgressionScreen` Compare tab (index 5; Other is
+6, F1 still opens Other), click-to-select cards, `coinLines` on the Rates tab, `crossMethodLine` on Upgrades cards. The 14
+methods are every `MiningMethod` (the brief's "15" counted one extra). Open: Bazaar tax, NPC sale, sell-offer fill volume,
+Breakdown zone/tool choices are not used by the comparison.
 
 2026-10-26 (upgrade coverage): `ProfileUpgrades` gains HOTM unlock options (LAYOUT from NEU hotmlayout, BFS `path`, token
 count, `Option.unlock/tier/bonus`, `State.unlocked/alternate/omelette`, `omeletteGain`), `skill` and `collections` grinding

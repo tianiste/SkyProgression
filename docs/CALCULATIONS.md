@@ -37,6 +37,7 @@ that cannot be computed, for example Mining Speed 0, falls back to it); those us
 Items/hour = `3600 * efficiency/100 * active blocks/sec * base drops/block * yield`.
 Coins/hour and Coleweight/hour multiply that rate by the user-entered per-item values.
 These are gross scenario estimates. They are not session tracking or the bot's proprietary calculations.
+The automatic coins/hour of every method is in "Coins per hour across methods" below.
 
 ## Data sources
 
@@ -481,8 +482,8 @@ only for Obsidian, Shafting/metals and Coal).
   average of the 3-5 base yield (wiki Gemstone and Pristine,
   <https://hypixelskyblock.minecraft.wiki/w/Gemstone>, <https://hypixelskyblock.minecraft.wiki/w/Pristine>).
   Flawless = 80 x 80 x 80 = 512,000 Rough.
-- Coins / hour = Flawless / hour x the Coflnet buy quote for the Flawless gem. Labelled as the buy quote:
-  selling yields less after the bazaar spread and tax. No sale price is invented.
+- Coins / hour = Flawless / hour x a Coflnet quote for the Flawless gem, shown at both figures ("Coins per hour across
+  methods" below). No sale price is invented.
 
 Guide check (Magma Fields guide, rates "up to" at 60% Block Efficiency, computed with a third-party calculator):
 Ruby 23.5, Amber/Sapphire/Jade/Amethyst 20.1, Topaz 16.5 Flawless / hour. With an estimated hypermax
@@ -502,7 +503,7 @@ Not validated against a measured session yet.
 (Bal and other Magma Fields bonuses then count).
 - Jasper strength 4,800 (wiki Block Strength, same for block and pane), Breaking Power 9, 3-5 Rough per block
   (wiki Jasper Gemstone, <https://hypixelskyblock.minecraft.wiki/w/Jasper_Gemstone>); Flawless Jasper =
-  512,000 Rough, priced at the `FLAWLESS_JASPER_GEM` buy quote.
+  512,000 Rough, priced at a `FLAWLESS_JASPER_GEM` quote (both figures).
 - 4 ticks (the soft cap) needs Mining Speed above 30 x 4,800 / 4.5 = 32,000, matching the Fairy Grotto guide's
   "32000 Mining Speed required to mine Japer in 4 Ticks" with Mining Speed Boost level 2. The tick-threshold
   guide lists it as "> 32000", consistent with our rounding (exactly 32,000 = 4.5, which rounds up to 5 ticks).
@@ -543,7 +544,7 @@ are part of the efficiency, so the 30-minute value is half the hourly rate.
   mines adjacent blocks; it does not say whether only blocks of the same type. We assume each Spread block is Coal Ore.
 - Coal per block = 1 x (1 + (Mining Fortune + Ore Fortune) / 100) (wiki Mining Fortune: every 100 is one more set of drops,
   the remainder a chance at one more; Ore Fortune adds on ores; Fortune also applies to Spread blocks). Base drop 1 Coal.
-- Coins = Coal x the Coflnet buy quote for `COAL`, labelled as the buy quote. Hard Stone (the guide's 3-6M / hour) and
+- Coins = Coal x a Coflnet quote for `COAL` (both figures, "Coins per hour across methods"). Hard Stone (the guide's 3-6M / hour) and
   crafting into enchanted items are not counted.
 
 Guide check (Coal guide, owner-supplied `service-data/guides/coal.txt`, October 2026: "rough estimates", 4.0M-9.0M Coal
@@ -575,7 +576,7 @@ Mining Cat Coal pages (comparison only; `docs/references/MININGCAT.md`):
 - Mined on the ground (the Obsidian guide's route is floor and walls); airborne share 0, with the share recorded as
   unknown. Default efficiency 65% (not an instamine block).
 - Obsidian per block = 1 x (1 + (Mining Fortune + Block Fortune) / 100) (wiki Mining Fortune; Obsidian takes Block
-  Fortune in our method table). Coins at the Coflnet `OBSIDIAN` buy quote; crafting into Null Ovoids is not counted.
+  Fortune in our method table). Coins at a Coflnet `OBSIDIAN` quote (both figures, "Coins per hour across methods"); crafting into Null Ovoids is not counted.
 - Value window: one Mining Speed Boost cycle, the ability's cooldown from the tool lore (the Mining Cat developer's
   window for Obsidian, "from full cooldown until it ends"; we read one cycle as one cooldown, which starts when the
   ability is used). Without a Mining Speed Boost the window is one hour.
@@ -604,8 +605,8 @@ Metals), default efficiency 65%, all blocks mined on the ground (airborne share 
   Glacite; every 100 adds 100% drops). Mining Spread applies to Dwarven Metals (wiki Mining Spread).
 - Base drops are not one number. Tungsten: Cobblestone 1, Clay 3; Umber: Terracotta 1, Brown Terracotta 2, Smooth Red
   Sandstone 3 (wiki). The share of each block in a vein is unknown, and the wiki states no base drop for Glacite. The rate
-  is shown per 1 base drop and labelled so; upgrade gains are ratios and do not depend on it. Coins are not shown as a
-  real income for that reason, only at the buy quote per shown unit.
+  is shown per 1 base drop and labelled so; upgrade gains are ratios and do not depend on it. Coins are not an
+  exact income for that reason: Tungsten and Umber coins are a lower bound (see "Coins per hour across methods").
 - Shafting is modelled as Glacite mining only: mineshaft spawns, corpses and mineshaft gemstones are not counted.
 - No guide rate was supplied for these methods (`METHOD-GUIDES.md`, "Missing guides").
 
@@ -621,7 +622,7 @@ Fortune 1,767 + Dwarven Metal 5, Spread 300: about 200,700 Tungsten or Umber / h
   36,001). Otherwise 4 ticks above 4,000, so Mining Speed counts only when Mining Speed Boost lifts it above 36,000.
   The guide's ability-loadout swap and the bugged Goblin/Strong Arm Gold bonuses it relies on are not modelled. Base drop
   5-7 Gold per block (wiki Mines of Divan changelog, 9 Oct 2023: "from 2-4 to 5-7"), shown at the average 6; coins at
-  the `GOLD_INGOT` buy quote. Fortune: Mining Fortune + Ore Fortune, as for ores. Open: the same changelog page says (1 Aug
+  a `GOLD_INGOT` quote (both figures). Fortune: Mining Fortune + Ore Fortune, as for ores. Open: the same changelog page says (1 Aug
   2023) only Redstone and Emerald in the Mines are affected by Mining Fortune; whether that still holds for Pure Gold is
   not confirmed. The Gold guide lists Fortune gear and the Mining Cat Gold page values Fortune, so Fortune is counted.
   Default efficiency 65%. No guide rate (the guide's rates are pending).
@@ -657,3 +658,49 @@ Guide check (Mycelium/Red Sand guide, owner-supplied: Mycelium 4.6M / hour, Red 
 including block fortune"): with Fortune 1,522 and Spread 400 the model gives 59,400 x 5 x 16.22 = about 4.8M / hour at
 82.5%, matching the guide. Fixture (Crimson Isle as "other" zone): Fortune 1,429.5 + Block 115, Spread 300: about
 3.9M / hour.
+
+## Coins per hour across methods
+
+`core/` `MethodComparison`; companion `GET /compare?ign=&profile=&god=` (about 9 KB on the fixture); mod **Compare** tab.
+- Setup per method: the automatic totals with that method's best owned gear and best tool (`Loadout.bestFor`/`bestTool`),
+  its best HOTM tree and its usual zone and block target (`MiningMethod.defaultZone`), God Potion as toggled (default on, the
+  owner's decision for the Breakdown). That method's Type Stats values override the totals and its efficiency is used
+  (defaults 82.5% instamine blocks and Coal, 65% otherwise; Mining Cat developer, `docs/references/MININGCAT.md`). A
+  Breakdown-tab zone or tool choice for a method is not used here; the Rates tab for that method follows it.
+- Items / hour = `MethodRates.perHour` (sections "Rates: ..." above). Coins / hour = items / hour x coins per item. Ranked by
+  coins / hour; methods without a usable price sort after every priced one and show "coins unknown", never 0, with their
+  item rate. A method whose rate cannot be computed (for example Mining Speed 0) sorts last with the reason.
+- Prices: Coflnet `GET /api/item/price/{tag}/current?minAgeSeconds=120` (<https://sky.coflnet.com/api/index.html>), cached 15
+  minutes by the companion; each card names the quote's source and `updatedAt`. Two labelled figures:
+  - instant-sell (default) = Coflnet `sell`, selling into the highest buy order now;
+  - sell offer = Coflnet `buy`, the lowest current sell offer, which a new sell order matches only when someone buys.
+  Both are gross: the Bazaar sales tax is not applied (its current rate and account reductions are not verified here).
+  When `buy` is more than twice `sell` the card warns that sell offers may not fill (thin market). Checked 2026-10-26:
+  Red Sand (`SAND:1`) 3.2 sell / 133.7 buy, Mycelium (`MYCEL`) 1.9 / 47.3, Coal 4.4 / 7.7; `ENDER_STONE` had no sell figure,
+  so End Stone's instant-sell coins were unknown. NPC sale prices and crafting into enchanted items are not counted.
+- Priced product: the Flawless gem for gem methods (Rough converted at 512,000 Rough per Flawless, as in the rate model);
+  the block product otherwise (`MethodRates.Block.product`). Only drops the rate model covers are counted: no Hard Stone on
+  Coal (guide 3-6M / hour), no other grotto gems (guide 3.1-4.6 Flawless / hour), no mineshaft loot. Tungsten and Umber are
+  shown as "at least": the rate counts 1 base drop while vein blocks drop 1-3 (wiki; mix unknown). Glacite's base drop is
+  assumed 1 (not on the wiki). Gold uses the average base drop 6.
+- Value windows (Mining Cat developer's notes, MININGCAT.md) normalized to one hour: Coal is valued per 30 minutes with two
+  lobby hops; the model has no hop time of its own (hops are inside the efficiency), so per hour = 2 x the 30-minute value.
+  Obsidian is valued per Mining Speed Boost cycle (cooldown from the tool lore); per hour = 3600 / cooldown cycles, which the
+  hourly rate already averages. Shafting and the Dwarven Metals are per hour; gems are a one-hour average over the ability
+  cycle. The Rates tab and each Compare card state the window.
+- Same upgrade, different value: the Upgrades tab (rate-ranked methods) shows each upgrade's coins / hour here
+  = (rate after - rate before) per hour x coins per item, and its gain in the best method by coins / hour =
+  `MethodComparison.gain` (rate with the same stat delta and cooldown factor on that method's own stats / rate - 1) x that
+  method's coins / hour. The delta is the one computed against the selected method's gear, so in the best method it is
+  an approximation (that method's best gear may hold a different item in the slot). The Compare tab also lists +50 Mining
+  Fortune and +100 Mining Speed per method. Fixture (65% / 82.5%, God Potion): +50 Mining Fortune is +2.5% on Coal and
+  +2.4% on MF Gems, while +100 Mining Speed gives 0% wherever it crosses no tick threshold.
+- Fixture with live quotes (2026-10-26, instant-sell): Grotto about 29.7M coins / hour (6.7 Flawless Jasper), MF Gems 24.3M,
+  MF Topaz 21.8M, MF Ruby 20.7M, Coal 17.1M (3.89M Coal), Umber 13.5M, Red Sand 12.5M, Tungsten 11.0M, Obsidian 9.5M,
+  Mycelium 7.4M, Gold 3.9M, Shafting 1.3M, Cobblestone 0.5M, End Stone unknown. At sell offers Red Sand and Mycelium jump
+  to 522M and 185M, which is the thin-market spread, not income. None is validated against a measured session.
+
+Coleweight: unknown, not shown. Coleweight is defined by the community Coleweight module (GitHub `Ninjune/coleweight`,
+archived 2026-07-25); its repository's `data/` folder holds no weight coefficients (checked 2026-10-26: collections, hotm,
+tick data, coordinates), and the weights it used came from the author's service, which we cannot verify as current or
+official. No coefficient is encoded; the manual Rates scenario still accepts a user-entered Coleweight per item.

@@ -23,7 +23,7 @@ Not affiliated with or endorsed by Hypixel or Mojang.
 
 ## Stitch interface (0.3.0)
 
-The native Stitch-inspired interface has Overview, Upgrades, Stats, Breakdown, Rates and Other tabs, method/stat/profile
+The native Stitch-inspired interface has Overview, Upgrades, Stats, Breakdown, Rates, Compare and Other tabs, method/stat/profile
 selectors, progress bars and a clearly labeled offline demo. A local companion service
 loads Hypixel profiles and Coflnet price quotes. Inventory lookups and price requests
 run off the Minecraft render thread and are cached.
