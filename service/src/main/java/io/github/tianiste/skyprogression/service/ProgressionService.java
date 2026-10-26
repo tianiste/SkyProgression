@@ -89,17 +89,19 @@ public final class ProgressionService {
         }
         return values;
     }
-    /** Equipped Mining Fortune / Speed ledger for one profile, held tool and zone. */
+    /** Mining Fortune / Speed ledger for one profile: best owned gear and tool by default, or what is worn. */
     private StatsReport stats(Map<String, String> q) throws Exception {
         String ign = q.getOrDefault("ign", ""), profileId = q.getOrDefault("profile", ""), tool = q.getOrDefault("tool", "");
         String zone = q.getOrDefault("zone", ""), target = q.getOrDefault("target", "");
         if (!ign.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
         if (!profileId.matches("[a-fA-F0-9-]{0,40}") || !tool.matches("[A-Za-z0-9_:#. -]{0,80}")) throw new LookupException(400, "Invalid profile or tool");
         StatContext context;
+        MiningMethod method;
         try {
+            method = MiningMethod.valueOf(q.getOrDefault("method", "MF_GEMS"));
             context = new StatContext(zone.isEmpty() ? null : StatContext.Zone.valueOf(zone), target.isEmpty() ? null : StatContext.Target.valueOf(target),
                     !"false".equals(q.get("god")));
-        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown zone or block target"); }
+        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, zone or block target"); }
         Cached cached = fetch(ign);
         JsonObject entry = null;
         for (JsonElement p : cached.raw.getAsJsonArray("profiles")) {
@@ -110,7 +112,7 @@ public final class ProgressionService {
         JsonObject member = at(entry, "members", cached.uuid).getAsJsonObject();
         String id = string(at(entry, "profile_id"), "");
         Loadout.Owned owned = cached.owned.computeIfAbsent(id, ignored -> Loadout.read(member));
-        StatsReport result = StatsReport.of(member, owned, tool, context);
+        StatsReport result = StatsReport.of(member, owned, method, tool, !"equipped".equals(q.get("gear")), context);
         result.player = ign; result.profileId = id; result.profile = string(at(entry, "cute_name"), "Profile");
         result.fetchedAt = cached.report.fetchedAt;
         return result;

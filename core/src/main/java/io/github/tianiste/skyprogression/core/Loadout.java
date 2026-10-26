@@ -130,11 +130,7 @@ public final class Loadout {
         owned.in("inv_armor").stream().filter(i -> ARMOR.contains(i.category)).forEach(l.armor::add);
         owned.in("equipment_contents").stream().filter(i -> EQUIPMENT.contains(i.category)).forEach(l.equipment::add);
         l.accessories.addAll(uniqueFamilies(owned.in("talisman_bag").stream().filter(i -> i.category.equals("ACCESSORY")).toList(), l.notes));
-        if (tool != null) {
-            l.tool = owned.tools().stream().filter(i -> i.instance.equals(tool)).findFirst()
-                    .orElseGet(() -> owned.tools().stream().filter(i -> i.id.equals(tool)).findFirst().orElse(null));
-            if (l.tool == null) l.notes.add("Selected tool " + tool + " is not owned or not readable.");
-        }
+        l.tool = pick(owned, tool, l.notes);
         l.pet = owned.pets.stream().filter(Pet::active).findFirst().orElse(null);
         return l;
     }
@@ -154,6 +150,53 @@ public final class Loadout {
                 .max(Comparator.comparingDouble(p -> StatBreakdown.petValue(p, focus))).orElse(null);
         if (l.pet == null && !owned.pets.isEmpty()) l.notes.add("No owned pet has catalogued " + focus.label + ".");
         return l;
+    }
+    /**
+     * Item value for a method's yield, with the same weighting as the upgrade ranking: Mining Fortune and
+     * the method's fortune type first, Pristine/Spread next, Mining Speed at 1% (ignored for instant blocks).
+     */
+    static double methodValue(Item item, MiningMethod m) {
+        return StatBreakdown.itemValue(item, Stat.MINING_FORTUNE) + Model.stat(item.stats, m.fortune)
+                + (m.gems() ? Model.stat(item.stats, Stat.PRISTINE) * 100 + Model.stat(item.stats, Stat.GEMSTONE_SPREAD) : Model.stat(item.stats, Stat.MINING_SPREAD))
+                + (m.instant ? 0 : StatBreakdown.itemValue(item, Stat.MINING_SPEED) * .01);
+    }
+    /** Pet value for a method, or null when a catalogued value is missing. */
+    static Double methodValue(Pet pet, MiningMethod m) {
+        Double fortune = StatBreakdown.petValue(pet, Stat.MINING_FORTUNE), speed = StatBreakdown.petValue(pet, Stat.MINING_SPEED);
+        return fortune == null || speed == null ? null : fortune + (m.instant ? 0 : speed * .01);
+    }
+    /** Key ({@code instance}, else item ID) of the owned tool with the highest value for the method. */
+    public static String bestTool(Owned owned, MiningMethod m) {
+        return owned.tools().stream().filter(i -> i.applies(m)).max(Comparator.comparingDouble(i -> methodValue(i, m)))
+                .map(i -> i.instance.isBlank() ? i.id : i.instance).orElse(null);
+    }
+    /**
+     * Best owned gear for the method: one copy per armor/equipment slot from all readable storage, the
+     * given tool, one accessory per family and the best catalogued pet. Slots are chosen independently,
+     * so a full set bonus can be broken when single pieces score higher.
+     */
+    public static Loadout bestFor(Owned owned, MiningMethod m, String tool) {
+        Loadout l = new Loadout(Kind.BEST_OWNED, owned);
+        Map<Item, Double> values = new IdentityHashMap<>();
+        Comparator<Item> byValue = Comparator.comparingDouble(i -> values.computeIfAbsent(i, item -> methodValue(item, m)));
+        for (String slot : ARMOR) owned.items.stream().filter(i -> i.category.equals(slot) && i.applies(m)).max(byValue).ifPresent(l.armor::add);
+        for (String slot : EQUIPMENT) owned.items.stream().filter(i -> i.category.equals(slot) && i.applies(m)).max(byValue).ifPresent(l.equipment::add);
+        l.tool = pick(owned, tool, l.notes);
+        l.accessories.addAll(uniqueFamilies(owned.items.stream().filter(i -> i.category.equals("ACCESSORY")).toList(), l.notes));
+        Pet active = owned.pets.stream().filter(Pet::active).findFirst().orElse(null);
+        if (active != null && methodValue(active, m) == null) {
+            l.pet = active;
+            l.notes.add("Kept the active " + active.label() + ": its stats are not catalogued, so it cannot be compared.");
+        } else l.pet = owned.pets.stream().filter(p -> methodValue(p, m) != null)
+                .max(Comparator.comparingDouble(p -> methodValue(p, m))).orElse(active);
+        return l;
+    }
+    private static Item pick(Owned owned, String tool, List<String> notes) {
+        if (tool == null) return null;
+        Item found = owned.tools().stream().filter(i -> i.instance.equals(tool)).findFirst()
+                .orElseGet(() -> owned.tools().stream().filter(i -> i.id.equals(tool)).findFirst().orElse(null));
+        if (found == null) notes.add("Selected tool " + tool + " is not owned or not readable.");
+        return found;
     }
     private static Optional<Item> best(List<Item> items, String category, Stat focus) {
         return items.stream().filter(i -> i.category.equals(category)).max(Comparator.comparingDouble(i -> StatBreakdown.itemValue(i, focus)));

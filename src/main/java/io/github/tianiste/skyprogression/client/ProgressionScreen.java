@@ -83,22 +83,24 @@ public final class ProgressionScreen extends Screen {
     private void typeStats(){minecraft.setScreen(new InputsScreen(this,data.inputs(method),method));}
     private void breakdownControls(int y){
         Profile p=data.profile();var i=data.inputs(method);boolean live=p!=null&&!data.demo;
-        int w=(span-18-12)/4,x=left+9;
-        button("Tool: "+toolName(i.tool)+" v",x,y,w,false,this::selectTool).active=live;
+        int w=(span-18-16)/5,x=left+9;
+        button("Gear: "+(i.equippedGear?"Equipped":"Best owned"),x,y,w,!i.equippedGear,()->{i.equippedGear=!i.equippedGear;persist();refresh();}).active=live;
+        button("Tool: "+toolName(i.tool)+" v",x+w+4,y,w,false,this::selectTool).active=live;
         StatContext.Zone z=data.zone(method);
-        button("Zone: "+(z==null?"Not chosen":z.label)+" v",x+w+4,y,w,false,this::selectZone).active=live;
-        button("God Potion: "+(i.godPotion?"On":"Off"),x+2*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
-        button(data.statsLoading(method)?"Loading...":"Refresh",x+3*(w+4),y,span-18-3*(w+4),false,()->{data.refreshStats();refresh();}).active=live&&!data.statsLoading(method);
+        button("Zone: "+(z==null?"Not chosen":z.label)+" v",x+2*(w+4),y,w,false,this::selectZone).active=live;
+        button("God Potion: "+(i.godPotion?"On":"Off"),x+3*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
+        button(data.statsLoading(method)?"Loading...":"Refresh",x+4*(w+4),y,span-18-4*(w+4),false,()->{data.refreshStats();refresh();}).active=live&&!data.statsLoading(method);
     }
     /** Tool list of the last ledger for this profile; it does not change with the selections. */
     private List<StatsReport.Tool> tools(){Profile p=data.profile();return data.stats!=null&&p!=null&&data.stats.profileId.equals(p.id)?data.stats.tools:List.of();}
     private String toolName(String key){
-        if(key==null||key.isEmpty())return "Choose held tool";
+        if(key==null||key.isEmpty()){StatsReport r=data.stats(method);
+            return r==null?"Auto":r.tool.isEmpty()?"None owned":"Auto, "+tools().stream().filter(t->t.key().equals(r.tool)).map(StatsReport.Tool::name).findFirst().orElse("best");}
         return tools().stream().filter(t->t.key().equals(key)).map(StatsReport.Tool::name).findFirst().orElse(tools().isEmpty()?"Selected":"Not found");
     }
     private void persist(){data.save(minecraft::execute,ignored->{});}
     private void selectTool(){
-        var list=tools();List<String> labels=new ArrayList<>();labels.add("Not chosen (tool stats unknown)");
+        var list=tools();List<String> labels=new ArrayList<>();labels.add("Best owned tool for "+method.label+" (automatic)");
         for(var t:list)labels.add(t.name()+" ("+t.location()+")");
         var i=data.inputs(method);
         minecraft.setScreen(new ChoiceScreen(this,"Held tool",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
@@ -226,15 +228,21 @@ public final class ProgressionScreen extends Screen {
             return;
         }
         var manual=data.inputs(method).stats;
+        Card used=card("Gear used | "+(r.bestGear?"best owned for "+method.label:"currently equipped"),GOLD,0);
+        if(r.loadout.isEmpty())used.line("No readable gear.",MUTED);
+        for(var piece:r.loadout)used.line(piece.name()+"  ("+piece.location()+")",TEXT);
+        used.line(r.accessories+" accessories from the accessory bag, one per family.",MUTED);
+        if(r.bestGear)used.line("Picked from all readable storage; equip these pieces to reach this total. Gear: Equipped shows what you wear now.",MUTED);
         var ledgers=new ArrayList<>(r.stats);ledgers.sort(Comparator.comparing(l->l.stat!=stat));
         int column=0;
         for(var l:ledgers){
             int col=column++%2;
             Card head=card(l.stat.label+" | "+(l.complete?"":"at least ")+fmt(l.total),col==0?GOLD:CYAN,col);
             head.line("Flat "+fmt(l.flat)+(l.multiplier!=1?" x "+fmt(l.multiplier)+" from additive % buffs":""),TEXT);
-            if(r.tool.isEmpty())head.line("Choose your held tool: the API does not report it.",RED);
+            if(r.tool.isEmpty())head.line("No readable mining tool is owned, so tool stats are missing.",RED);
             if(!l.complete)head.line("Some counted sources have unknown values, so this is a lower bound.",RED);
-            if(l.bestOwned!=null)head.meter("Best owned loadout: "+fmt(l.bestOwned),l.total,Math.max(l.total,l.bestOwned));
+            if(r.bestGear&&l.equipped!=null)head.meter("Wearing now: "+fmt(l.equipped),l.equipped,Math.max(l.equipped,l.total));
+            if(!r.bestGear&&l.bestOwned!=null)head.meter("Best owned gear: "+fmt(l.bestOwned),l.total,Math.max(l.total,l.bestOwned));
             Double override=manual.get(l.stat);if(override!=null)head.line("Manual value in use instead: "+fmt(override)+" (clear it in Type Stats)",GOLD);
             for(Breakdown.State state:Breakdown.State.values()){
                 var list=l.contributions.stream().filter(c->c.state()==state).toList();if(list.isEmpty())continue;

@@ -36,16 +36,17 @@ final class ClientData {
     static final class Inputs {
         /** Manual values; a stat absent here uses the automatic total when one exists. */
         Map<Stat, Double> stats = new EnumMap<>(Stat.class);
-        /** Held tool key and zone name for the breakdown; empty zone means the method's usual zone, "-" none. */
+        /** Held tool key (empty = best owned tool) and zone name (empty = the method's usual zone, "-" none). */
         String tool = "", zone = "";
-        boolean godPotion = true;
+        /** False: best owned gear for the method; true: what the API reports as worn. */
+        boolean equippedGear, godPotion = true;
         double efficiency = 65, blocksPerSecond, baseDrops = 1, coinsPerItem, coleweightPerItem;
         boolean confirmed;
         Inputs copy() {
             Inputs i=new Inputs();i.stats=new EnumMap<>(Stat.class);i.stats.putAll(stats);
             i.efficiency=efficiency;i.blocksPerSecond=blocksPerSecond;i.baseDrops=baseDrops;
             i.coinsPerItem=coinsPerItem;i.coleweightPerItem=coleweightPerItem;i.confirmed=confirmed;
-            i.tool=tool;i.zone=zone;i.godPotion=godPotion;return i;
+            i.tool=tool;i.zone=zone;i.equippedGear=equippedGear;i.godPotion=godPotion;return i;
         }
     }
     // No filesystem, TLS initialization, or catalog parsing in the screen constructor.
@@ -82,7 +83,7 @@ final class ClientData {
     private String statsQuery(MiningMethod method) {
         Profile p=profile();if(p==null||demo)return "";
         Inputs i=inputs(method);StatContext.Zone z=zone(method);
-        return "/stats?ign="+enc(p.player)+"&profile="+enc(p.id)+"&tool="+enc(i.tool==null?"":i.tool)+"&zone="+(z==null?"":z.name())
+        return "/stats?ign="+enc(p.player)+"&profile="+enc(p.id)+"&method="+method.name()+"&gear="+(i.equippedGear?"equipped":"best")+"&tool="+enc(i.tool==null?"":i.tool)+"&zone="+(z==null?"":z.name())
                 +"&target="+method.target().name()+"&god="+i.godPotion;
     }
     private static String enc(String value){return URLEncoder.encode(value,java.nio.charset.StandardCharsets.UTF_8);}
