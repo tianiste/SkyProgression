@@ -187,9 +187,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "HELMET",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLOSSY_MINERAL_HELMET",
@@ -203,9 +201,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "LEGENDARY",
     "category": "HELMET",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLACITE_CHESTPLATE",
@@ -395,9 +391,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "CHESTPLATE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLOSSY_MINERAL_CHESTPLATE",
@@ -411,9 +405,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "LEGENDARY",
     "category": "CHESTPLATE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLACITE_LEGGINGS",
@@ -603,9 +595,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "LEGGINGS",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLOSSY_MINERAL_LEGGINGS",
@@ -619,9 +609,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "LEGENDARY",
     "category": "LEGGINGS",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLACITE_BOOTS",
@@ -811,9 +799,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "BOOTS",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLOSSY_MINERAL_BOOTS",
@@ -827,9 +813,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "LEGENDARY",
     "category": "BOOTS",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "FRACTURED_MITHRIL_PICKAXE",
@@ -843,23 +827,14 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
-      "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "UNCOMMON",
     "category": "PICKAXE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "BANDAGED_MITHRIL_PICKAXE",
@@ -873,23 +848,14 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
-      "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "UNCOMMON",
     "category": "PICKAXE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "MITHRIL_PICKAXE",
@@ -903,23 +869,14 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
-      "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "UNCOMMON",
     "category": "PICKAXE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "REFINED_MITHRIL_PICKAXE",
@@ -933,23 +890,14 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
-      "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "RARE",
     "category": "PICKAXE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "TITANIUM_PICKAXE",
@@ -962,23 +910,15 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
       "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "RARE",
     "category": "PICKAXE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "REFINED_TITANIUM_PICKAXE",
@@ -991,23 +931,15 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
       "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "RARE",
     "category": "PICKAXE",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "MITHRIL_DRILL_1",
@@ -1021,23 +953,14 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
-      "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "RARE",
     "category": "DRILL",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "MITHRIL_DRILL_2",
@@ -1051,23 +974,15 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
       "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "RARE",
     "category": "DRILL",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GEMSTONE_DRILL_1",
@@ -1082,14 +997,8 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
       "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
@@ -1129,11 +1038,7 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
       "MF_GEMS",
       "MF_RUBY",
       "MF_TOPAZ",
@@ -1269,23 +1174,15 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
-      "MF_GEMS",
       "MF_RUBY",
-      "MF_TOPAZ",
       "END_STONE",
       "COBBLESTONE"
     ],
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "DRILL",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "TITANIUM_DRILL_2",
@@ -1299,11 +1196,7 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
       "MF_GEMS",
       "MF_RUBY",
       "MF_TOPAZ",
@@ -1437,7 +1330,7 @@
   },
   {
     "id": "DIVAN_DRILL",
-    "name": "Divan's Drill",
+    "name": "Divan\u0027s Drill",
     "group": "Tool",
     "stats": {
       "MINING_SPEED": 1800,
@@ -1533,11 +1426,7 @@
     "methods": [
       "COAL",
       "GOLD",
-      "GROTTO",
-      "UMBER",
-      "SHAFTING",
       "OBSIDIAN",
-      "TUNGSTEN",
       "MF_GEMS",
       "MF_RUBY",
       "MF_TOPAZ",
@@ -1715,9 +1604,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "GLOVES",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "MINERAL_TALISMAN",
@@ -1731,9 +1618,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "RARE",
     "category": "ACCESSORY",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "GLOSSY_MINERAL_TALISMAN",
@@ -1747,9 +1632,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "ACCESSORY",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "TITANIUM_TALISMAN",
@@ -1763,9 +1646,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "UNCOMMON",
     "category": "ACCESSORY",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "TITANIUM_RING",
@@ -1779,9 +1660,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "RARE",
     "category": "ACCESSORY",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "TITANIUM_ARTIFACT",
@@ -1795,9 +1674,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "EPIC",
     "category": "ACCESSORY",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "TITANIUM_RELIC",
@@ -1811,9 +1688,7 @@
     "source": "Auction House / Bazaar; check item requirements",
     "tier": "LEGENDARY",
     "category": "ACCESSORY",
-    "slots": [
-      null
-    ]
+    "slots": []
   },
   {
     "id": "MITHRIL_LANTERN",
@@ -1904,7 +1779,7 @@
   },
   {
     "id": "WILL_O_WISP",
-    "name": "Will-o'-wisp",
+    "name": "Will-o\u0027-wisp",
     "group": "Lantern",
     "stats": {
       "GEMSTONE_SPREAD": 2.5,
@@ -1930,5 +1805,1216 @@
     "slots": [
       null
     ]
+  },
+  {
+    "id": "ARMOR_OF_YOG_HELMET",
+    "name": "Yog Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "HELMET",
+    "slots": [
+      {
+        "slot_type": "UNIVERSAL"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "FLAMEBREAKER_HELMET",
+    "name": "Ember Ash Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "UNCOMMON",
+    "category": "HELMET",
+    "slots": []
+  },
+  {
+    "id": "FLAME_BREAKER_HELMET",
+    "name": "Flamebreaker Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "HELMET",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "GOBLIN_HELMET",
+    "name": "Goblin Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 4
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "HELMET",
+    "slots": [
+      {
+        "slot_type": "SAPPHIRE"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HEAT_HELMET",
+    "name": "Heat Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 2",
+    "tier": "RARE",
+    "category": "HELMET",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      }
+    ]
+  },
+  {
+    "id": "LAPIS_ARMOR_HELMET",
+    "name": "Lapis Armor Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 2
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Mining 5",
+    "tier": "UNCOMMON",
+    "category": "HELMET",
+    "slots": []
+  },
+  {
+    "id": "MINER_OUTFIT_HELMET",
+    "name": "Prospecting Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "HELMET",
+    "slots": []
+  },
+  {
+    "id": "NETHERITE_HELMET",
+    "name": "Netherite Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "HELMET",
+    "slots": []
+  },
+  {
+    "id": "TANK_MINER_HELMET",
+    "name": "Miner Helmet",
+    "group": "Helmet",
+    "stats": {
+      "MINING_SPEED": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "HELMET",
+    "slots": []
+  },
+  {
+    "id": "ARMOR_OF_YOG_CHESTPLATE",
+    "name": "Yog Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "CHESTPLATE",
+    "slots": [
+      {
+        "slot_type": "UNIVERSAL"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "FLAMEBREAKER_CHESTPLATE",
+    "name": "Ember Ash Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "UNCOMMON",
+    "category": "CHESTPLATE",
+    "slots": []
+  },
+  {
+    "id": "FLAME_BREAKER_CHESTPLATE",
+    "name": "Flamebreaker Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "CHESTPLATE",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "GOBLIN_CHESTPLATE",
+    "name": "Goblin Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 4
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "CHESTPLATE",
+    "slots": [
+      {
+        "slot_type": "SAPPHIRE"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HEAT_CHESTPLATE",
+    "name": "Heat Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 2",
+    "tier": "RARE",
+    "category": "CHESTPLATE",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      }
+    ]
+  },
+  {
+    "id": "LAPIS_ARMOR_CHESTPLATE",
+    "name": "Lapis Armor Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 2
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Mining 5",
+    "tier": "UNCOMMON",
+    "category": "CHESTPLATE",
+    "slots": []
+  },
+  {
+    "id": "MINER_OUTFIT_CHESTPLATE",
+    "name": "Prospecting Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "CHESTPLATE",
+    "slots": []
+  },
+  {
+    "id": "TANK_MINER_CHESTPLATE",
+    "name": "Miner Chestplate",
+    "group": "Chestplate",
+    "stats": {
+      "MINING_SPEED": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "CHESTPLATE",
+    "slots": []
+  },
+  {
+    "id": "ARMOR_OF_YOG_LEGGINGS",
+    "name": "Yog Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "LEGGINGS",
+    "slots": [
+      {
+        "slot_type": "UNIVERSAL"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "FLAMEBREAKER_LEGGINGS",
+    "name": "Ember Ash Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "UNCOMMON",
+    "category": "LEGGINGS",
+    "slots": []
+  },
+  {
+    "id": "FLAME_BREAKER_LEGGINGS",
+    "name": "Flamebreaker Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "LEGGINGS",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "GOBLIN_LEGGINGS",
+    "name": "Goblin Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 4
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "LEGGINGS",
+    "slots": [
+      {
+        "slot_type": "SAPPHIRE"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HEAT_LEGGINGS",
+    "name": "Heat Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 2",
+    "tier": "RARE",
+    "category": "LEGGINGS",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      }
+    ]
+  },
+  {
+    "id": "LAPIS_ARMOR_LEGGINGS",
+    "name": "Lapis Armor Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 2
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Mining 5",
+    "tier": "UNCOMMON",
+    "category": "LEGGINGS",
+    "slots": []
+  },
+  {
+    "id": "MINER_OUTFIT_LEGGINGS",
+    "name": "Prospecting Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "LEGGINGS",
+    "slots": []
+  },
+  {
+    "id": "TANK_MINER_LEGGINGS",
+    "name": "Miner Leggings",
+    "group": "Leggings",
+    "stats": {
+      "MINING_SPEED": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "LEGGINGS",
+    "slots": []
+  },
+  {
+    "id": "ARMOR_OF_YOG_BOOTS",
+    "name": "Yog Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 20
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "BOOTS",
+    "slots": [
+      {
+        "slot_type": "UNIVERSAL"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "FLAMEBREAKER_BOOTS",
+    "name": "Ember Ash Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "UNCOMMON",
+    "category": "BOOTS",
+    "slots": []
+  },
+  {
+    "id": "FLAME_BREAKER_BOOTS",
+    "name": "Flamebreaker Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 25,
+      "MINING_FORTUNE": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 5",
+    "tier": "EPIC",
+    "category": "BOOTS",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 20000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "GOBLIN_BOOTS",
+    "name": "Goblin Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 10,
+      "MINING_FORTUNE": 4
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "BOOTS",
+    "slots": [
+      {
+        "slot_type": "SAPPHIRE"
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "HEAT_BOOTS",
+    "name": "Heat Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 15,
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Hard Stone collection 2",
+    "tier": "RARE",
+    "category": "BOOTS",
+    "slots": [
+      {
+        "slot_type": "RUBY"
+      }
+    ]
+  },
+  {
+    "id": "LAPIS_ARMOR_BOOTS",
+    "name": "Lapis Armor Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 20,
+      "MINING_FORTUNE": 2
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Mining 5",
+    "tier": "UNCOMMON",
+    "category": "BOOTS",
+    "slots": []
+  },
+  {
+    "id": "MINER_OUTFIT_BOOTS",
+    "name": "Prospecting Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 15
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "BOOTS",
+    "slots": []
+  },
+  {
+    "id": "TANK_MINER_BOOTS",
+    "name": "Miner Boots",
+    "group": "Boots",
+    "stats": {
+      "MINING_SPEED": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "BOOTS",
+    "slots": []
+  },
+  {
+    "id": "DIAMOND_PICKAXE",
+    "name": "Diamond Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 220
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "OBSIDIAN",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "GOLD_PICKAXE",
+    "name": "Golden Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 250
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "COMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "IRON_PICKAXE",
+    "name": "Iron Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 160
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "COMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "JUNGLE_PICKAXE",
+    "name": "Jungle Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 330
+    },
+    "hotm": 4,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "OBSIDIAN",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "LAPIS_PICKAXE",
+    "name": "Lapis Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 200
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "OBSIDIAN",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "PICKONIMBUS",
+    "name": "Pickonimbus 2000",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 750
+    },
+    "hotm": 4,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "OBSIDIAN",
+      "MF_GEMS",
+      "MF_RUBY",
+      "MF_TOPAZ",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "PROMISING_PICKAXE",
+    "name": "Promising Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 50
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "ROOKIE_PICKAXE",
+    "name": "Rookie Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 150,
+      "ORE_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "COMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "RUSTY_TITANIUM_PICKAXE",
+    "name": "Rusty Titanium Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 100
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "OBSIDIAN",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "STONE_PICKAXE",
+    "name": "Stone Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 110
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "COMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "STONK_PICKAXE",
+    "name": "Stonk",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 380
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "WOOD_PICKAXE",
+    "name": "Wooden Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 70
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "COMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "ZOMBIE_PICKAXE",
+    "name": "Zombie Pickaxe",
+    "group": "Tool",
+    "stats": {
+      "MINING_SPEED": 190
+    },
+    "hotm": 0,
+    "methods": [
+      "COAL",
+      "GOLD",
+      "END_STONE",
+      "COBBLESTONE"
+    ],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "COMMON",
+    "category": "PICKAXE",
+    "slots": []
+  },
+  {
+    "id": "DIVAN_PENDANT",
+    "name": "Pendant of Divan",
+    "group": "Necklace",
+    "stats": {
+      "MINING_SPEED": 100,
+      "MINING_FORTUNE": 25,
+      "COLD_RESISTANCE": 10
+    },
+    "hotm": 10,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "NECKLACE",
+    "slots": [
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ANCIENT_CLOAK",
+    "name": "Ancient Cloak",
+    "group": "Cloak",
+    "stats": {
+      "MINING_FORTUNE": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Combat 22",
+    "tier": "EPIC",
+    "category": "CLOAK",
+    "slots": []
+  },
+  {
+    "id": "GLOWSTONE_GAUNTLET",
+    "name": "Glowstone Gauntlet",
+    "group": "Gloves",
+    "stats": {
+      "MINING_FORTUNE": 5
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Combat 22",
+    "tier": "RARE",
+    "category": "GLOVES",
+    "slots": []
+  },
+  {
+    "id": "VANQUISHED_GLOWSTONE_GAUNTLET",
+    "name": "Vanquished Glowstone Gauntlet",
+    "group": "Gloves",
+    "stats": {
+      "MINING_FORTUNE": 7
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; requires Combat 22",
+    "tier": "EPIC",
+    "category": "GLOVES",
+    "slots": []
+  },
+  {
+    "id": "DWARVEN_METAL",
+    "name": "Dwarven Metal Talisman",
+    "group": "Dwarven Metal Talisman",
+    "stats": {
+      "DWARVEN_METAL_FORTUNE": 15
+    },
+    "hotm": 8,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "ACCESSORY",
+    "slots": []
+  },
+  {
+    "id": "HASTE_ARTIFACT",
+    "name": "Haste Artifact",
+    "group": "Haste accessory",
+    "stats": {
+      "MINING_SPEED": 25
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "ACCESSORY",
+    "slots": []
+  },
+  {
+    "id": "HASTE_RING",
+    "name": "Haste Ring",
+    "group": "Haste accessory",
+    "stats": {
+      "MINING_SPEED": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "ACCESSORY",
+    "slots": []
+  },
+  {
+    "id": "JUNGLE_AMULET",
+    "name": "Jungle Amulet",
+    "group": "Jungle Amulet",
+    "stats": {
+      "GEMSTONE_FORTUNE": 10
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "ACCESSORY",
+    "slots": []
+  },
+  {
+    "id": "SPEED_RELIC",
+    "name": "Speed Relic",
+    "group": "Speed accessory",
+    "stats": {
+      "MINING_SPEED": 1
+    },
+    "hotm": 0,
+    "methods": [],
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "ACCESSORY",
+    "slots": []
   }
 ]

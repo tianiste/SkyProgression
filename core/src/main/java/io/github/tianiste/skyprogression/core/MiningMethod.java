@@ -23,6 +23,21 @@ public enum MiningMethod {
     MiningMethod(String label, Stat fortune, String product, boolean instant) {
         this.label = label; this.fortune = fortune; this.product = product; this.instant = instant;
     }
+    /**
+     * Breaking Power the method's block needs (wiki Breaking Power): MF Gems is capped by Topaz (8); Red Sand and
+     * Mycelium are not listed (null, no pickaxe or drill requirement known).
+     */
+    public Integer breakingPower() {
+        return switch (this) {
+            case COAL, END_STONE, COBBLESTONE -> 1;
+            case GOLD -> 3;
+            case OBSIDIAN -> 4;
+            case MF_RUBY -> 6;
+            case MF_GEMS, MF_TOPAZ -> 8;
+            case GROTTO, UMBER, SHAFTING, TUNGSTEN -> 9;
+            case RED_SAND, MYCELIUM -> null;
+        };
+    }
     /** Uptime defaults per the Mining Cat developer (2026-10-26): about 80-85% for instant-mine blocks, 65-70% otherwise. */
     public double defaultEfficiency() { return instant ? 82.5 : 65; }
     public boolean gems() { return fortune == Stat.GEMSTONE_FORTUNE; }
