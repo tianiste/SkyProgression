@@ -355,8 +355,11 @@ Mineral +150 Mining Spread per piece on ores and blocks (Ore and Block Fortune m
 the bonus it completes and subtracts the one it breaks, and each set is also offered as a full four-piece purchase
 (owned pieces free). Mixed Mineral/Glossy pieces are counted per set (whether they combine is unknown). Not counted:
 Goblin Smart Miner (converts Intelligence, not known to the engine) and Yog Absorb (+1 Mining Speed per 5 Yog kills).
-Known gap: the Breakdown reads a set bonus from the stored lore, which shows "+2 Mining Speed" for Glacite Expert
-Miner rather than 2 x level, so the baseline and this table can differ for a worn Glacite set.
+The Breakdown counts the same values: a full-set bonus whose lore says "per Mining Skill level" (Glacite Expert
+Miner) is the lore number x the Mining level from the skill XP (unknown when the XP is missing). A "Tiered Bonus"
+(Mineralworks, Glossy Mineralworks) is counted once per set as the per-piece value x pieces in the loadout; the stored
+lore number reflects the pieces worn when the item was saved, so the wiki per-piece value is used, or the stored
+value / stored count for other tiered sets.
 
 ## Pets and pet items
 

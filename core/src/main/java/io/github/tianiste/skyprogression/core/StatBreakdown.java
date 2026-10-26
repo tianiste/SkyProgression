@@ -107,12 +107,16 @@ public final class StatBreakdown {
     private static final Pattern BRACKET = Pattern.compile("^(.+?):\\s*[+-]?[0-9,.]+\\s*\\[\\+([0-9,.]+)\\]");
     private static final Pattern STAT_LINE = Pattern.compile("^[A-Z][A-Za-z' ]+:\\s*[+-]?[0-9]");
     private static final Pattern SET_BONUS = Pattern.compile("Full Set Bonus: (.+?) \\((\\d+)/(\\d+)\\)");
+    /** Bonus that grows with each piece worn; counted once per set, per piece worn in the loadout. */
+    private static final Pattern TIERED_BONUS = Pattern.compile("Tiered Bonus: (.+?) \\((\\d+)/(\\d+)\\)");
+    /** Per-piece values (wiki Mineral and Glossy Mineral Armor: +100/+150 Mining Spread per piece on ores and blocks). */
+    private static final Map<String, Double> TIERED_PER_PIECE = Map.of("Mineralworks", 100.0, "Glossy Mineralworks", 150.0);
 
     public static Breakdown compute(JsonObject member, Loadout loadout, StatContext context, Stat stat) {
         if (!SUPPORTED.contains(stat)) throw new IllegalArgumentException(stat.label + " breakdown is not implemented yet");
         Breakdown b = new Breakdown(stat, loadout.kind, context);
         b.notes.addAll(loadout.notes);
-        gear(b, loadout);
+        gear(b, loadout, miningLevel(member));
         pet(b, loadout);
         hotm(b, member, loadout.hotmTree);
         if (stat == Stat.MINING_FORTUNE) skill(b, member);
@@ -127,7 +131,7 @@ public final class StatBreakdown {
 
     // ---- gear ----------------------------------------------------------------------------------
 
-    private static void gear(Breakdown b, Loadout l) {
+    private static void gear(Breakdown b, Loadout l, Integer miningLevel) {
         if (!l.inventoryKnown) {
             b.contributions.add(new Contribution("Gear", "Armor, equipment, tool and accessories", b.stat, null, null, "",
                     State.COUNTED, Confidence.UNKNOWN, "Inventory API data is missing or unreadable; enable the Inventory API."));
@@ -136,10 +140,10 @@ public final class StatBreakdown {
         if (l.tool == null) b.contributions.add(new Contribution("Tool", "Mining tool", b.stat, null, null, "",
                 State.COUNTED, Confidence.MANUAL, "The API does not expose the held item; select the tool you mine with."));
         Set<String> setBonuses = new HashSet<>();
-        for (Item item : l.armor) itemContributions(b, "Armor", item, l, setBonuses);
-        for (Item item : l.equipment) itemContributions(b, "Equipment", item, l, setBonuses);
-        if (l.tool != null) itemContributions(b, "Tool", l.tool, l, setBonuses);
-        for (Item item : l.accessories) itemContributions(b, "Accessory", item, l, setBonuses);
+        for (Item item : l.armor) itemContributions(b, "Armor", item, l, setBonuses, miningLevel);
+        for (Item item : l.equipment) itemContributions(b, "Equipment", item, l, setBonuses, miningLevel);
+        if (l.tool != null) itemContributions(b, "Tool", l.tool, l, setBonuses, miningLevel);
+        for (Item item : l.accessories) itemContributions(b, "Accessory", item, l, setBonuses, miningLevel);
         if (l.accessories.stream().anyMatch(i -> i.id.equals("HASTE_ARTIFACT")) && b.stat == Stat.MINING_SPEED)
             b.contributions.add(new Contribution("Accessory", "Haste III (Haste Artifact effect)", b.stat, 150.0, 150.0,
                     "Only when no stronger Haste effect is active", State.SITUATIONAL, Confidence.KNOWN,
@@ -149,11 +153,11 @@ public final class StatBreakdown {
     /** Value the item contributes unconditionally (stat line plus drill parts), for choosing a best-owned copy. */
     static double itemValue(Item item, Stat stat) {
         Breakdown scratch = new Breakdown(stat, Loadout.Kind.BEST_OWNED, StatContext.UNSPECIFIED);
-        itemContributions(scratch, "", item, null, new HashSet<>());
+        itemContributions(scratch, "", item, null, new HashSet<>(), null);
         return scratch.total();
     }
 
-    private static void itemContributions(Breakdown b, String category, Item item, Loadout l, Set<String> setBonuses) {
+    private static void itemContributions(Breakdown b, String category, Item item, Loadout l, Set<String> setBonuses, Integer miningLevel) {
         Double line = item.stats.get(b.stat);
         if (line != null) b.contributions.add(new Contribution(category, item.name, b.stat, line, null, "",
                 State.COUNTED, Confidence.KNOWN, "Displayed stat line (includes base, enchantments, reforge and gemstones)."));
@@ -167,12 +171,40 @@ public final class StatBreakdown {
             double value = Double.parseDouble(amount.group(1).replace(",", ""));
             boolean percent = !amount.group(2).isEmpty();
             String source = header.contains("+") ? item.name + " lore bonus" : item.name + ": " + header;
+            Matcher tiered = TIERED_BONUS.matcher(text);
+            if (tiered.find()) {
+                String name = tiered.group(1);
+                if (!setBonuses.add("tiered:" + name)) continue; // one bonus per set, not per piece
+                int needed = Integer.parseInt(tiered.group(3)), stored = Integer.parseInt(tiered.group(2));
+                long pieces = l == null ? 0 : l.gear().stream().filter(i -> i.lore.stream().anyMatch(s -> s.startsWith("Tiered Bonus: " + name + " "))).count();
+                // Stored lore shows the bonus for the pieces worn when it was saved; prefer the wiki per-piece value.
+                Double perPiece = TIERED_PER_PIECE.containsKey(name) ? TIERED_PER_PIECE.get(name) : stored > 0 ? value / stored : null;
+                Condition condition = zoneCondition(text);
+                if (perPiece == null) b.contributions.add(new Contribution(category, name + " tiered bonus", b.stat, null, null, condition.text(),
+                        State.COUNTED, Confidence.UNKNOWN, "Per-piece value unknown."));
+                else if (pieces == 0) b.contributions.add(new Contribution(category, name + " tiered bonus", b.stat, 0.0, perPiece * needed,
+                        condition.text(), State.MISSING, Confidence.KNOWN, "0/" + needed + " pieces in this loadout."));
+                else add(b, category, name + " tiered bonus (" + pieces + "/" + needed + ")", perPiece * pieces, perPiece * needed, condition,
+                        Confidence.KNOWN, fmt(perPiece) + " per piece worn.");
+                continue;
+            }
             Matcher set = SET_BONUS.matcher(text);
             if (set.find()) {
                 if (!setBonuses.add(set.group(1))) continue; // one bonus per set, not per piece
                 int needed = Integer.parseInt(set.group(3));
                 long pieces = l == null ? 0 : l.gear().stream().filter(i -> i.lore.stream().anyMatch(s -> s.startsWith("Full Set Bonus: " + set.group(1) + " "))).count();
                 Condition condition = zoneCondition(text);
+                if (text.toLowerCase(Locale.ROOT).contains("per mining skill level")) {
+                    // Glacite Expert Miner: "+2 Mining Speed per Mining Skill level unlocked".
+                    double perLevel = value, maximum = perLevel * number(at(Catalog.progressionRules(), "mining", "maxLevel"), 60);
+                    if (pieces < needed) b.contributions.add(new Contribution(category, set.group(1) + " set bonus", b.stat, 0.0, maximum,
+                            condition.text(), State.MISSING, Confidence.KNOWN, pieces + "/" + needed + " pieces in this loadout."));
+                    else if (miningLevel == null) b.contributions.add(new Contribution(category, set.group(1) + " set bonus", b.stat, null, maximum,
+                            condition.text(), State.COUNTED, Confidence.UNKNOWN, "Mining skill level missing (Skills API off?)."));
+                    else add(b, category, set.group(1) + " set bonus", perLevel * miningLevel, maximum, condition, Confidence.KNOWN,
+                            fmt(perLevel) + " per Mining level (level " + miningLevel + ").");
+                    continue;
+                }
                 if (pieces < needed) b.contributions.add(new Contribution(category, set.group(1) + " set bonus", b.stat, 0.0, value,
                         condition.text(), State.MISSING, Confidence.KNOWN, pieces + "/" + needed + " pieces in this loadout."));
                 else add(b, category, set.group(1) + " set bonus", value, value, condition, Confidence.KNOWN, "Full set equipped.");
@@ -393,6 +425,16 @@ public final class StatBreakdown {
         return !"false".equals(string(at(nodes, "toggle_" + perk), "true"));
     }
 
+    /** Mining skill level from the skill XP, or null when the XP is missing. */
+    static Integer miningLevel(JsonObject member) {
+        JsonElement xp = at(member, "player_data", "experience", "SKILL_MINING");
+        JsonElement levels = at(Catalog.progressionRules(), "mining", "levels");
+        if (xp.isJsonNull() || !levels.isJsonArray()) return null;
+        int level = 0;
+        for (JsonElement rule : levels.getAsJsonArray())
+            if (number(xp, 0) >= number(at(rule, "totalExpRequired"), Double.MAX_VALUE)) level = Math.max(level, (int)number(at(rule, "level"), 0));
+        return level;
+    }
     private static void skill(Breakdown b, JsonObject member) {
         JsonElement xp = at(member, "player_data", "experience", "SKILL_MINING");
         JsonObject rules = Catalog.progressionRules();

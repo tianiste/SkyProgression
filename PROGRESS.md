@@ -40,8 +40,10 @@ fix them later; do not block on the in-game test. Order:
    Powder Coating, Power accessories' gem slots; essence perks, attribute shards and HOTM perk levels (free from
    unspent powder, else grinding); Miner Outfit/Glacite/Mineral set bonuses in armor swaps plus full-set offers.
    Rules: CALCULATIONS.md "Recombobulation, gem swaps...", "Essence perks, attributes, HOTM perk levels", "Set bonuses".
+   Breakdown fix: Glacite Expert Miner = 2 x Mining level; Mineral/Glossy tiered bonus
+   counted once per set (per-piece value x pieces worn). Checked with synthetic pieces (120 Speed at level 60; 3
+   Mineral pieces = 300 Spread); the fixture wears neither, so its ledger is unchanged (Spread 300).
    **Next:** owner checks the Upgrades tab (new cards, grinding label, plan) after restarting the companion. Then:
-   Breakdown reading Glacite Expert Miner as 2 x Mining level and Mineral tiered bonuses per set (not per piece);
    unlocking new HOTM perks, Blue Cheese omelette, collections/skill as grinding; rate models for non-gem methods.
 3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
    prerequisites, mutual exclusions and prices. Each method values them through its rate model
