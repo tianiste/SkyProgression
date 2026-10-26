@@ -22,6 +22,8 @@ public final class StatsReport {
     /** HOTM tree used ("mining", "mining_2"..) and how many trees the profile has. */
     public String hotmTree = "mining";
     public int hotmTrees = 1;
+    /** Pickaxe ability shown on the evaluated tool's lore, for the rate engine; null when none is shown. */
+    public MethodRates.Ability ability;
     public List<Ledger> stats = new ArrayList<>();
 
     public record Tool(String key, String name, String location) {}
@@ -59,6 +61,7 @@ public final class StatsReport {
         for (Item item : pieces) r.loadout.add(new Tool(key(item), item.name, item.location));
         if (main.pet != null) r.loadout.add(new Tool("pet", main.pet.label(), main.pet.active() ? "active pet" : "pets menu"));
         r.accessories = main.accessories.size();
+        r.ability = MethodRates.ability(main.tool);
         for (Stat stat : StatBreakdown.SUPPORTED) {
             Breakdown b = StatBreakdown.compute(member, main, context, stat);
             Ledger l = new Ledger();

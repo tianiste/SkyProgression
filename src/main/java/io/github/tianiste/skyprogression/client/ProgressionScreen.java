@@ -201,8 +201,27 @@ public final class ProgressionScreen extends Screen {
         comparison.line("Shorter bars cost less per gain. These are separate alternatives.",MUTED);
         card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("No assumed resale credit or transfer of modifiers onto replacement gear.",MUTED).line("Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
     }
+    /** Automatic Magma Fields gem rate from the effective stats, the tool's ability and the player's efficiency. */
+    private void gemRateCard(){
+        var i=data.inputs(method);var gem=MethodRates.gem(method);StatsReport r=data.stats(method);
+        Card c=card(method.label+" | automatic rate",GOLD,0);
+        c.line(gem.name()+" (block strength "+fmt(gem.strength())+")",MUTED);
+        if(r==null&&!data.demo&&!data.inputs(method).stats.containsKey(Stat.MINING_SPEED)){c.line(data.statsLoading(method)?"Loading automatic stats...":"Load your profile (or enter stats in Type Stats) for the automatic rate.",TEXT);return;}
+        try{
+            var rate=MethodRates.gems(method,data.effective(method),i.efficiency,r==null?null:r.ability);
+            c.line(fmt(rate.flawlessPerHour())+" Flawless "+gem.name().split(" ")[0]+" / hour",CYAN);
+            var quote=data.prices.get(gem.flawless());
+            if(quote!=null&&quote.available)c.line("About "+coins(rate.flawlessPerHour()*quote.buy)+" / hour at the buy quote ("+coins(quote.buy)+" each; selling yields less)",GOLD);
+            else c.line("Flawless price unknown; coins/hour not shown.",MUTED);
+            c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.roughPerBlock())+" Rough / block",TEXT);
+            c.line("Mining Speed "+fmt(rate.speed())+": "+rate.ticks()+" ticks per block"+(rate.uptime()>0?", "+rate.boostedTicks()+" during the ability ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
+            c.line("Guide reference (hypermax, "+fmt(MethodRates.GUIDE_EFFICIENCY)+"% efficiency): "+fmt(gem.guideFlawlessPerHour())+" Flawless / hour",MUTED);
+            for(String a:rate.assumptions())c.line(a,MUTED);
+        }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
+    }
     private void rateCards(){
-        var i=data.inputs(method);var stats=data.effective(method);Card c=card(method.label+" | rate scenario",GOLD,0);
+        if(MethodRates.supported(method))gemRateCard();
+        var i=data.inputs(method);var stats=data.effective(method);Card c=card(method.label+" | "+(MethodRates.supported(method)?"manual ":"")+"rate scenario",GOLD,MethodRates.supported(method)?1:0);
         if(i.blocksPerSecond<=0){c.line("Enter effective stats and measured active blocks/sec in Type Stats.",TEXT).line("Default mining efficiency: "+fmt(method.defaultEfficiency())+"%",CYAN);return;}
         try{var r=ProgressionEngine.rate(method,stats,i.efficiency,i.blocksPerSecond,i.baseDrops,i.coinsPerItem,i.coleweightPerItem);
             c.line(fmt(i.efficiency)+"% mining uptime",MUTED).line(fmt(r.itemsPerHour())+" items / hour",CYAN).line(i.coinsPerItem>0?coins(r.coinsPerHour())+" / hour":"Enter sale price for coins/hour",GOLD).line(i.coleweightPerItem>0?fmt(r.coleweightPerHour())+" Coleweight / hour":"Enter item weight for Coleweight/hour",GREEN);
