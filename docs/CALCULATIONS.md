@@ -713,3 +713,38 @@ Coleweight: unknown, not shown. Coleweight is defined by the community Coleweigh
 archived 2026-07-25); its repository's `data/` folder holds no weight coefficients (checked 2026-10-26: collections, hotm,
 tick data, coordinates), and the weights it used came from the author's service, which we cannot verify as current or
 official. No coefficient is encoded; the manual Rates scenario still accepts a user-entered Coleweight per item.
+
+## Start with: best owned loadout
+
+`core/` `StartWith`; companion `GET /start?ign=&profile=&method=&tool=&zone=&target=&god=` (about 8-12 KB on the owner's
+snapshot); mod **Start with** tab. Added 2026-10-27 (owner request, roadmap 4).
+- Best owned loadout: the same choice as the Breakdown tab's default, without a second ranking: `Loadout.bestFor` with
+  `Loadout.bestTool` (one copy per armor/equipment slot from all readable storage by the method weighting `Loadout.weigh`, one
+  tool, the best catalogued pet, one accessory per family) and `StatBreakdown.chooseTree` for the HOTM tree. Slots are chosen
+  independently, so a set bonus can be broken (as in the Breakdown). Accessories are listed only when their unconditional stat
+  lines add one of the method's weighted stats; the rest are counted, not listed.
+- Current loadout: `Loadout.equipped` (worn armor and equipment, accessory bag, active pet). The held tool is not in the API:
+  the player's Tool choice (shared with the Breakdown tab) is the held tool; without one the current loadout assumes the best
+  owned tool and no tool swap is listed (said so on the tab). The active HOTM tree is not in the API either: the current
+  loadout uses its own best tree, and a different best tree for the best loadout is listed as a "HOTM tree" swap.
+- Swaps: per armor/equipment slot, tool, pet and accessory family where the best loadout holds a different copy. Each swap is
+  evaluated alone: the current loadout with only that piece changed, same tree and context, all supported stats recomputed with
+  `StatBreakdown.compute`. Swaps that change none of the method's stats and not the tool ability are dropped (ties). The mod
+  rates each with `MethodRates.perHour` at the method's efficiency and the tool's ability, prices it with the selected price
+  mode (`MethodComparison.coinsPerItem`; unknown stays "coins unknown"), sorts by rate after the swap and shows the total of
+  current vs best owned loadout. Single gains need not add up to the total (set bonuses, tick thresholds). Type Stats overrides
+  are not applied (they would hide gear differences); the tab says so when the method has any.
+- Storage (`StartWith.where`): `inv_armor` = worn, `equipment_contents` = worn (equipment), `inv_contents` slots 0-8 = hotbar,
+  else inventory; wardrobe slot = page x 9 + slot % 9 + 1 with 36 items per page (4 rows of 9); ender chest page = slot / 45 + 1;
+  backpack keys count from 0 (backpack slot key + 1); `loadout armor|equipment set N` = Loadouts set N; pets: active pet / pets
+  menu. Container layouts follow the profile API's item order (owner's snapshot: a piece moved to wardrobe index 40 reads as slot
+  14); not cross-checked in game yet.
+- Best-method hint: the report also carries every rated method's totals with the gear worn now in that method's usual zone
+  (same God Potion flag); the mod ranks them like the Compare tab (Type Stats values and efficiency per method) and shows the
+  top method next to the Compare tab's top method with the best owned gear. When the Compare tab's God Potion toggle differs,
+  the hint says so.
+- Inventory API off: ownership of gear and accessories is unknown (shown), only the pet can be compared; pet data off is shown too.
+- Owner's snapshot (2026-10-27, scratch runner): Debotes already wears the best owned armor, equipment, pet and accessories for MF
+  Gems, Coal and Grotto, so only the tool can differ. With the helmet moved to the wardrobe, the necklace to the ender chest, the
+  Mineral Talisman to a backpack and no active pet, MF Gems lists four swaps (helmet restores the Divan set bonus: +161.6 Mining
+  Fortune, +2 Pristine; Bal with Quick Claw; necklace; talisman) with their storage locations.

@@ -53,6 +53,13 @@ this development companion is designed for the project owner's machine.
   missing, temporary, not in the API). By default it uses the best gear and tool you own for the method,
   listed with where each piece is stored; **Gear** switches to what you wear now, and **Tool** picks a
   specific tool. Choose the zone; God Potion is assumed on and can be switched off. Refresh retries.
+- **Start with:** which of your own gear to use for the method before buying anything: the best owned armor,
+  equipment, tool, pet (with its pet item), the accessories that add the method's stats and the HOTM tree, each with
+  where it is stored (worn, inventory, wardrobe slot, ender chest page, backpack, Loadouts set, pets menu). The swap list
+  shows only what differs from what you wear, each with its stat and rate change (items and coins per hour at the
+  **Price** mode), largest gain first, plus the total before and after and the best method for the gear you wear now
+  and for your best owned gear. The API does not show the held tool: pick it with **Held tool** (shared with Breakdown)
+  to see a tool swap. Zone and God Potion follow the Breakdown tab. Needs the companion's `/start` (restart an older companion).
 - **Rates:** the automatic rate for the method (ticks, ability uptime, items per hour or per the method's window)
   with coins per hour at both Coflnet figures (instant-sell and sell offer, labelled, with the quote time). The
   manual scenario next to it takes active blocks per second, base drops, efficiency, a sale price and optionally

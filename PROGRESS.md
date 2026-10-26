@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (coins/hour across methods). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (Start with tab). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -88,9 +88,17 @@ fix them later; do not block on the in-game test. Order:
    pay the same per Rough). End Stone now has a known value (NPC 2); Glacite, Mycelium, Red Sand, Gold sell higher to NPCs.
    Coleweight: no verifiable coefficients (module archived, no weights in its repo), recorded unknown and not shown.
    Rules: CALCULATIONS.md "Coins per hour across methods".
-   **Next:** owner restarts the companion (new `/compare`) and checks the Compare tab (ranking, both price modes, click/Pick,
-   God Potion, Refresh, companion offline message) and the Upgrades cross-method line. Then the scheduled "Start with" gear tab
-   (roadmap 4). Open: a measured session for the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule;
+   **Start with tab (`69e34a3`, `51907cd`, in-game test pending):** `StartWith` + companion `/start` + a **Start with** tab
+   (between Breakdown and Rates): best owned loadout for the method by the existing choice (`Loadout.bestFor`/`bestTool`,
+   `chooseTree`) with each piece's storage (worn, hotbar/inventory, wardrobe slot, ender chest page, backpack slot, Loadouts set,
+   pets menu, pet item), swaps from the worn loadout only (each rated alone through `MethodRates` at the Price mode, largest gain
+   first, total before/after, "already best" when none), and a best-method hint (gear worn now vs Compare's best owned).
+   Held tool = the Tool choice shared with Breakdown (API has no held item; without it no tool swap). Rules: CALCULATIONS.md
+   "Start with: best owned loadout".
+   **Next:** owner restarts the companion (new `/compare` and `/start`) and checks the Compare tab and the Start with tab: piece
+   list and storage labels against the game (wardrobe slot and ender chest page numbering especially), swaps after moving a piece
+   to storage, Held tool, Price, God Potion, Refresh, the hint, and the old-companion message. Then roadmap 4's remaining
+   "Other Upgrades/progression" view. Open: a measured session for the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule;
    Fungus/Harena Fortuna in the stat ledger; Bazaar tax and NPC sale prices in coins/hour.
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
    prerequisites (HOTM tier/tokens, recipe unlocks), mutual exclusions and prices, valued by each method's model, with a
@@ -214,7 +222,14 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (coins/hour across methods, 2026-10-27): `./gradlew build :service:installDist` succeeded after each
+Latest verification (Start with, 2026-10-27): `./gradlew build :service:installDist` succeeded after each step; existing tests
+pass, no tests added. GitHub Actions Build succeeded for `69e34a3` and `51907cd`. Scratch runner on the owner's private snapshot
+(`service-data/debotes-profiles.json`): `StartWith.of` for MF Gems, Coal and Grotto (about 0.6-0.7 s each, 8-12 KB JSON, Gson
+round-trip with null `from` and the ability intact); with no held tool chosen and an unowned tool chosen; and on a modified copy
+(helmet to wardrobe index 40, necklace to the ender chest, Mineral Talisman to backpack 2, no active pet), which listed the four
+swaps with storage labels as quoted in CALCULATIONS.md. The companion's `/start` was compiled but not run as a service (the
+owner's companion on 18475 was not touched); the mod's Start with tab was not run by the agent.
+Earlier verification (coins/hour across methods, 2026-10-27): `./gradlew build :service:installDist` succeeded after each
 step; existing tests pass, no tests added. Scratch runner on the fixture with live Coflnet quotes: `MethodComparison.of` for
 all 14 methods, a Gson round-trip of the `/compare` payload (8.9 KB, same ranking), both price modes and `gain` (numbers in
 CALCULATIONS.md). The companion's `/compare` was compiled but not run as a service (the owner's companion on 18475 was not
@@ -339,10 +354,9 @@ Recent milestones:
 - [ ] Use early/mid/end guide stages for orientation; personalize actual next steps.
 - [ ] Explain prerequisites, where/how to acquire, owned/missing quantities, source
   confidence and distance from a validated method-specific max.
-- [ ] **Later (owner request, 2026-10-26):** a "Start with" tab showing which of the player's
-  owned gear to use for the selected method before buying anything (best owned armor, equipment,
-  tool, pet, accessories and HOTM tree, with where each piece is stored and what to swap from
-  the current loadout). Not scheduled yet; do after the coins/hour comparison.
+- [x] **Start with tab (owner request, 2026-10-26; `69e34a3`, `51907cd`; in-game test pending):** which owned gear to use
+  for the selected method before buying anything (best owned armor, equipment, tool, pet with item, method accessories and
+  HOTM tree, where each piece is stored, swaps from the current loadout with stat and rate change, best-method hint).
 
 ### 5. Regression/parity validation and distribution
 
@@ -387,6 +401,12 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-27 (Start with): new `StartWith` (Report/Piece/Scenario/Swap, `of`, `where`, `petItem`), `Loadout.copy`, companion
+`/start` (same parameters as `/stats` minus `gear`), `ClientData` start request (cancelled with the others, stale responses
+rejected, 45 s cap, old-companion 404 message), `ProgressionScreen` Start with tab (index 4; Rates 5, Compare 6, Other 7; F1
+still opens Other) with Price / Held tool / God Potion / Refresh. Open: storage numbering not checked in game; the hint's worn
+gear uses the Breakdown God Potion flag while Compare has its own; Type Stats overrides are ignored on this tab by design.
 
 2026-10-27 (coins/hour across methods): new `MethodComparison` (Report/Entry wire format, PriceMode, Row, `row`, `rank`,
 `gain`, `of`), companion `/compare` (shared `member` lookup with `/stats`), `ClientData` comparison request (cancelled with
