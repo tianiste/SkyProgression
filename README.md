@@ -16,18 +16,20 @@ Inspired by Mining Cat (Mycelium Larper) and SkyCompass (banana eater).
 This is an independent implementation, not their code or an official integration.
 Not affiliated with or endorsed by Hypixel or Mojang.
 
-## First build (0.1.0)
+## Gear upgrades (0.2.0)
 
 The interface has Overview, Upgrades, Stats, Rates and Other tabs, method/stat/profile
 selectors, progress bars and a clearly labeled offline demo. A local companion service
 loads Hypixel profiles and Coflnet price quotes. Inventory lookups and price requests
 run off the Minecraft render thread and are cached.
 
-**This is a base-gear MVP, not full Mining Cat parity.** The initial catalog has 57 items.
-Overview bars compare base item stats. Item modifiers, pets, complete HOTM stat math,
-recipe/resale costing and exact method-specific rates need further implementation.
-The UI labels these limits; missing prices and API data are never treated as free or zero.
-
+**This is not yet full Mining Cat parity.** Alongside 57 base gear items, the mod now
+reads individual gear copies, displayed stats, enchantments, gemstone slots and rarity.
+It recommends Fortune, Efficiency/Silex, Prismatic, Polarvoid and supported gemstone
+upgrades, using owned materials before buying and including socket unlock/removal fees.
+Overview includes modifier progress bars. Unknown prices remain unknown.
+Pets, complete HOTM stat math, reforges, recipe/resale costing and exact method rates
+still need further implementation. Effective method stats must still be entered manually.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API
 key for Demo. Real profile lookup requires your own registered Hypixel application key
 in the local companion service. The mod never asks for a key.
@@ -40,7 +42,7 @@ the version-upgrade workflow.
 .\Start-Service.cmd
 ```
 
-Build output: `build/libs/skyprogression-0.1.0.jar`.
+Build output: `build/libs/skyprogression-0.2.0.jar`.
 Companion: `service/build/install/service/` (keep its `bin` and `lib` directories together).
 GitHub Actions also builds the jar and companion on every push.
 

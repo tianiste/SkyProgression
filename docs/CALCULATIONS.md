@@ -11,13 +11,13 @@ For method queries, the first version uses a coarse selection score: relevant fo
 plus relevant spread, plus 100 times Pristine for gems, plus 0.01 times speed for non-instant methods.
 This selection heuristic is not an optimizer and may disagree with a fully modeled setup.
 
-An upgrade's delta is target base stats minus current base stats. All alternatives compare
+Base-item replacement deltas compare target base stats against the selected owned copy's displayed stats (or base stats when unavailable). All alternatives compare
 to the same baseline; do not sum every recommendation into one shopping list. Unmet HOTM
 requirements appear after available upgrades. Missing prices sort last. Corrupt or absent
 inventory data disables recommendations rather than interpreting the inventory as empty.
 
 Cost per stat point = full quoted purchase cost / positive stat delta.
-No resale credits, recipe discounts, slot fees, or modifier migration costs are silently assumed.
+No resale credits, recipe discounts or modifier transfers are assumed. Supported socket fees are included.
 
 ## Drop and rate model
 
@@ -63,3 +63,25 @@ Those are separate work from bumping the Minecraft version.
 For Minecraft updates: update `gradle.properties`, adjust the client adapter if needed,
 run `./gradlew build :service:distZip`, then test in-game. Do not widen the supported
 Minecraft version range before testing it. The core and service have no Minecraft imports.
+
+## Individual gear upgrades (0.2.0)
+
+UUID deduplication prevents the same gear copy appearing twice across containers.
+Displayed lore totals replace base values rather than adding modifiers a second time.
+Lore can contain context-dependent values: it is not a complete effective stat calculator.
+Fortune, Efficiency/Silex, Prismatic and Polarvoid proposals use incremental stat deltas.
+Gemstone deltas use quality and item rarity, including recombobulation and accessory scaling.
+Occupied flexible slots retain their current gem type. Unknown qualities are skipped.
+Costs deduct owned materials independently per alternative; no shared shopping-list allocation.
+Slot unlock ingredients and coins come from official Hypixel item metadata. Removal fees
+are included, and removed gems receive no resale credit. Missing ingredient prices make
+the whole cost unknown. Enchantment XP costs are not converted to coins.
+
+Rule references:
+- https://hypixelskyblock.minecraft.wiki/w/Enchantment_Fortune
+- https://hypixelskyblock.minecraft.wiki/w/Enchantment_Efficiency
+- https://hypixelskyblock.minecraft.wiki/w/Enchantment_Prismatic
+- https://hypixelskyblock.minecraft.wiki/w/Silex
+- https://hypixelskyblock.minecraft.wiki/w/Polarvoid_Book
+- https://hypixelskyblock.minecraft.wiki/w/Gemstone
+- https://hypixelskyblock.minecraft.wiki/w/Gemstone_Slot

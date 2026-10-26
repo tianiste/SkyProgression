@@ -1,10 +1,10 @@
-# Install SkyProgression 0.1.0
+# Install SkyProgression 0.2.0
 
 ## Mod
 
 1. Use Minecraft **26.1.2**, **Fabric Loader 0.20.1 or newer**, and Java **25**.
 2. Install **Fabric API for 26.1.2**. Keep your other existing mods.
-3. Copy `skyprogression-0.1.0.jar` into that instance's `mods` folder.
+3. Copy `skyprogression-0.2.0.jar` into that instance's `mods` folder.
    Do not install the `-sources.jar` file.
 4. Start Minecraft and enter `/sp` or `/skyprogression` while in a world/server.
 5. Select **Demo** to try the interface immediately. Demo inventory/prices are fabricated and labeled.
@@ -45,31 +45,37 @@ this development companion is designed for the project owner's machine.
 - **Overview:** HOTM, mining level and collection progress, plus the selected stat's best
   owned base item per slot, catalog target and remaining points.
 - **Upgrades:** choose a method, then enter effective in-game stats in **Type Stats**.
-  Ranks base-item alternatives by purchase cost per estimated 1% more drops.
-- **Stats:** ranks base-item alternatives by purchase cost per point of the selected stat.
+  Ranks supported gear upgrades and base-item alternatives by purchase cost per estimated 1% more drops.
+- **Stats:** ranks supported gear upgrades and base-item alternatives by purchase cost per point of the selected stat.
 - **Rates:** enter effective stats, active blocks per second, base drops per block, efficiency,
   sale price per item and optionally Coleweight per item. Inputs are saved per profile/method.
 - **Other:** known profile milestones plus a checklist of bonuses not modeled automatically.
 
 Use the arrows to page through results. Nothing purchases items, equips gear, or mines for you.
 
-## Important first-version limits
+## Current limits
 
-This is a working **base-gear MVP**, not yet a full replacement for Mining Cat or SkyCompass.
+This is a working **gear-upgrade preview**, not yet a full replacement for Mining Cat or SkyCompass.
 The 57-item catalog covers selected armor, equipment, tools, accessories and lanterns.
 The method selector includes all requested methods, but specialized loadouts and bonuses
 are not comprehensive. Do not interpret a completed bar as a fully maxed account.
 
-Reforges, gemstone sockets/quality, enchants, drill modules, pet bonuses, HOTM perks,
-attributes and temporary buffs are not automatically calculated. Enter effective totals
-for estimates. Current/max bars compare catalog **base** item stats only. Owned gear can
-be in storage; the mod does not claim you have it equipped or that it is usable yet.
+Individual gear copies retain their enchantments, rarity, socket contents and displayed
+item stats. Supported upgrades include Fortune IV, Efficiency/Silex, Prismatic,
+Polarvoid Books, and Flawless/Perfect Jade, Amber and Topaz. Gemstone costs include
+known unlock and removal fees. Owned materials reduce the amount to buy.
+Recommendations are independent alternatives, not a cumulative shopping list.
 
-Upgrade costs use Coflnet purchase quotes, not a matching item's exact modifiers.
-Owned items are excluded from purchases. Recipe materials and resale credits are not
-costed yet. HOTM is checked; other requirements and soulbinding require manual checks.
-Ironman/Bingo market purchases are flagged rather than suggested as available.
+Reforge upgrades, drill modules, pet bonuses, complete HOTM math, attributes and temporary
+buffs are not modeled automatically. Enter effective totals for method estimates.
+Displayed item lore is not your effective total. Base-item bars compare catalog base
+stats; modifier bars show supported upgrades separately. Stored gear is not necessarily
+equipped. New-item comparisons do not assume modifiers transfer from your old item.
 
+Prices are purchase quotes, not exact matching auction listings. No resale credits or
+full crafting optimization. Unknown prices stay unknown. HOTM and Prismatic's Enchanting
+requirement are checked; other requirements and soulbinding need manual checks.
+Ironman/Bingo missing materials are flagged for gathering.
 Rates are scenario estimates, not Mining Cat's exact formulas. Speed thresholds, mining
 abilities, cooldowns, fuel costs, taxes, route density and mineshaft loot are not modeled.
 Supply measured active blocks/sec to account for speed. Spread assumes enough extra
@@ -90,6 +96,11 @@ No automatic Coleweight coefficient is invented: enter one or the result stays u
 - **Rate limited:** wait a few minutes. Profiles cache for five minutes; prices for fifteen.
 - **Wrong numbers:** compare the stated base-item scope with the in-game effective total.
 - **Newer Minecraft:** this jar intentionally declares 26.1.2 only. Rebuild and test before upgrading.
+
+## Updating from 0.1.0
+
+Close the old companion and replace both the mod jar and the companion from this pack.
+Remove the old mod jar from the instance, then start the new companion.
 
 ## Your first in-game test
 
