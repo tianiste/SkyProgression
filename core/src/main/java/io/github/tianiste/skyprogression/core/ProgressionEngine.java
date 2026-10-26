@@ -162,7 +162,7 @@ public final class ProgressionEngine {
     }
     /** Rate (MethodRates.unit) when the method has a usable rate model, else the drop multiplier. */
     private static double metric(MiningMethod m, Map<Stat, Double> stats, RateBasis basis) {
-        Double r = basis != null && rateModel(m) ? rate(m, stats, basis, 1) : null;
+        Double r = basis != null && rateModel(m) ? perHour(m, stats, basis, 1) : null; // hourly, so a changing ability cycle cannot skew the total
         return r != null && r > 0 ? r : yieldMultiplier(m, stats);
     }
 
@@ -396,10 +396,15 @@ public final class ProgressionEngine {
         return after;
     }
     /** Rate over the method's value window (MethodRates.unit) with the ability cooldown scaled by cooldownFactor; null when the stats are invalid. */
+    /** The window is the baseline's (before the upgrade's cooldown change), so before and after share one window and the gain stays hourly. */
     private static Double rate(MiningMethod m, Map<Stat, Double> stats, RateBasis basis, double cooldownFactor) {
+        Double r = perHour(m, stats, basis, cooldownFactor);
+        return r == null ? null : r * MethodRates.windowHours(m, basis.ability());
+    }
+    private static Double perHour(MiningMethod m, Map<Stat, Double> stats, RateBasis basis, double cooldownFactor) {
         var a = basis.ability();
         if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * cooldownFactor);
-        try { return MethodRates.value(m, stats, basis.efficiency(), a); }
+        try { return MethodRates.perHour(m, stats, basis.efficiency(), a); }
         catch (IllegalArgumentException e) { return null; }
     }
     /** Drop-only model. Does not pretend speed, cold, route, abilities or tick thresholds are linear yield. */

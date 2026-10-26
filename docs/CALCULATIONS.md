@@ -30,8 +30,8 @@ Combined yield is the product of those multipliers.
 Estimated improvement % = `100 * (yield after / yield before - 1)`.
 Cost per 1% = `purchase cost / estimated improvement %`.
 Speed/cold-only changes are available in stat queries, not assigned imaginary drop gains.
-This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz, Grotto
-and Coal); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
+This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz, Grotto,
+Coal and Obsidian); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
 
 Items/hour = `3600 * efficiency/100 * active blocks/sec * base drops/block * yield`.
 Coins/hour and Coleweight/hour multiply that rate by the user-entered per-item values.
@@ -242,9 +242,11 @@ Mining Fortune and may be one temporary source. Not tuned.
 
 ## Upgrade ranking by rate
 
-Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto, Coal) rank upgrades on the Upgrades tab by
-gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour for the gem methods and Coal per 30 minutes
-for Coal (sections below; the window does not change the gain). Before and
+Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto, Coal, Obsidian) rank upgrades on the Upgrades
+tab by gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour for the gem methods, Coal per 30
+minutes and Obsidian per Mining Speed Boost cycle (sections below). The gain is always computed on the hourly rate; the
+window only scales what is shown, and before and after use the baseline's window (a cooldown upgrade shortens the
+cycle, which would otherwise look like a loss). The plan's running total is hourly too. Before and
 after use the same effective stats as the Rates tab (automatic totals; Type Stats overrides still win), the
 efficiency from Type Stats and the evaluated tool's Mining Speed Boost; the upgrade's stat delta is added to
 those stats. Each card shows the gain and the rate before and after in the method's unit, which the Upgrades header also names. Cost per 1% = cost / gain %, as
@@ -561,3 +563,30 @@ Mining Cat Coal pages (comparison only; `docs/references/MININGCAT.md`):
   neighbor blocks on a route), so we keep the plain Spread rule and record the difference.
 - Speed: Mining Cat says 7,380 is "1,621 short of the 9,001 needed to instamine coal while falling". Our threshold is the
   same 9,001; our fixture speed is 7,250 (the 130 difference is not yet explained).
+
+## Rates: Obsidian
+
+`MethodRates.blocks` for Obsidian with the Coal rules above, except:
+- Obsidian strength 500, instamine above 60 x 500 = 30,000 Mining Speed (wiki Block Strength names Obsidian among the
+  60 x blocks). Ticks otherwise round(15,000 / Mining Speed), at least 4: every Mining Speed above 3,334 gives the
+  4-tick soft cap, so Mining Speed has value only when Mining Speed Boost lifts it above 30,000
+  (speed x (1 + boost) > 30,000; above 8,571 with +250%). The Rates tab shows that threshold.
+- Mined on the ground (the Obsidian guide's route is floor and walls); airborne share 0, with the share recorded as
+  unknown. Default efficiency 65% (not an instamine block).
+- Obsidian per block = 1 x (1 + (Mining Fortune + Block Fortune) / 100) (wiki Mining Fortune; Obsidian takes Block
+  Fortune in our method table). Coins at the Coflnet `OBSIDIAN` buy quote; crafting into Null Ovoids is not counted.
+- Value window: one Mining Speed Boost cycle, the ability's cooldown from the tool lore (the Mining Cat developer's
+  window for Obsidian, "from full cooldown until it ends"; we read one cycle as one cooldown, which starts when the
+  ability is used). Without a Mining Speed Boost the window is one hour.
+- Not modelled (unknown or no rule yet): the guide's pet swap to Scatha (Unalloyed Speed) for the ability and to Snail
+  otherwise, Rogue Sword / Weirder Tuba movement speed (walking, not Mining Speed), and Will-o'-wisp uptime. Movement
+  belongs in the efficiency.
+
+Guide check (Obsidian guide, owner-supplied `service-data/guides/obsidian.txt`: "around 3.5m/h" with max Magical Power
+and decent skill). An assumed hypermax (Mining Speed 9,700, so instamine during a 15 s / 97 s ability; Spread 400;
+Mining + Block Fortune about 2,950) gives about 2.6M / hour at 65%, about 25% below the guide. The gap is not explained;
+skilled routes may run above 65% efficiency, or Spread may be higher. Not tuned.
+
+Fixture (Debotes, best owned gear, DR-X655, Crystal Hollows, 65%): Mining Speed 7,250 (4 ticks, 25,375 during the
+ability, still 4 ticks), Fortune 1,767 + Block 115, Spread 300: about 0.93M Obsidian / hour, 25,000 per 108 s cycle.
+8,572 Mining Speed would add about 41%. Not validated against a measured session.

@@ -63,6 +63,9 @@ fix them later; do not block on the in-game test. Order:
    ~3.89M Coal/h (1.95M / 30 min); 9,001 Speed would add ~20%. Guide 4-9M/h hypermax; estimated hypermax ~8.3M/h.
    Differences vs Mining Cat: Spread rows (Snoozle +8: ours 2.0%, theirs 1.6%) documented, not tuned. Wiki fix: non-ore
    strengths are instamine / 30 (Cobblestone 20, not 10). Rules: CALCULATIONS.md "Rates: Coal".
+   **Obsidian rate model (in-game test pending):** strength 500 (instamine > 30,000), 4-tick soft cap otherwise, so
+   speed only counts when MSB lifts it above 30,000; Block Fortune; shown per ability cycle (cooldown), ranked hourly.
+   Fixture ~0.93M/h at 65%; 8,572 Speed would add ~41%. Hypermax estimate ~2.6M/h vs guide ~3.5M/h (gap documented).
    **Next:** owner restarts the companion (new `/stats` resale fields and prices) and checks the Upgrades tab: grinding
    labels, craft/buy notes, net-cost lines, plan resale line. Then: rate models for non-gem methods (roadmap 2).
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,

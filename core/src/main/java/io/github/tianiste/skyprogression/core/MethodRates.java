@@ -43,31 +43,44 @@ public final class MethodRates {
     /**
      * A non-gem block method: block strength and instamine factor (wiki Block Strength: instamining needs more than
      * 60 x strength on ores, Obsidian, gemstones and Dwarven Metal, else 30 x), the share of blocks mined airborne,
-     * base drops per block, the priced product, and the value window in hours with its description.
+     * base drops per block, the priced product, and the value window: windowHours with its description, or one Mining
+     * Speed Boost cycle (abilityCycle; one hour when the tool has no Mining Speed Boost).
      */
     public record Block(String name, double strength, double instamineFactor, double airShare, double baseDrops, String product, String unit,
-                        double windowHours, String window, String guideNote) {}
+                        double windowHours, String window, boolean abilityCycle, String guideNote) {}
     public record BlockRate(Block block, double speed, int groundTicks, int airTicks, int boostedGroundTicks, int boostedAirTicks, double uptime,
-                            double blocksPerHour, double dropsPerBlock, double perHour, List<String> assumptions) {
-        public double perWindow() { return perHour * block.windowHours(); }
+                            double blocksPerHour, double dropsPerBlock, double perHour, double windowHours, List<String> assumptions) {
+        public double perWindow() { return perHour * windowHours; }
     }
 
     public static Block block(MiningMethod m) {
         return switch (m) {
             // Coal guide (Oct 2026): rough estimates, "likely to make in between/less than what is written".
-            case COAL -> new Block("Coal Ore", 30, 60, .08, 1, "COAL", "Coal", .5, "30 minutes (two lobby hops)",
-                    "Coal guide: 4.0M-9.0M Coal plus 3.0M-6.0M Hard Stone / hour");
+            case COAL -> new Block("Coal Ore", 30, 60, .08, 1, "COAL", "Coal", .5, "30 minutes (two lobby hops)", false,
+                    "Coal guide, hypermax rough estimates: 4.0M-9.0M Coal plus 3.0M-6.0M Hard Stone / hour");
+            // Obsidian guide: "around 3.5m/h" with max Magical Power and decent skill; mined on the floor and walls.
+            case OBSIDIAN -> new Block("Obsidian", 500, 60, 0, 1, "OBSIDIAN", "Obsidian", 1, "hour", true,
+                    "Obsidian guide: around 3.5M Obsidian / hour with max Magical Power and decent skill");
             default -> null;
         };
     }
     public static boolean supported(MiningMethod m) { return gem(m) != null || block(m) != null; }
-    /** Hours the method's rate is shown and valued over (the Mining Cat developer's per-method windows; one hour otherwise). */
-    public static double windowHours(MiningMethod m) { Block b = block(m); return b == null ? 1 : b.windowHours(); }
+    /**
+     * Hours the method's rate is shown over (the Mining Cat developer's per-method windows; one hour otherwise). A Mining
+     * Speed Boost cycle is the ability's cooldown, which starts when the ability is used.
+     */
+    public static double windowHours(MiningMethod m, Ability ability) {
+        Block b = block(m);
+        if (b == null) return 1;
+        return b.abilityCycle() ? ability != null && ability.speedBoost() ? ability.cooldown() / 3600 : 1 : b.windowHours();
+    }
     /** Unit of value(): "Flawless / hour" for gems, else the product per window, for example "Coal / 30 min". */
-    public static String unit(MiningMethod m) {
+    public static String unit(MiningMethod m, Ability ability) {
         Block b = block(m);
         if (b == null) return "Flawless / hour";
-        return b.unit() + (b.windowHours() == 1 ? " / hour" : " / " + fmt(b.windowHours() * 60) + " min");
+        if (b.abilityCycle() && ability != null && ability.speedBoost()) return b.unit() + " / ability cycle (" + fmt(ability.cooldown()) + "s)";
+        double h = windowHours(m, ability);
+        return b.unit() + (h == 1 ? " / hour" : " / " + fmt(h * 60) + " min");
     }
     /** Price ids of the methods' rated products. */
     public static Set<String> priceIds() {
@@ -75,9 +88,9 @@ public final class MethodRates {
         for (MiningMethod m : MiningMethod.values()) { Block b = block(m); if (b != null) ids.add(b.product()); }
         return ids;
     }
-    /** The method's rate over its value window (Flawless / hour for gems, product per window otherwise). */
-    public static double value(MiningMethod m, Map<Stat, Double> stats, double efficiency, Ability ability) {
-        return block(m) != null ? blocks(m, stats, efficiency, ability).perWindow() : gems(m, stats, efficiency, ability).flawlessPerHour();
+    /** The method's hourly rate (Flawless / hour for gems, product / hour otherwise); scale by windowHours to show it. */
+    public static double perHour(MiningMethod m, Map<Stat, Double> stats, double efficiency, Ability ability) {
+        return block(m) != null ? blocks(m, stats, efficiency, ability).perHour() : gems(m, stats, efficiency, ability).flawlessPerHour();
     }
 
     private static final Pattern ABILITY = Pattern.compile("Ability: (.+?)\\s+RIGHT CLICK");
@@ -146,9 +159,10 @@ public final class MethodRates {
         double fortune = Math.max(0, stat(stats, Stat.MINING_FORTUNE) + stat(stats, m.fortune));
         double drops = b.baseDrops() * (1 + fortune / 100);
         if (a > 0) assumptions.add(fmt(a * 100) + "% of blocks mined airborne (route estimate), at Mining Speed / 5; the rest on the ground.");
+        else assumptions.add("All blocks mined on the ground (the airborne share of the route is unknown; airborne blocks take 5x longer).");
         assumptions.add("Every Mining Spread block is another " + b.name() + "; other blocks on the route, travel and lobby hops are part of the efficiency.");
         assumptions.add(b.unit() + " per block = " + fmt(b.baseDrops()) + " x (1 + (Mining Fortune + " + m.fortune.label + ") / 100).");
-        return new BlockRate(b, speed, ground, air, boostedGround, boostedAir, uptime, blocksPerHour, drops, blocksPerHour * drops, assumptions);
+        return new BlockRate(b, speed, ground, air, boostedGround, boostedAir, uptime, blocksPerHour, drops, blocksPerHour * drops, windowHours(m, ability), assumptions);
     }
 
     public static GemRate gems(MiningMethod m, Map<Stat, Double> stats, double efficiency, Ability ability) {

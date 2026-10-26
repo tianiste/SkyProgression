@@ -194,7 +194,7 @@ public final class ProgressionScreen extends Screen {
         if(!focused&&!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Automatic method stats come from your loaded profile. Type Stats adds or overrides values.",TEXT).line("The Stats tab works without these inputs and ranks coins per stat point.",CYAN);return;}
         boolean rated=!focused&&upgrades.stream().anyMatch(u->u.rateBefore()!=null);
         Card head=card(focused?stat.label+" | cheapest points first":method.label+" | best value first",GOLD,0);
-        if(!focused)head.line(rated?"Model: rate gain (automatic "+method.label+" rate, "+MethodRates.unit(method)+")":ProgressionEngine.rateModel(method)?"Model: drop multiplier (rate unavailable for these stats)":"Model: drop multiplier (no rate model for "+method.label+" yet)",CYAN)
+        if(!focused)head.line(rated?"Model: rate gain (automatic "+method.label+" rate, "+MethodRates.unit(method,ability())+")":ProgressionEngine.rateModel(method)?"Model: drop multiplier (rate unavailable for these stats)":"Model: drop multiplier (no rate model for "+method.label+" yet)",CYAN)
                 .line(rated?"Mining Speed counts only when it changes ticks; ability cooldown counts through uptime.":"Fortune x Spread x Pristine; Mining Speed and ability cooldown are not valued.",MUTED);
         head.line("Each recommendation compares to your current setup. Alternatives are not a combined shopping list.",MUTED);
         if(upgrades.isEmpty())card("No supported upgrades found",CYAN,0).line("This does not mean your account is fully maxed. Try another method or stat.",TEXT);
@@ -209,7 +209,7 @@ public final class ProgressionScreen extends Screen {
             c.line(u.cost()==null?("GRIND".equals(u.item().category)?"Grinding (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
             if(!u.resaleNote().isEmpty()&&u.cost()!=null)c.line(u.net()!=null?"Net "+coins(u.net())+" after selling the replaced item for "+coins(u.resale())+" ("+u.resaleNote()+")"
                     :u.resaleNote()+"; net cost unknown",u.net()!=null?CYAN:MUTED);
-            if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" "+MethodRates.unit(method),GREEN);
+            if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" "+MethodRates.unit(method,ability()),GREEN);
             else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
             if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned",GREEN);
             if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
@@ -235,7 +235,7 @@ public final class ProgressionScreen extends Screen {
         for(var step:plan){var u=step.upgrade();
             c.line((++n)+". "+u.item().name+(u.current()!=null&&u.item().modification?" ("+u.current().name+")":""),TEXT);
             c.line("   +"+fmt(u.gain())+"% | "+coins(u.cost())+" | total +"+fmt(step.totalGain())+"% for "+coins(step.totalCost())
-                    +(step.rate()!=null?" | "+fmt(step.rate())+" "+MethodRates.unit(method):""),u.cost()==0?GREEN:CYAN);
+                    +(step.rate()!=null?" | "+fmt(step.rate())+" "+MethodRates.unit(method,ability()):""),u.cost()==0?GREEN:CYAN);
         }
         var last=plan.getLast();
         c.line("After "+plan.size()+" steps: +"+fmt(last.totalGain())+"% "+(rated?"rate":"drops")+" for "+coins(last.totalCost())
@@ -271,9 +271,10 @@ public final class ProgressionScreen extends Screen {
         if(r==null&&!data.demo&&!data.inputs(method).stats.containsKey(Stat.MINING_SPEED)){c.line(data.statsLoading(method)?"Loading automatic stats...":"Load your profile (or enter stats in Type Stats) for the automatic rate.",TEXT);return;}
         try{
             var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability);
-            c.line(fmt(rate.perWindow())+" "+b.unit()+" per "+b.window()+" | "+fmt(rate.perHour())+" / hour",CYAN);
+            String window=rate.windowHours()==1?"hour":b.abilityCycle()?"ability cycle ("+fmt(rate.windowHours()*3600)+"s)":b.window();
+            c.line(fmt(rate.perWindow())+" "+b.unit()+" per "+window+(rate.windowHours()==1?"":" | "+fmt(rate.perHour())+" / hour"),CYAN);
             var quote=data.prices.get(b.product());
-            if(quote!=null&&quote.available)c.line("About "+coins(rate.perWindow()*quote.buy)+" per "+b.window()+" at the buy quote ("+coins(quote.buy)+" each; selling yields less)",GOLD);
+            if(quote!=null&&quote.available)c.line("About "+coins(rate.perWindow()*quote.buy)+" per "+window+" at the buy quote ("+coins(quote.buy)+" each; selling yields less)",GOLD);
             else c.line(b.unit()+" price unknown; coins not shown.",MUTED);
             c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.dropsPerBlock())+" "+b.unit()+" / block",TEXT);
             c.line("Mining Speed "+fmt(rate.speed())+": "+ticksText(rate.groundTicks())+" on the ground, "+ticksText(rate.airTicks())+" airborne"
@@ -281,10 +282,14 @@ public final class ProgressionScreen extends Screen {
             double nextGround=MethodRates.nextTickSpeed(rate.speed(),b.strength(),b.instamineFactor());
             if(Double.isFinite(nextGround))c.line("Next threshold: "+fmt(nextGround)+" Mining Speed on the ground; speed between thresholds adds nothing",MUTED);
             else if(rate.airTicks()>1)c.line("Next threshold: "+fmt(5*MethodRates.nextTickSpeed(rate.speed()/5,b.strength(),b.instamineFactor())-4)+" Mining Speed airborne; speed between thresholds adds nothing",MUTED);
-            c.line("Guide reference ("+b.guideNote()+"; hypermax, rough estimates)",MUTED);
+            var ab=ability();
+            if(rate.uptime()>0&&rate.boostedGroundTicks()>1)c.line("Instamine during the ability above "+fmt(Math.floor(b.instamineFactor()*b.strength()/(1+ab.boostPercent()/100))+1)+" Mining Speed",MUTED);
+            c.line("Guide reference ("+b.guideNote()+")",MUTED);
             for(String a:rate.assumptions())c.line(a,MUTED);
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
     }
+    /** Pickaxe ability of the evaluated tool, or null before the stats load. */
+    private MethodRates.Ability ability(){StatsReport r=data.stats(method);return r==null?null:r.ability;}
     private static String ticksText(int t){return t==1?"instamine":t+" ticks";}
     private void rateCards(){
         if(MethodRates.block(method)!=null)blockRateCard();
