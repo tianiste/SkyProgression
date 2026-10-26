@@ -149,24 +149,28 @@ public final class Loadout {
         l.tool = owned.tools().stream().max(Comparator.comparingDouble(i -> StatBreakdown.itemValue(i, focus))).orElse(null);
         List<Item> accessories = owned.items.stream().filter(i -> i.category.equals("ACCESSORY")).toList();
         l.accessories.addAll(uniqueFamilies(accessories, l.notes));
-        l.pet = owned.pets.stream().filter(p -> StatBreakdown.petValue(p, focus) != null)
-                .max(Comparator.comparingDouble(p -> StatBreakdown.petValue(p, focus))).orElse(null);
+        l.pet = owned.pets.stream().filter(p -> StatBreakdown.petValue(p, focus, StatContext.UNSPECIFIED) != null)
+                .max(Comparator.comparingDouble(p -> StatBreakdown.petValue(p, focus, StatContext.UNSPECIFIED))).orElse(null);
         if (l.pet == null && !owned.pets.isEmpty()) l.notes.add("No owned pet has catalogued " + focus.label + ".");
         return l;
     }
     /**
-     * Item value for a method's yield, with the same weighting as the upgrade ranking: Mining Fortune and
-     * the method's fortune type first, Pristine/Spread next, Mining Speed at 1% (ignored for instant blocks).
+     * Method weighting shared with the upgrade ranking: Mining Fortune and the method's fortune type first,
+     * Pristine x 100 and the method's Spread next, Mining Speed at 1% (ignored for instant blocks).
      */
-    static double methodValue(Item item, MiningMethod m) {
-        return StatBreakdown.itemValue(item, Stat.MINING_FORTUNE) + Model.stat(item.stats, m.fortune)
-                + (m.gems() ? Model.stat(item.stats, Stat.PRISTINE) * 100 + Model.stat(item.stats, Stat.GEMSTONE_SPREAD) : Model.stat(item.stats, Stat.MINING_SPREAD))
-                + (m.instant ? 0 : StatBreakdown.itemValue(item, Stat.MINING_SPEED) * .01);
+    public static double weigh(MiningMethod m, java.util.function.ToDoubleFunction<Stat> value) {
+        return value.applyAsDouble(Stat.MINING_FORTUNE) + value.applyAsDouble(m.fortune) + value.applyAsDouble(m.spread())
+                + (m.gems() ? value.applyAsDouble(Stat.PRISTINE) * 100 : 0) + (m.instant ? 0 : value.applyAsDouble(Stat.MINING_SPEED) * .01);
     }
-    /** Pet value for a method, or null when a catalogued value is missing. */
+    /** Item value for a method's yield (unconditional stat lines and drill parts). */
+    static double methodValue(Item item, MiningMethod m) {
+        return weigh(m, s -> StatBreakdown.itemValue(item, s));
+    }
+    /** Pet value for a method in its usual zone and block target, or null when a catalogued value is missing. */
     static Double methodValue(Pet pet, MiningMethod m) {
-        Double fortune = StatBreakdown.petValue(pet, Stat.MINING_FORTUNE), speed = StatBreakdown.petValue(pet, Stat.MINING_SPEED);
-        return fortune == null || speed == null ? null : fortune + (m.instant ? 0 : speed * .01);
+        StatContext context = m.usualContext();
+        for (Stat s : m.relevantStats()) if (StatBreakdown.petValue(pet, s, context) == null) return null;
+        return weigh(m, s -> StatBreakdown.petValue(pet, s, context));
     }
     /** Key ({@code instance}, else item ID) of the owned tool with the highest value for the method. */
     public static String bestTool(Owned owned, MiningMethod m) {

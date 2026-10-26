@@ -44,8 +44,9 @@ this development companion is designed for the project owner's machine.
 
 - **Overview:** HOTM, mining level and collection progress, plus the selected stat's best
   owned base item per slot, catalog target and remaining points.
-- **Upgrades:** choose a method. Mining Fortune/Speed come from the loaded profile automatically;
-  enter other effective stats (or override Fortune/Speed) in **Type Stats**. Blank fields stay automatic or unknown.
+- **Upgrades:** choose a method. Mining Fortune/Speed, the Gemstone/Ore/Dwarven Metal/Block Fortunes, both
+  Spreads and Pristine come from the loaded profile automatically; override any of them (or enter Cold
+  Resistance) in **Type Stats**. Blank fields stay automatic or unknown.
   Ranks supported gear upgrades and base-item alternatives by purchase cost per estimated 1% more drops.
 - **Stats:** ranks supported gear upgrades and base-item alternatives by purchase cost per point of the selected stat.
 - **Breakdown:** automatic Mining Fortune and Mining Speed itemized by source (counted, situational,

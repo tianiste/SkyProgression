@@ -172,3 +172,62 @@ Sources (fetched 2026-10-26):
 - https://hypixelskyblock.minecraft.wiki/w/Attributes, https://hypixelskyblock.minecraft.wiki/w/Flitter_Shard,
   https://hypixelskyblock.minecraft.wiki/w/Miner_Zombie_Shard, https://hypixelskyblock.minecraft.wiki/w/Quartzfang_Shard
 - https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO/blob/master/constants/pets.json (pet XP table)
+
+## Stat breakdown: method stats
+
+Added 2026-10-26. The same ledger, states, loadouts and `/stats` report now cover Gemstone, Ore, Dwarven
+Metal and Block Fortune, Mining Spread, Gemstone Spread and Pristine (`StatBreakdown.SUPPORTED`). The
+Breakdown tab shows the method's stats (`MiningMethod.relevantStats`: Mining Fortune, Mining Speed, the
+method's fortune type, its spread, and Pristine for gems) plus the focused stat. All automatic totals feed
+Upgrades and Rates; a value typed in Type Stats overrides that stat. Cold Resistance stays manual.
+
+Context: the Magma Fields are a zone of their own (inside the Crystal Hollows, so "in the Crystal Hollows"
+bonuses also apply there) and the default for MF Gems/Ruby/Topaz. Block Fortune methods use the new
+`BLOCK` target. Lore paragraphs "while mining Hard Stone / Gemstones / Dwarven Metals" and "ores and blocks"
+become block-target conditions (checked against the method's target) instead of always situational.
+
+Best gear, best pet and best HOTM tree use one method weighting (`Loadout.weigh`): Mining Fortune + the
+method's fortune type + the method's spread + Pristine x 100 (gems) + Mining Speed x 0.01 (not instant).
+Pets are valued in the method's usual zone and target, so Bal's Furnace counts for Magma Fields methods.
+
+Rules (fetched 2026-10-26):
+- Gear: the lore stat line for each stat counts once (as for Fortune/Speed). Pristine on the Divan pieces and
+  the DR-X655 comes from that line (Topaz gems, Prismatic V = 2.5 inside the drill's 4.5).
+- HOTM (`skill_tree.nodes.<tree>`): Gem Lover 20 + 4/level Gemstone Fortune; Old-School 5/level Ore Fortune;
+  Blockhead 5/level Block Fortune; Metal Head 5/level Dwarven Metal Fortune; Efficient Miner 3/level Mining
+  Spread; Mole 50 + (level - 1) x 350/199 Mining Spread on Hard Stone; Mining Master 0.1/level Pristine.
+  Front Loaded (+150 Gemstone Fortune, +250 Mining Speed for the first 2,500 Gemstones each day) is
+  situational; its node key is assumed to be `front_loaded` and has not been observed, so absence is shown
+  as missing with that caveat. Sky Mall applies to Fortune/Speed only.
+  Sources: <https://hypixelskyblock.minecraft.wiki/w/Template:Heart_of_the_Mountain/List/Tier_3>, `/Tier_4`,
+  `/Tier_6`, `/Tier_9`, `/Tier_10`; perk names from <https://hypixelskyblock.minecraft.wiki/w/Gemstone_Fortune>,
+  <https://hypixelskyblock.minecraft.wiki/w/Block_Fortune>, <https://hypixelskyblock.minecraft.wiki/w/Ore_Fortune>,
+  <https://hypixelskyblock.minecraft.wiki/w/Dwarven_Metal_Fortune>, <https://hypixelskyblock.minecraft.wiki/w/Mining_Spread>,
+  <https://hypixelskyblock.minecraft.wiki/w/Pristine>.
+- Pets (<https://hypixelskyblock.minecraft.wiki/w/Bal_Pet>, <https://hypixelskyblock.minecraft.wiki/w/Scatha_Pet>,
+  <https://hypixelskyblock.minecraft.wiki/w/Armadillo_Pet>): Bal Furnace 0.02 (Epic) / 0.03 (Legendary) Pristine
+  per level in the Magma Fields; Scatha Drill Infusion 1 (Epic) / 1.25 (Legendary) Gemstone Fortune per level
+  with a Drill (situational with another tool); Armadillo Long Claws 3 Mining Spread per level on Hard Stone
+  (Legendary/Mythic). Quick Claw adds to Fortune and Speed only.
+- Attributes (wiki rarity tables, <https://hypixelskyblock.minecraft.wiki/w/Attributes/List/Epic>,
+  <https://hypixelskyblock.minecraft.wiki/w/Hideonleaf_Shard>): Mossy Box (Hideonleaf, Common) 5 Block Fortune
+  per level; Devouring Spread (Gemzie, Epic) 0.25 Gemstone Spread per level; Deep Technique (Bal shard, Epic)
+  is a per-block level% chance of +1 Pristine, shown as situational with its expected value (0.01 x level)
+  and not added to the stat total (the in-game menu does not include it).
+- Essence (<https://hypixelskyblock.minecraft.wiki/w/Essence_Shops/Diamond>): Rhinestone Infusion 2 Gemstone
+  Fortune per level on Mining Islands. Under Pressure (Strength), Dwarven Training (Wisdom) and Treasures of
+  the Earth (Worm/Scatha chance) give none of these stats.
+- God Potion and Booster Cookie lines appear on Fortune/Speed only.
+- Not in the API (untrackable, listed with ranges): Dwarven O's cereals (Gemstone Grahams, Ore Oats, Block
+  Bran, Metallic Minis; +2 per bowl), Dwarven Expertise (Researcher Beryl shop perk, key not identified),
+  Chilled Pristine Potato, Will-o'-wisp Gemstone Spread, Sheer Force (ability uptime, not a stat).
+- Not encoded yet (unknown key or rule): Gold Box / Royal Riches attributes (keys unobserved), Goblin and
+  Snail pet perks, Glacite Golem corpses, Fungus/Harena Fortuna, Lapidary outside the lore line, Front Loaded's
+  day count.
+
+Fixture check (equipped, DR-X655, MF Gems context) against the owner's in-game menu of 2026-10-26:
+Mining Spread 300 = 300, Gemstone Spread 2.5 = 2.5, Dwarven Metal Fortune 5 = 5, Pristine 13.4 = 13.4
+before Bal's Furnace (the menu was not taken in the Magma Fields; with it 16.31). Gemstone Fortune 180 vs
+195, Ore Fortune 100 vs 110, Block Fortune 115 vs 125: the gaps are unexplained. The flat +10 Ore and +10
+Block fit consumed Dwarven O's cereals (untrackable); the +15 Gemstone Fortune matches the unexplained +15
+Mining Fortune and may be one temporary source. Not tuned.

@@ -179,7 +179,7 @@ public final class ProgressionScreen extends Screen {
     }
     private void upgradeCards(){
         boolean focused=tab==2;
-        if(!focused&&!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Automatic Mining Fortune/Speed come from your loaded profile. Type Stats adds or overrides values.",TEXT).line("The Stats tab works without these inputs and ranks coins per stat point.",CYAN);return;}
+        if(!focused&&!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Automatic method stats come from your loaded profile. Type Stats adds or overrides values.",TEXT).line("The Stats tab works without these inputs and ranks coins per stat point.",CYAN);return;}
         card(focused?stat.label+" | cheapest points first":method.label+" | best value first",GOLD,0).line("Each recommendation compares to your current setup. Alternatives are not a combined shopping list.",MUTED);
         if(upgrades.isEmpty())card("No supported upgrades found",CYAN,0).line("This does not mean your account is fully maxed. Try another method or stat.",TEXT);
         int rank=0;
@@ -209,17 +209,19 @@ public final class ProgressionScreen extends Screen {
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
         card("How to read this estimate",CYAN,1).line("Gems use rough-equivalent units. Match your sale price and item weight to those units.",TEXT).line("Spread assumes extra blocks are available. Fuel, taxes, route, abilities and shaft loot are excluded. Shafting estimates Glacite only.",MUTED);
     }
-    /** Effective stats in the header; "auto" marks automatic totals, "?" a value that is neither known nor entered. */
+    /** The method's effective stats in the header; "*" marks a manual value, "?" one that is neither known nor entered. */
     private String statSummary(){
         var e=data.effective(method);var manual=data.inputs(method).stats;
         if(e.isEmpty())return data.statsLoading(method)?"Automatic stats loading...":"Effective stats: not entered";
         StringJoiner out=new StringJoiner("  ");
-        for(Stat s:List.of(Stat.MINING_SPEED,Stat.MINING_FORTUNE,Stat.PRISTINE)){Double v=e.get(s);
-            out.add((s==Stat.MINING_SPEED?"SPD ":s==Stat.MINING_FORTUNE?"FTN ":"PRIST ")+(v==null?"?":compact(v)+(manual.containsKey(s)?"":" auto")));}
+        for(Stat s:method.relevantStats()){Double v=e.get(s);
+            out.add(switch(s){case MINING_SPEED->"SPD ";case MINING_FORTUNE->"FTN ";case GEMSTONE_FORTUNE->"GEM ";case ORE_FORTUNE->"ORE ";
+                case DWARVEN_METAL_FORTUNE->"DWM ";case BLOCK_FORTUNE->"BLK ";case MINING_SPREAD->"SPR ";case GEMSTONE_SPREAD->"GSPR ";case PRISTINE->"PRIST ";default->"";}
+                +(v==null?"?":compact(v)+(manual.containsKey(s)?"*":"")));}
         return out.toString();
     }
     private void breakdownCards(){
-        if(data.demo){card("Stat breakdown",GOLD,0).line("Demo has no API data. Load your player for the automatic Mining Fortune and Speed breakdown.",TEXT);return;}
+        if(data.demo){card("Stat breakdown",GOLD,0).line("Demo has no API data. Load your player for the automatic stat breakdown.",TEXT);return;}
         StatsReport r=data.stats(method);
         if(r==null){
             String error=data.statsError(method);
@@ -234,7 +236,9 @@ public final class ProgressionScreen extends Screen {
         used.line(r.accessories+" accessories from the accessory bag, one per family.",MUTED);
         if(r.hotmTrees>1)used.line(StatBreakdown.treeLabel(r.hotmTree)+" of "+r.hotmTrees+": best for "+method.label+" (the API does not show which tree is active).",CYAN);
         if(r.bestGear)used.line("Picked from all readable storage; equip these pieces to reach this total. Gear: Equipped shows what you wear now.",MUTED);
-        var ledgers=new ArrayList<>(r.stats);ledgers.sort(Comparator.comparing(l->l.stat!=stat));
+        // Only the method's stats (plus the focused one); the rest still feed Upgrades and Rates.
+        var shown=method.relevantStats();
+        var ledgers=new ArrayList<>(r.stats.stream().filter(l->shown.contains(l.stat)||l.stat==stat).toList());ledgers.sort(Comparator.comparing(l->l.stat!=stat));
         int column=0;
         for(var l:ledgers){
             int col=column++%2;

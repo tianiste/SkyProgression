@@ -1,5 +1,7 @@
 package io.github.tianiste.skyprogression.core;
 
+import java.util.*;
+
 public enum MiningMethod {
     COAL("Coal", Stat.ORE_FORTUNE, "COAL", false),
     GOLD("Gold", Stat.ORE_FORTUNE, "GOLD_INGOT", false),
@@ -24,11 +26,22 @@ public enum MiningMethod {
     /** Uptime defaults per the Mining Cat developer (2026-10-26): about 80-85% for instant-mine blocks, 65-70% otherwise. */
     public double defaultEfficiency() { return instant ? 82.5 : 65; }
     public boolean gems() { return fortune == Stat.GEMSTONE_FORTUNE; }
+    /** Spread stat that applies: Gemstone Spread on gemstones, Mining Spread otherwise. */
+    public Stat spread() { return gems() ? Stat.GEMSTONE_SPREAD : Stat.MINING_SPREAD; }
+    /** Stats that change this method's yield or speed, in display order. */
+    public List<Stat> relevantStats() {
+        List<Stat> stats = new ArrayList<>(List.of(Stat.MINING_FORTUNE, Stat.MINING_SPEED, fortune, spread()));
+        if (gems()) stats.add(Stat.PRISTINE);
+        return stats;
+    }
+    /** The method's usual zone and block target with the God Potion assumed. */
+    public StatContext usualContext() { return StatContext.in(defaultZone()).mining(target()); }
     /** Usual location of the method, used as the stat-breakdown default; the player can change it. */
     public StatContext.Zone defaultZone() {
         return switch (this) {
             case COAL, GOLD -> StatContext.Zone.DWARVEN_MINES;
-            case GROTTO, OBSIDIAN, MF_GEMS, MF_RUBY, MF_TOPAZ -> StatContext.Zone.CRYSTAL_HOLLOWS;
+            case GROTTO, OBSIDIAN -> StatContext.Zone.CRYSTAL_HOLLOWS;
+            case MF_GEMS, MF_RUBY, MF_TOPAZ -> StatContext.Zone.MAGMA_FIELDS;
             case UMBER, TUNGSTEN -> StatContext.Zone.GLACITE_TUNNELS;
             case SHAFTING -> StatContext.Zone.GLACITE_MINESHAFTS;
             case RED_SAND, MYCELIUM, END_STONE, COBBLESTONE -> StatContext.Zone.OTHER;
@@ -40,6 +53,7 @@ public enum MiningMethod {
             case GEMSTONE_FORTUNE -> StatContext.Target.GEMSTONE;
             case ORE_FORTUNE -> StatContext.Target.ORE;
             case DWARVEN_METAL_FORTUNE -> StatContext.Target.DWARVEN_METAL;
+            case BLOCK_FORTUNE -> StatContext.Target.BLOCK;
             default -> StatContext.Target.OTHER;
         };
     }

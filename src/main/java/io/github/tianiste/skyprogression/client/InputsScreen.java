@@ -55,7 +55,7 @@ final class InputsScreen extends Screen {
     @Override public void extractBackground(GuiGraphicsExtractor g,int x,int y,float delta){g.fill(0,0,width,height,0xE508090D);}
     @Override public void extractRenderState(GuiGraphicsExtractor g,int x,int y,float delta){
         panel(g,left,top,span,end-top,BACK);g.fill(left+1,top+1,left+span-1,top+28,RAISED);g.text(font,fit(font,title.getString(),span-24),left+12,top+10,GOLD,true);
-        g.text(font,fit(font,"Enter stats from your in-game menu. Leave Fortune/Speed blank for automatic totals.",span-24),left+12,top+39,MUTED,false);
+        g.text(font,fit(font,"Enter stats from your in-game menu. Leave a stat blank for its automatic total.",span-24),left+12,top+39,MUTED,false);
         int start=page*perPage;for(int n=start;n<Math.min(15,start+perPage);n++){int slot=n-start;g.text(font,fit(font,labels[n],fieldWidth),left+16+(slot%columns)*(fieldWidth+12),top+61+(slot/columns)*45,n==0?CYAN:GOLD,false);}
         String status=error.isEmpty()?"Profile + method inputs | Page "+(page+1)+" / "+(14/perPage+1):error;
         g.text(font,fit(font,status,span-24),left+12,end-46,error.isEmpty()?MUTED:RED,false);
