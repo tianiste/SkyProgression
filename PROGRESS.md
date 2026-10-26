@@ -24,9 +24,10 @@ effective player stats. Target scope (feature spec from SkyCompass, see
   temporary (consumables, mayor, verified live); untrackable (never in API: neither
   confirmed nor ruled out). Only counted sources enter the total.
 
-1. Extract minimal regression fixtures from the private snapshot (no credentials/raw
-   profile dumps in Git), preserving only fields used by a test.
-2. Implement a typed loadout/context and stat breakdown with each contribution's source,
+1. **Done (2026-10-26).** Sanitized fixture `core/src/test/resources/fixtures/debotes-zucchini.json`
+   (regenerate: `./gradlew :core:extractFixture`), field map in
+   `docs/references/API-FIELDS.md`, `ProfileFixtureTest`. HOTM now read from `skill_tree`.
+2. **Next.** Implement a typed loadout/context and stat breakdown with each contribution's source,
    conditions and confidence (known/unknown/manual). Separate equipped from best owned.
 3. Start with Mining Fortune and Mining Speed; compare against the owner's in-game stat
    menu first, then SkyCompass totals (1,724.5 Fortune / 7,150.5 Speed observed).
@@ -98,6 +99,7 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
+Latest verification (Step 1 fixtures): build succeeded, **33 core tests passed**.
 Verification at 0.3.0: local build succeeded; **29 core tests passed** (26 calculation/
 parser tests + 3 HTTP success/size/stalled-body tests). No in-game visual or freeze
 reproduction was performed by the agent. Owner confirmed an earlier build worked;
@@ -224,3 +226,21 @@ scraping/republishing). Recorded it as a feature spec and comparison evidence in
 AGENTS.md now requires no AI attribution anywhere and forbids calling SkyCompass's
 internal endpoints. Next milestone reframed as our own Stat Breakdown engine.
 Documentation-only change; no build was run.
+
+2026-10-26 (Step 1, fixtures): inspected the raw snapshot and recorded where every
+mining stat source lives (`docs/references/API-FIELDS.md`). Added test-scope
+`FixtureExtractor` plus Gradle task `:core:extractFixture`, which re-encodes the NBT
+containers with original tag types and writes a 15 KB fixture: HOTM tree/powder,
+mining skill XP, mining shop perks, effects, attribute stacks, magical power, mining
+collections, mining pets, armor, equipment, the Titanium Drill and 7 accessories.
+Player/profile/item/gem UUIDs, timestamps and skull textures are removed; a test
+decodes every container to enforce that. Found and fixed a real bug: current profiles
+store HOTM under `skill_tree.experience.mining`, so the parser reported HOTM 0 for
+Debotes (now 10; legacy `mining_core.experience` kept as fallback).
+Verification: `./gradlew build :service:installDist` succeeded; **33 core tests passed**
+(29 previous + 4 fixture tests). No live API refetch or in-game check was performed;
+the fixture reflects the snapshot captured earlier on 2026-10-26.
+Open questions recorded in API-FIELDS.md: attribute stack→level/effect tables, perk
+effects, `polarvoid` key vs displayed "Prismatic", `_total` powder meaning.
+Next: Step 2, typed loadout/context and Mining Fortune/Speed source ledger against
+the fixture (acceptance in "Resume here").

@@ -1,0 +1,311 @@
+{
+  "_note": "Sanitized subset of a private profile snapshot. Regenerate with ./gradlew :core:extractFixture.",
+  "profiles": [
+    {
+      "profile_id": "fixture-profile",
+      "cute_name": "Zucchini",
+      "selected": true,
+      "members": {
+        "fixture-member": {
+          "skill_tree": {
+            "nodes": {
+              "mining": {
+                "core_of_the_mountain": 10,
+                "toggle_core_of_the_mountain": true,
+                "blockhead": 20,
+                "efficient_miner": 100,
+                "fortunate_mineman": 50,
+                "gem_lover": 20,
+                "great_explorer": 1,
+                "keep_it_cool": 25,
+                "lonesome_miner": 1,
+                "metal_head": 1,
+                "mining_fortune": 50,
+                "mining_master": 9,
+                "mining_speed": 50,
+                "mining_speed_boost": 1,
+                "mole": 186,
+                "no_stone_unturned": 1,
+                "old_school": 20,
+                "powder_buff": 25,
+                "precision_mining": 1,
+                "professional": 140,
+                "rags_to_riches": 1,
+                "seasoned_mineman": 100,
+                "speedy_mineman": 50,
+                "steady_hand": 1,
+                "strong_arm": 1,
+                "toggle_blockhead": true,
+                "toggle_efficient_miner": true,
+                "toggle_fortunate_mineman": true,
+                "toggle_gem_lover": true,
+                "toggle_great_explorer": false,
+                "toggle_keep_it_cool": true,
+                "toggle_lonesome_miner": true,
+                "toggle_metal_head": true,
+                "toggle_mining_fortune": true,
+                "toggle_mining_master": true,
+                "toggle_mining_speed": true,
+                "toggle_mining_speed_boost": true,
+                "toggle_mole": true,
+                "toggle_no_stone_unturned": true,
+                "toggle_old_school": true,
+                "toggle_powder_buff": true,
+                "toggle_precision_mining": true,
+                "toggle_professional": true,
+                "toggle_rags_to_riches": true,
+                "toggle_seasoned_mineman": true,
+                "toggle_speedy_mineman": true,
+                "toggle_steady_hand": true,
+                "toggle_strong_arm": true,
+                "toggle_warm_heart": true,
+                "warm_heart": 1,
+                "sky_mall": 1,
+                "toggle_sky_mall": true
+              }
+            },
+            "experience": {
+              "mining": 1247000.0
+            },
+            "tokens_spent": {
+              "mountain": 25
+            },
+            "selected_ability": {
+              "mining": "mining_speed_boost"
+            }
+          },
+          "mining_core": {
+            "powder_mithril": 8619678,
+            "powder_spent_mithril": 8517747,
+            "powder_mithril_total": 101931,
+            "powder_gemstone": 21220317,
+            "powder_spent_gemstone": 20843215,
+            "powder_gemstone_total": 377102,
+            "powder_glacite": 4624699,
+            "powder_spent_glacite": 3286000,
+            "powder_glacite_total": 1338699,
+            "current_daily_effect": "powder_bonus"
+          },
+          "player_data": {
+            "experience": {
+              "SKILL_MINING": 251573724.21235678,
+              "SKILL_ENCHANTING": 30317098.495679125
+            },
+            "perks": {
+              "dwarven_training": 3,
+              "eager_miner": 10,
+              "treasures_of_the_earth": 5,
+              "rhinestone_infusion": 10,
+              "under_pressure": 4
+            },
+            "active_effects": [],
+            "temp_stat_buffs": []
+          },
+          "attributes": {
+            "stacks": {
+              "skeletal_ruler": 96,
+              "forest_fishing": 96,
+              "nocturnal_animal": 4,
+              "yummy": 96,
+              "bucket_lover": 4,
+              "fancy_visit": 3,
+              "forest_trap": 1,
+              "strong_legs": 18,
+              "experience": 4,
+              "rotten_pickaxe": 96,
+              "breeze": 1,
+              "cheapstake": 96,
+              "ender": 64,
+              "ender_resistance": 3,
+              "forest_strength": 2,
+              "lost_and_found": 2,
+              "magmatic_ruler": 2,
+              "arachno": 1,
+              "arachno_resistance": 5,
+              "blazing_resistance": 1,
+              "dragon_shortbow_improvement": 1,
+              "hunter": 96,
+              "life_recovery": 7,
+              "lifeline": 1,
+              "mana_steal": 1,
+              "midas_touch": 19,
+              "moonglade_serendipity": 1,
+              "speed": 1,
+              "spirit_axe": 64,
+              "yog_membrane": 2,
+              "atomized_mithril": 48,
+              "blazing_fortune": 48,
+              "combo": 1,
+              "deep_diving": 1,
+              "fisherman": 1,
+              "fog_elemental": 6,
+              "humanoid_ruler": 1,
+              "ice_essence": 48,
+              "infection": 1,
+              "light_elemental": 1,
+              "mana_regeneration": 7,
+              "moonglade_mastery": 1,
+              "mossy_box": 10,
+              "undead": 64,
+              "unity_is_strength": 1,
+              "visitor_bait": 4,
+              "atomized_crystals": 48,
+              "battle_frog": 1,
+              "bone_font": 1,
+              "extreme_pressure": 1,
+              "forest_essence": 1,
+              "lightning_elemental": 1,
+              "mountain_climber": 2,
+              "pest_luck": 29,
+              "water_elemental": 1,
+              "fig_sharpening": 17,
+              "blazing": 1,
+              "cavern_wisdom": 32,
+              "matriarch_cubs": 0,
+              "quartz_speed": 1,
+              "stone_elemental": 1,
+              "strong_arms": 1,
+              "veil": 1,
+              "spider_essence": 4,
+              "warrior": 12,
+              "attack_speed": 1,
+              "crop_bug": 1,
+              "insect_power": 10,
+              "pretty_clothes": 1,
+              "garden_wisdom": 1,
+              "infiltration": 1,
+              "lunar_power": 1,
+              "solar_power": 1,
+              "deep_technique": 32,
+              "fortunate_miner": 96,
+              "pickaxe_cooldown": 32,
+              "devouring_spread": 32,
+              "fiesta_fortune": 1,
+              "glossy_fortune": 32,
+              "buckle_fisher": 64,
+              "forest_serendipity": 48,
+              "frozen_ruler": 64,
+              "lotus_trophy": 96,
+              "yeti_tracker": 64
+            }
+          },
+          "accessory_bag_storage": {
+            "highest_magical_power": 381,
+            "selected_power": "bloody",
+            "unlocked_powers": [
+              "bloody",
+              "sighted"
+            ]
+          },
+          "collection": {
+            "COBBLESTONE": 358978,
+            "COAL": 4472882,
+            "IRON_INGOT": 585935,
+            "GOLD_INGOT": 80711,
+            "DIAMOND": 110674,
+            "INK_SACK:4": 207298,
+            "EMERALD": 101684,
+            "REDSTONE": 10629429,
+            "QUARTZ": 2966385,
+            "OBSIDIAN": 147654,
+            "GLOWSTONE_DUST": 2,
+            "GRAVEL": 6,
+            "SAND": 8223,
+            "ENDER_STONE": 184889,
+            "MITHRIL_ORE": 10288149,
+            "HARD_STONE": 37578867,
+            "GEMSTONE_COLLECTION": 69484298,
+            "SULPHUR": 63,
+            "GLACITE": 1003100,
+            "TUNGSTEN": 1022989,
+            "UMBER": 1020783
+          },
+          "leveling": {
+            "mining_fiesta_ores_mined": 405756
+          },
+          "glacite_player_data": {
+            "fossils_donated": [
+              "CLAW",
+              "SPINE",
+              "CLUBBED",
+              "HELIX",
+              "FOOTPRINT",
+              "WEBBED",
+              "TUSK"
+            ],
+            "corpses_looted": {
+              "lapis": 7
+            },
+            "mineshafts_entered": 7
+          },
+          "profile": {
+            "cookie_buff_active": true
+          },
+          "pets_data": {
+            "pets": [
+              {
+                "type": "ARMADILLO",
+                "exp": 13642750.328750817,
+                "active": false,
+                "tier": "LEGENDARY",
+                "candyUsed": 0,
+                "petSoulbound": false,
+                "extra": {}
+              },
+              {
+                "type": "MOLE",
+                "exp": 24171961.809454076,
+                "active": false,
+                "tier": "LEGENDARY",
+                "heldItem": "PET_ITEM_MINING_SKILL_BOOST_RARE",
+                "candyUsed": 0,
+                "petSoulbound": false,
+                "extra": {}
+              },
+              {
+                "type": "MOLE",
+                "exp": 6971972.182376756,
+                "active": false,
+                "tier": "LEGENDARY",
+                "heldItem": "PET_ITEM_MINING_SKILL_BOOST_RARE",
+                "candyUsed": 0,
+                "petSoulbound": false,
+                "extra": {}
+              },
+              {
+                "type": "BAL",
+                "exp": 20900763.27687998,
+                "active": true,
+                "tier": "LEGENDARY",
+                "heldItem": "PET_ITEM_QUICK_CLAW",
+                "candyUsed": 0,
+                "petSoulbound": false,
+                "extra": {}
+              }
+            ]
+          },
+          "inventory": {
+            "inv_armor": {
+              "type": 0,
+              "data": "H4sIAAAAAAAA/+2XS08jRxCAy5iHGTawm0hhtcqhFXJY4l1k4zUGkhyMbWyveAmc3TwUjdqett1hZnrS0wP45txyiRQpyi05+3/4B/knRKkeP4DFQShaEktZJMbuenRXVVd98hgA8xDhBgBMG2DUhOMJl7nKj8Gyw11Wk7SutpUQtuKe6auWzWC52fL4BbNN/7RVtUXtdNtpqSavwRRMcSvyRQRmciJwVcSAqKKNeZhmbq0J+i8CC1+6VcnoKa3aLBKF+RK32K5NGz5q/zRgzuK+Z9MWOu0JyWIoXYJH3U6mxKitmtuk26nFNxPwAYryrM5cn2kZjSeTCYijcJ+73G2QE48xS2s24qkXCfzcehrfSKziF+tpfD2RWIUnaHwkua8wS22Yjq8PtKvw/HKjXSFV0LfYiCc3Blulhlslh1thfIocMx83pG6N9QPFmL5CXZE5vsKy+uEu3+J/r/0bPr8bLGnvx1+vLG/Xsl77d73EymARtjCKbsd+zX1LOKRcLodFKFLuonk1hY9M2VXMtnkDL4GRupCEnTHZ0uo0fIJPNLFRZPtE1Am78EhLBKRJzxgRrv6+BitokqOexyyCSaJLWIZrG69hOB93O5sYy6eo28yJ58IjJyKwq9gKFhmodHQ63m7nlHY7kvRX+19XSuUc2Tk8rJyQS4MYTB9QB/sNRS+phafvCKHCMPP8jLpgwFLhQkmaVUryaqCYH4UlSSVXLTPwGhJ9dFthH0438AoMmH2ZzRfMZAzmfgiojWYwd1Q43i3kKjBUJsYp52ExcHWnM8v0baGnA2AG5rL7O4VjMzF0HQqSw4NgrnJ4lP3GTBgj2/FnDx3/RjvYZZwWYhBzhMXrnEmY+V6XKabHEBby5VfZAzMsqgEP9AhSVzl6trFKAc6zQxUzz8POwXSiOJyLlnBRaJlO4LPAiQCO9GyeOrTB0OIt8eHzt86H99/gQzI1DhCZ/x8gHt0AxDU8JO8JD+v/GA9rt+Bhr1Aslg+K4wjxZESIPdZo4K1MIiSGU/wmJYb4SP4HkFjsQ2JY2rtwIvJvceKze+cEjvkYTqTecWLiOZG4hRO5UuGkcrSXrRTGkOKjESlyTeYrbBHFJpAVk/iD4mGfFZflnSha/DyeFvrFJjIFUfvM1p86j1m4Ey6Wb/6syKTH4CI9mbj4EHUo9rikigtXy1PxF+l7xQgWbCuLDUWy9TpmoVrIkZVwwmuIap/5mgOS4CAzeY4dIYkTJgsxNMI4cfwXcIuiFOeqSV5pEmSKEvvLD0udSevkeu1fSP9WULsGS+hwJIViNZ0mOq1cdwoZQ3vtn8jg2kIvHemV6oQvTqtXHXWteu0/yBUjVD8j59hxzfAMPkpKNRmhju49TRKcAKbzhMdoVKMuwYtp9XMmYdJ3ZdyzWxhXKuztFypj+PZ4xLcSsx2m3rHtTmx70Gdbv6w3uGZ4owbTqURhthG2aH+xIC97RL9HReE9iiebdDAEd6BgFOAvOw46z4kRAAA="
+            },
+            "equipment_contents": {
+              "type": 0,
+              "data": "H4sIAAAAAAAA/+2V3U5TQRDHp4BaGhQJGjUas5poxCqUQgG5MaUchFiKaatcNttzpu2me87Wc/Yo5UqfwXjhE9Tn6KP4AD6CcfaU8iUkNpLgBTfd7c7szH9n5tcmAEYhJhIAMJKAhK3clvLQ00EcbrjCQ9vnNb0sNLoVVzkoIdNot8QOykrQbFelspuRcSb0bK6xrnyxi86MFpp7InQrFKApuY1xuHUQTSsltWhVAt2WCDf/COhzH2EIhoQTK8XgUk6Fno4lYFjz+jCMrgsH1ySvByT5VwKuOCJoSd4ehZG88ikRwA241e0sbgpPeHVWaiE6y6zbWUjOpeDBgWFN+Tr0sGeazdDy4kkyMxW5rCPXrIiBCOgdduRjJ9M9l/QUpUiS0yufU51611M/P39hRwOTYfFjQ9ALjbPbs3U76U2hG76Qxsw9h5Zaea9adDINw/QJjynoWiglK6FmK8oLg2VW9kNkqx+5XzNXn8zNzE/B7FEZmdTPT1/Z4YcfZFlIzhuR8Iy2pwhlwmO6Yb6nTZ4P6MFYJNjDINIGcJfWbgeLot7Qz20p7CbTiuH7ULQekPk6VWhF8l0TPZIdKaQ8DD+g3zZlpAP7x7fvzJSYbM9YW4WMGk42nppOZR6Zx3NTMeomk6KJsm1y1ETvGdvKd/tqHnY7S92OfErnSzn1XLVYSYWySvNiXCMTTJIk2hSzRYsVrNzrfDZnxWGkwF2Ee4fk9pvACnsjCwkYt3a0z7Na+6IaaiQm4gSBqAn04Uq1dzFu5hQmyhvlbGHj7WalnyMG1xzlERNOxQ0DDN0Y0ExfXuUuryNp/yvY0gPBZkvFmxekXZB2PqRdP0RaLr+Vfd3H7M5JmOXMsA7E2LV9xqLoZwLY7ECAVVHqC74u+DofvsYP8bVi5ct9vG6fhNcKjepAdF3dp8vEPhO4Xp4MV53+XWlzDDKn16dKg5pMWxf9YCDUsCXsf0Ft7BTU5jOnoja30ONo4a9Qo1/BxZySzjGXajLz303jRLeToUmz3mzk2Kv81jur1J+1+2TpC9kji60fdGygiZtc3c4W31mFynq2YLabVrF0dMrgNykkKTueDAAA"
+            },
+            "inv_contents": {
+              "type": 0,
+              "data": "H4sIAAAAAAAA/21V3VLbRhQ+jkkxLiU/7SRtmottp8yEGIJwEH93xhag1jYe26QhmYxmLa3NjiWtql01uFftM3R61+vyHjxKHyCP0OlZScZ4EgYYnb/v/J8tAyxBgZcBoFCGsiuCSIQsVLIEXwU8ZG5Mh+qAKxY4gfCYDwcXk4hfMt+R48nAF+44FW4moUsVG4mY/8a8TcUVDXkSOF7MfR//O5c7plmCxzNIJYSveORINfEZPP4INZioC+7CHbjDvcKjAtytiyRUGGNR0dESLLDQvQD9U4DPz8JBzOiYDnxWKMLSCffYkU9HEqX/lWHR4zLy6QSNmiJmJeQ+hy+vr/YOtREPR6Qj3rOY7KPgwfXVboMGdMQOyPWVW9k1YQdZLR5qvV7EmKcFO5Wt9f09E7/231ZM453+eIbKa/jhPatsGcYaPEW7TsylwpS1jVnZfmFm8uoabM9Qj0Sskkxnp1J9OUXNQatGDmoi5rdodcwCqbBH83amAY9nkD9z6YlAS15W9uHglpVM1d/i34ff/8L/73KSfvjjz1sk+/fvfzSJJXmEYWAA11f+kS/eS4VtJrZtw9fIr+O4UFcR+zXa7e0Z++vm9h7cQ4k1HHKXY5Mm5DXc14zLiMWagdav4Avk5PFPySaNuEfjCXkFK0jq0gVUcRdpAITfxSD7+Vxt2OEwkcwjRwnzSZ+GY/gu1cDfatVcNwyDtOhlJq5TjJGrCaxOVejG9irpcHdMLxmpDbiPUlLHgfTE+3DmrZsMJhsd4XN5ga4aepSJFY6wn/Ak1cB2mQbWkdyej7RJWvbSwJqS+SbPwHtJGE5ID0eVHIuBz0NijXASaazA1P2KKS5h3tqPcVBjnQwSRXBJZBZamp4rQpkETJJfEurFSeQz1GAIU9WlQIUXGMHTrA6ao6ehurWDw2xgAzer5hjlW+g1r8rBXGrkUAipCNpgAH7XPj7pk3rTrv8EG/MhY1lWSTZj8wCoNhSx7reuwZYp05D0Mk7LryOiezt6d5G9X0tkhIMkEonOw0TC83lPW5mfTxVIp/o9ImOoz0nqYUNEpCcSf4CnRMeSiqCSTff11ZheX8Uko1rn/RO7Thpdu9kkM4USLLRpwOAHZN0KbTqX+ZA0uhuv8d5BGe5ZlyqmNaVijt1isgj3YhpjYZ0kGsXUYzpPfbMi4dP4V8E9pO8WoZwdziG2COCwX4ISXl8+5CyGMr3xW4QVN9tAJz2aEpbfNMuwrG8jVijQdxyx2M0uIni5CCU/X7XM1+LwZjYXkMoRkVpC1Si/YJnqwwRvNm4lc4bTW4CCovZxs94aBjNfyRPUz0bi49XFOw5Pjk8Pm3bbOW1ZTavft5zeWbt97vTshgUl+CZLOsIdcOat4cko3RFHBMxnCv1LvT6OxPUpw8IIj1sZPvux1rAcowSLOPx6eGGxY3WPrHofwym17LbdPv60eAmjDXUBmedIX+jHD/DlyQFntviW1FqHVvfTKCVYnio6GBHc7Z92am+Q/eBWXiy/HzHeFifKb0v+TGYyTCT7yEvWPTs8dzqnTbt3YjWcdCAdq31st3XJtMb9vt2vte2zVi7cxqf7lkc9Q47SJ/LhzbN8wyvAiidCbKPnBHhQk6CQJp49gfp1/R96PJp6IAgAAA=="
+            },
+            "bag_contents": {
+              "talisman_bag": {
+                "type": 0,
+                "data": "H4sIAAAAAAAA/82WzW4bNxDHx7ET2wskTdOmTtIPMEAKNHAROHIlp77R8lpeQ1obq1UDIygEesVdEeaSwi4VZ2/urZcCBYq+QC96Dz2QH6Ho0Ipjp7ISI8ohJ3E45Az3N38O5QAswoxwAGDeASfSaU8rrky+AEupUDzKWGzWjdbSiF47N4XksNQteuIVl+38sDiQOjpcx22pVnANronOzB8zcL2q+8rMODBrWDILi9uiw7ckS3JM868D8x2R9yQrFmGurjO+YJPD/eFgjUYRz3OdFWRPH/FsnQwHleVVdC+js5YxPNfp1MqTMom0UNZa6/GMSP6SS6JjYrocbuPkoZCSdwhXPC2eYABc+Oy5zg5zctQVkhOhyHmyDZY8hK+Gg3g4kNXdRmPXJ7RadZvN3WB/AeZ8lnK4i+5mxF5ylWC+kEmRp0yBA5+5r0zGqDGZOOgbjuAQAtxpVukvrl9zg3ZI616zQX1APjc2WcoSDrPwCcMuofMi73i5VD45/oc0exyRomeEUCu7oyGUUAncwqGXS6Y6OS74KMTxjDFG54TGMSYxxfup32x4vjsl8PtjwPtqeuTX4WuLlKe5wROQLZ2ZvuIj5k9XJtejfCWS94YDhiRb/iSWeCXYTl8luJumfcnNZIQ7Lb9Wd9u00aq74aeE8CZ8g5S2OZOma+FEyyVsA8NB5wc7eAzfoneTx1zlp1zZ/9zfoXsk1pGQR3zXRivWHsOjc/9b1Vk9i7Jqo7yjUN6FAud28ucXeMiT4z9x9OtrE+/R7xdMdvLbXxfMysnx39bEj/3e5pFSH+Wk0H1iNOmyDOPmtsORns2L7e60L2KYn/CHvMn9I7GIdD/p4h2VBe6UsV1sY9rdSmcpk6+DREyRA34WnXcefjzBBZYl9uRTSpcIzoG5BM+8ADeC1sZ+ewXmtvD6orlDN91zc542NrCNvrEd2nDD7f1meDYFI+U6e7vPcV3g+bUPk+3dMdlmLOPT3fp7k1Q1WUnPrlSBL1EoWIGABu44/S/QaVtnhmV+b9O8bZtmQOtT9s1xerwnoumeqaVL72ypDA8mwXtawo2Pzl8v/HOA345HRy/fZrnhxPO8Kz9RSLmMlN09rzpO+XN0jkLSzIiYRZO76q1t2gyxqQaht0WrH9hWH4wRljzhqsOyYjqRXo65svIOzJUr4UONVxBf3a25/iYN9i9lWAmFYUr0UxJwiYqZyDD0Qup7rUY7cOte9W2G8B/okC/RyQoAAA=="
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

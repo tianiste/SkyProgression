@@ -9,3 +9,9 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 test { useJUnitPlatform() }
+tasks.register('extractFixture', JavaExec) {
+    description = 'Regenerates the sanitized test fixture from the private service-data snapshot.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.tianiste.skyprogression.core.FixtureExtractor'
+    workingDir = rootProject.projectDir
+}

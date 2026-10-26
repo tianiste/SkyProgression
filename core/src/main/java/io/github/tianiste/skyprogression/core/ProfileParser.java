@@ -45,7 +45,8 @@ public final class ProfileParser {
                 if (!sacks.isJsonObject()) sacks = at(member, "sacks_counts");
                 if (sacks.isJsonObject()) sacks.getAsJsonObject().entrySet().forEach(e -> p.owned.merge(e.getKey(), (int)number(e.getValue(), 0), Integer::sum));
             }
-            double xp = number(at(member, "mining_core", "experience"), -1);
+            // Current profiles store HOTM under skill_tree; mining_core.experience is the legacy location.
+            double xp = number(at(member, "skill_tree", "experience", "mining"), number(at(member, "mining_core", "experience"), -1));
             long[] thresholds = {0, 3000, 12000, 37000, 97000, 197000, 347000, 557000, 847000, 1247000};
             if (xp >= 0) { p.hotm = 1; for (int i = 1; i < thresholds.length; i++) if (xp >= thresholds[i]) p.hotm = i + 1; }
             p.progress.put("Heart of the Mountain tier", (double)p.hotm);
