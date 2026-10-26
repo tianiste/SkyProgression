@@ -1,10 +1,10 @@
-# Install SkyProgression 0.2.0
+# Install SkyProgression 0.3.0
 
 ## Mod
 
 1. Use Minecraft **26.1.2**, **Fabric Loader 0.20.1 or newer**, and Java **25**.
 2. Install **Fabric API for 26.1.2**. Keep your other existing mods.
-3. Copy `skyprogression-0.2.0.jar` into that instance's `mods` folder.
+3. Copy `skyprogression-0.3.0.jar` into that instance's `mods` folder.
    Do not install the `-sources.jar` file.
 4. Start Minecraft and enter `/sp` or `/skyprogression` while in a world/server.
 5. Select **Demo** to try the interface immediately. Demo inventory/prices are fabricated and labeled.
@@ -51,7 +51,7 @@ this development companion is designed for the project owner's machine.
   sale price per item and optionally Coleweight per item. Inputs are saved per profile/method.
 - **Other:** known profile milestones plus a checklist of bonuses not modeled automatically.
 
-Use the arrows to page through results. Nothing purchases items, equips gear, or mines for you.
+Use the mouse wheel, Page Up/Down or footer arrows to scroll results. Selectors have search fields. Nothing purchases items, equips gear, or mines for you.
 
 ## Current limits
 
@@ -97,7 +97,7 @@ No automatic Coleweight coefficient is invented: enter one or the result stays u
 - **Wrong numbers:** compare the stated base-item scope with the in-game effective total.
 - **Newer Minecraft:** this jar intentionally declares 26.1.2 only. Rebuild and test before upgrading.
 
-## Updating from 0.1.0
+## Updating from an earlier build
 
 Close the old companion and replace both the mod jar and the companion from this pack.
 Remove the old mod jar from the instance, then start the new companion.
@@ -112,3 +112,19 @@ Remove the old mod jar from the instance, then start the new companion.
 6. Compare known item ownership and HOTM with your account. Check each tab before buying anything.
 
 Builds and unit tests are automated. In-game validation is deliberately left to you.
+
+## Check the redesigned interface
+
+- Open /sp at your usual GUI scale, then try a larger GUI scale. Panels should stack
+  on narrow windows; content stays inside its scrollable area.
+- Demo > Overview shows gold/cyan progress cards and gear icons. Stats shows ranked
+  cards and a cost comparison. Selectors filter as you type.
+- Type Stats accepts comma-separated numbers; Apply saves in the background. Cancel
+  discards edits that have not been applied.
+- Load with the companion stopped: the screen should remain interactive and report
+  the connection error. Cancel interrupts a pending lookup. Closing and reopening
+  during a lookup should still display the completed result.
+- If Minecraft freezes again, retain latest.log and a Java thread dump captured during
+  the freeze. Report which action triggered it, GUI scale and other installed mods.
+  Do not include API keys. This release removes identified blocking paths, but the
+  original freeze has not been reproduced in a running Minecraft instance.

@@ -16,9 +16,9 @@ Inspired by Mining Cat (Mycelium Larper) and SkyCompass (banana eater).
 This is an independent implementation, not their code or an official integration.
 Not affiliated with or endorsed by Hypixel or Mojang.
 
-## Gear upgrades (0.2.0)
+## Stitch interface (0.3.0)
 
-The interface has Overview, Upgrades, Stats, Rates and Other tabs, method/stat/profile
+The native Stitch-inspired interface has Overview, Upgrades, Stats, Rates and Other tabs, method/stat/profile
 selectors, progress bars and a clearly labeled offline demo. A local companion service
 loads Hypixel profiles and Coflnet price quotes. Inventory lookups and price requests
 run off the Minecraft render thread and are cached.
@@ -42,10 +42,26 @@ the version-upgrade workflow.
 .\Start-Service.cmd
 ```
 
-Build output: `build/libs/skyprogression-0.2.0.jar`.
+Build output: `build/libs/skyprogression-0.3.0.jar`.
 Companion: `service/build/install/service/` (keep its `bin` and `lib` directories together).
 GitHub Actions also builds the jar and companion on every push.
 
 For development, `./gradlew runClient -Ppreview` opens the offline demo from the title
 screen. This flag is off during normal play. Automated unit tests cover calculation,
 price, requirement and inventory error cases. In-game testing is left to the project owner.
+
+## Interface and responsiveness (0.3.0)
+
+Dark framed panels, gold tabs, cyan stats, gear icons, progress cards, independent cost
+comparisons, searchable selectors and a two-column Type Stats form adapt the supplied
+Stitch designs. Smaller GUI sizes stack content into one column. Use the mouse wheel,
+Page Up/Down or footer arrows to scroll; R reloads and F1 opens help when not typing.
+
+Catalog/settings loading, HTTP client initialization, profile/price fetches, analysis,
+and settings writes run off the game thread. Requests have response-size limits and
+whole-response timeouts, and Load becomes Cancel during lookup. Native flat backgrounds
+avoid the fullscreen blur pass. Closing/reopening during a lookup still updates results.
+
+See [design adaptation and freeze investigation](docs/DESIGN.md). Minecraft visual and
+runtime validation is left to the owner; a passing build does not prove the reported
+freeze is reproduced or resolved.
