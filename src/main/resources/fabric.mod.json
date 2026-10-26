@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "skyprogression",
+  "version": "${version}",
+  "name": "SkyProgression",
+  "description": "Simple, personal SkyBlock progression. Mining first.",
+  "authors": ["tianiste"],
+  "contact": {"sources": "https://github.com/tianiste/SkyProgression"},
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {"client": ["io.github.tianiste.skyprogression.client.SkyProgressionClient"]},
+  "depends": {"fabricloader": ">=0.20.1", "minecraft": "${minecraft_version}", "java": ">=25", "fabric-api": "*"}
+}

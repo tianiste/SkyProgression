@@ -1,0 +1,5 @@
+plugins { id 'application' }
+repositories { mavenCentral() }
+java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
+dependencies { implementation project(':core') }
+application { mainClass = 'io.github.tianiste.skyprogression.service.ProgressionService' }

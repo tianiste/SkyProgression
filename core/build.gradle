@@ -1,0 +1,11 @@
+plugins { id 'java-library' }
+group = 'io.github.tianiste'
+version = '0.1.0'
+repositories { mavenCentral() }
+java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
+dependencies {
+    api 'com.google.code.gson:gson:2.13.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+test { useJUnitPlatform() }
