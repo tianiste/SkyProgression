@@ -47,9 +47,15 @@ public final class Breakdown {
     public Breakdown(Stat stat, Loadout.Kind loadout, StatContext context) {
         this.stat = stat; this.loadout = loadout; this.context = context;
     }
-    public double total() {
-        return contributions.stream().filter(Contribution::counts).mapToDouble(Contribution::value).sum();
+    /** Category of percentage buffs: summed, then applied once to the flat total (in-game stat menu, 2026-10-26). */
+    public static final String ADDITIVE_PERCENT = "Additive %";
+    public double flat() {
+        return contributions.stream().filter(c -> c.counts() && !c.category.equals(ADDITIVE_PERCENT)).mapToDouble(Contribution::value).sum();
     }
+    public double multiplier() {
+        return 1 + contributions.stream().filter(c -> c.counts() && c.category.equals(ADDITIVE_PERCENT)).mapToDouble(Contribution::value).sum() / 100;
+    }
+    public double total() { return flat() * multiplier(); }
     /** Sources that would count in this context but whose value is unknown: the total is a lower bound. */
     public List<Contribution> unresolved() {
         return contributions.stream().filter(c -> c.state == State.COUNTED && c.value == null).toList();

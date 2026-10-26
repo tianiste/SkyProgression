@@ -115,8 +115,10 @@ Rules:
   counted separately only when the bracket matches that rule. Drill engine and upgrade-module
   paragraphs (e.g. Ruby-Polished Drill Engine +250/+30, Sunny Side omelette +50) are also outside
   the total and count separately. Lore paragraphs with a condition ("while ...") are situational.
-  Percentage bonuses (Auspicious Bonus +1% Mining Fortune) stay UNKNOWN until we know what the
-  percentage applies to. Full Set Bonus paragraphs count once per set, and only when the loadout
+  Percentage buffs are summed and applied once to the flat total: total = flat x (1 + sum%/100).
+  This was confirmed by the owner's in-game stat menu on 2026-10-26: 1,814.5 flat x (25% Mining
+  Fiesta + 1% Auspicious Bonus = 1.26) = 2,286.27. The Auspicious Bonus counts as +1%; other
+  percentage lore bonuses stay UNKNOWN. Full Set Bonus paragraphs count once per set, and only when the loadout
   holds every piece.
 - Haste Artifact: Haste III effect +150 Mining Speed, situational (only without a stronger Haste).
 - Pet: level from `exp` and rarity using the pet XP table (`pet-levels.json`, NotEnoughUpdates-REPO
@@ -127,7 +129,9 @@ Rules:
 - HOTM (`skill_tree.nodes.mining`; `toggle_<perk>` false = situational, not counted): Mining Speed
   20/level, Speedy Mineman 40/level, Professional 50+5/level on Gemstones, Strong Arm 5/level on
   Dwarven Metals, Mining Fortune 2/level, Fortunate Mineman 3/level, Rags to Riches 4/level in
-  Glacite Mineshafts, Sky Mall +50 Fortune / +100 Speed on the matching random day (situational).
+  Glacite Mineshafts, Sky Mall +50 Fortune / +100 Speed on the matching random day. The day's buff
+  is `mining_core.current_daily_effect`: `dig_speed` counts +100 Speed on Mining Islands (matched
+  in game 2026-10-26); the Fortune code is not yet observed, so that buff stays situational.
   Front Loaded, Mineshaft Mayhem and Eager Adventurer are not encoded: their API keys are unobserved.
   The Blue Cheese omelette's +1 perk level is not applied.
 - Mining skill: 4 Mining Fortune per level (level from the official skills resource).

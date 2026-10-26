@@ -31,6 +31,8 @@ public final class StatBreakdown {
             new Perk("rags_to_riches", "Rags to Riches", Stat.MINING_FORTUNE, 0, 4, 50, Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In Glacite Mineshafts")));
     /** Sky Mall grants one random daily buff on Mining Islands; the day's buff is not in the API. */
     static final Map<Stat, Double> SKY_MALL = Map.of(Stat.MINING_FORTUNE, 50.0, Stat.MINING_SPEED, 100.0);
+    /** `mining_core.current_daily_effect` codes; dig_speed matched the in-game Sky Mall +100 on 2026-10-26. */
+    static final Map<Stat, String> SKY_MALL_CODES = Map.of(Stat.MINING_SPEED, "dig_speed");
 
     /** Attribute: rarity (shard cost table) and linear effect per level up to 10 (wiki shard pages). */
     record Attribute(String id, String name, String rarity, Stat stat, double perLevel, Condition condition) {}
@@ -126,6 +128,11 @@ public final class StatBreakdown {
                 if (pieces < needed) b.contributions.add(new Contribution(category, set.group(1) + " set bonus", b.stat, 0.0, value,
                         condition.text(), State.MISSING, Confidence.KNOWN, pieces + "/" + needed + " pieces in this loadout."));
                 else add(b, category, set.group(1) + " set bonus", value, value, condition, Confidence.KNOWN, "Full set equipped.");
+                continue;
+            }
+            if (percent && header.equals("Auspicious Bonus")) {
+                b.contributions.add(new Contribution(Breakdown.ADDITIVE_PERCENT, item.name + ": Auspicious Bonus", b.stat, value, value, "",
+                        State.COUNTED, Confidence.KNOWN, "Percentage buffs add up, then multiply the flat total."));
                 continue;
             }
             if (percent) {
@@ -247,9 +254,20 @@ public final class StatBreakdown {
             add(b, "HOTM", perk.name + " " + level, perk.at(level), perk.at(perk.maxLevel), condition, Confidence.KNOWN, "");
         }
         int skyMall = (int)number(at(nodes, "sky_mall"), 0);
-        if (skyMall > 0) add(b, "HOTM", "Sky Mall", SKY_MALL.get(b.stat), SKY_MALL.get(b.stat),
-                enabled(nodes, "sky_mall") ? Condition.unchecked("Only on days the random Sky Mall buff is " + b.stat.label + ", on Mining Islands")
-                        : Condition.unchecked("Perk toggled off in the HOTM tree"), Confidence.KNOWN, "The day's buff is not in the API.");
+        if (skyMall <= 0) return;
+        String today = string(at(member, "mining_core", "current_daily_effect"), "");
+        String code = SKY_MALL_CODES.get(b.stat);
+        Condition condition;
+        String note;
+        if (!enabled(nodes, "sky_mall")) { condition = Condition.unchecked("Perk toggled off in the HOTM tree"); note = ""; }
+        else if (code != null && code.equals(today)) {
+            condition = Condition.zones(StatContext.MINING_ISLANDS, "On Mining Islands");
+            note = "Today's buff (" + today + "); changes every SkyBlock day (20 minutes).";
+        } else {
+            condition = Condition.unchecked("Only on days the random Sky Mall buff is " + b.stat.label + ", on Mining Islands");
+            note = today.isEmpty() ? "The day's buff is not in the API response." : "Today's buff is " + today + ".";
+        }
+        add(b, "HOTM", "Sky Mall", SKY_MALL.get(b.stat), SKY_MALL.get(b.stat), condition, Confidence.KNOWN, note);
     }
     private static boolean enabled(JsonElement nodes, String perk) {
         return !"false".equals(string(at(nodes, "toggle_" + perk), "true"));

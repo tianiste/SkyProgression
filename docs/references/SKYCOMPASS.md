@@ -105,3 +105,17 @@ lanterns, weather, Better Together). The owner had a Fiesta Flask active as well
 This needs confirming with the menu's per-source details
 and the active buffs at capture time. Note the in-game values differ from SkyCompass's capture
 (1,724.5 / 7,150.5), so buffs likely changed between captures.
+
+### Per-source details (owner screenshots, same session)
+
+- Mining Speed 7,610 itemized exactly. HOTM 3,100 (Speedy Mineman 2,000, Mining Speed 1,000,
+  Sky Mall 100). Basic 2,140, Gemstone 907, Reforge 315 (Auspicious 75, Jaded 60 x 4), Efficiency X
+  210 (these four are inside our lore totals). Drill Parts 250, Polarvoid 50, Quick Claw 48,
+  Eager Miner 100, Attributes 40 (Rotten Pickaxe 30, Quartz Speed 10). Mist weather 250 and Haste
+  potion effect 200 are untrackable for us. Ours: 7,050 + Sky Mall 100 + Mist 250 + Haste 200 +
+  Quartz Speed 10 = 7,610. The Haste IV potion (+200) replaces the Haste Artifact's Haste III (+150).
+- Mining Fortune: Flat Bonuses add up to 1,814.5 (drill 320, mining skill 240, Divan 160 x 4,
+  Fortunate Mineman 150, "and 17 more" not seen). Additive Buffs: Mining Fiesta 25% + Auspicious
+  Bonus 1% = x1.26, multiplied with the flat total. The Fiesta Flask is not listed, so it did not apply.
+  Our flat total is 1,724.5: 90 Fortune is still unidentified. Likely candidates are weather Mist
+  (+50 per the wiki) plus a Spelunker potion, lantern or similar. This needs the hidden 17 entries.
