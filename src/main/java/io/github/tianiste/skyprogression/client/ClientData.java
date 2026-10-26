@@ -25,7 +25,7 @@ final class ClientData {
     int profileIndex, revision;
     boolean loading, demo, ready, initializing, initializationFailed;
     private int generation;
-    private Future<?> lookup, priceRequest, statsRequest, compareRequest;
+    private Future<?> lookup, priceRequest, statsRequest, compareRequest, startRequest;
     /** Automatic stat ledger for {@link #statsKey}; requested lazily from the companion's /stats endpoint. */
     StatsReport stats;
     String statsKey = "", statsPending = "", statsError = "";
@@ -33,6 +33,9 @@ final class ClientData {
     /** Every method's automatic totals for the method comparison; requested from the companion's /compare endpoint. */
     MethodComparison.Report comparison;
     String compareKey = "", comparePending = "", compareError = "";
+    /** Best owned loadout and swaps for {@link #startKey}; requested from the companion's /start endpoint. */
+    StartWith.Report start;
+    String startKey = "", startPending = "", startError = "";
     MethodComparison.PriceMode priceMode = MethodComparison.PriceMode.INSTANT_SELL;
     boolean compareGodPotion = true;
     final Map<String, Inputs> inputs = new HashMap<>();
@@ -91,6 +94,34 @@ final class ClientData {
         return "/stats?ign="+enc(p.player)+"&profile="+enc(p.id)+"&method="+method.name()+"&gear="+(i.equippedGear?"equipped":"best")+"&tool="+enc(i.tool==null?"":i.tool)+"&zone="+(z==null?"":z.name())
                 +"&target="+method.target().name()+"&god="+i.godPotion;
     }
+    private String startQuery(MiningMethod method) {
+        Profile p=profile();if(p==null||demo)return "";
+        Inputs i=inputs(method);StatContext.Zone z=zone(method);
+        return "/start?ign="+enc(p.player)+"&profile="+enc(p.id)+"&method="+method.name()+"&tool="+enc(i.tool==null?"":i.tool)+"&zone="+(z==null?"":z.name())
+                +"&target="+method.target().name()+"&god="+i.godPotion;
+    }
+    /** Start-with report for the current selections, or null while missing, loading or failed. */
+    StartWith.Report start(MiningMethod method){String key=startQuery(method);return !key.isEmpty()&&key.equals(startKey)?start:null;}
+    boolean startLoading(MiningMethod method){String key=startQuery(method);return !key.isEmpty()&&key.equals(startPending);}
+    String startError(MiningMethod method){String key=startQuery(method);return !key.isEmpty()&&key.equals(startKey)?startError:"";}
+    void ensureStart(MiningMethod method,Consumer<Runnable> dispatch,Runnable changed) {
+        String key=startQuery(method);
+        if(!ready||loading||key.isEmpty()||key.equals(startKey)||key.equals(startPending))return;
+        if(startRequest!=null)startRequest.cancel(true);
+        startPending=key;startError="";int requestGeneration=generation;
+        startRequest=WORK.submit(()->{
+            StartWith.Report result=null;String error="";
+            try{result=Catalog.GSON.fromJson(fetch(key,45),StartWith.Report.class);if(result==null||result.current==null||result.bestOwned==null)throw new IllegalStateException("Empty start-with report");}
+            catch(IllegalStateException e){error="Unknown endpoint".equals(e.getMessage())?"The companion is older than the mod. Restart it to use Start with.":e.getMessage();}
+            catch(Exception e){error="Companion unavailable or timed out. Start with needs the companion.";}
+            StartWith.Report loaded=result;String failure=error;
+            dispatch.accept(()->{
+                if(requestGeneration!=generation||!key.equals(startPending))return;
+                startPending="";startKey=key;start=loaded;startError=failure;revision++;changed.run();
+            });
+        });
+    }
+    void refreshStart(){startKey="";startPending="";start=null;startError="";if(startRequest!=null)startRequest.cancel(true);revision++;}
     private static String enc(String value){return URLEncoder.encode(value,java.nio.charset.StandardCharsets.UTF_8);}
     /** Automatic ledger for the current selections, or null while missing, loading or failed. */
     StatsReport stats(MiningMethod method){String key=statsQuery(method);return !key.isEmpty()&&key.equals(statsKey)?stats:null;}
@@ -177,6 +208,8 @@ final class ClientData {
         if(priceRequest!=null)priceRequest.cancel(true);
         if(statsRequest!=null)statsRequest.cancel(true);
         if(compareRequest!=null)compareRequest.cancel(true);
+        if(startRequest!=null)startRequest.cancel(true);
+        start=null;startKey="";startPending="";startError="";
         stats=null;statsKey="";statsPending="";statsError="";
         comparison=null;compareKey="";comparePending="";compareError="";
         message="Lookup cancelled. You can load again or use Demo.";

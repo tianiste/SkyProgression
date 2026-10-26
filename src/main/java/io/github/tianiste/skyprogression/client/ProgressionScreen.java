@@ -32,8 +32,8 @@ public final class ProgressionScreen extends Screen {
     private Map<Upgrade,Double> bestGains=new IdentityHashMap<>();
     private final List<Card> cards=new ArrayList<>();
     private final List<Placed> placed=new ArrayList<>();
-    private static final String[] TABS={"Overview","Upgrades","Stats","Breakdown","Rates","Compare","Other"};
-    private static final int BREAKDOWN=3,RATES=4,COMPARE=5,OTHER=6;
+    private static final String[] TABS={"Overview","Upgrades","Stats","Breakdown","Start with","Rates","Compare","Other"};
+    private static final int BREAKDOWN=3,START=4,RATES=5,COMPARE=6,OTHER=7;
     private record Line(String text,int color,double progress) {}
     private static final class Card {
         ItemStack icon=ItemStack.EMPTY;
@@ -78,6 +78,7 @@ public final class ProgressionScreen extends Screen {
         if(!wide){button(stat.label+" v",left+9,y,span-124,false,this::selectStat);button("Type Stats",left+span-110,y,101,false,this::typeStats).active=data.ready;y+=24;}
         if(tab==BREAKDOWN){breakdownControls(y+3);bodyTop=y+31;}
         else if(tab==COMPARE){compareControls(y+3);bodyTop=y+31;}
+        else if(tab==START){startControls(y+3);bodyTop=y+31;}
         else bodyTop=y+(!wide&&height<330?4:31);
         bodyBottom=bottom-48;
         button("<",left+9,bottom-30,24,false,()->scroll=Math.max(0,scroll-Math.max(30,bodyBottom-bodyTop-20)));
@@ -85,7 +86,8 @@ public final class ProgressionScreen extends Screen {
         if(wide)button("Type Stats",left+span-111,bottom-30,102,false,this::typeStats).active=data.ready;
         data.initialize(minecraft::execute,this::refresh);
         data.ensureStats(method,minecraft::execute,this::refresh);
-        if(tab==COMPARE||tab==1)data.ensureCompare(minecraft::execute,this::refresh);
+        if(tab==COMPARE||tab==1||tab==START)data.ensureCompare(minecraft::execute,this::refresh);
+        if(tab==START)data.ensureStart(method,minecraft::execute,this::refresh);
         lastRevision=data.revision;analyze();
     }
     @Override public void tick(){
@@ -112,6 +114,21 @@ public final class ProgressionScreen extends Screen {
         button("God Potion: "+(data.compareGodPotion?"On":"Off"),x+w+4,y,w,data.compareGodPotion,()->{data.compareGodPotion=!data.compareGodPotion;scroll=0;refresh();}).active=live;
         button("Pick method v",x+2*(w+4),y,w,false,this::pickRanked).active=!data.comparisonRows().isEmpty();
         button(data.compareLoading()?"Loading...":"Refresh",x+3*(w+4),y,span-18-3*(w+4),false,()->{data.refreshCompare();data.loadPrices(minecraft::execute,this::refresh);refresh();}).active=live&&!data.compareLoading();
+    }
+    /** Start with uses the Breakdown tab's held tool, zone and God Potion; Price is shared with Compare. */
+    private void startControls(int y){
+        boolean live=data.profile()!=null&&!data.demo;var i=data.inputs(method);int w=(span-18-12)/4,x=left+9;
+        var modes=MethodComparison.PriceMode.values();
+        button("Price: "+data.priceMode.label,x,y,w,true,()->{data.priceMode=modes[(data.priceMode.ordinal()+1)%modes.length];refresh();});
+        button("Held tool: "+(i.tool==null||i.tool.isEmpty()?"Not chosen":toolName(i.tool))+" v",x+w+4,y,w,false,this::selectHeldTool).active=live;
+        button("God Potion: "+(i.godPotion?"On":"Off"),x+2*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
+        button(data.startLoading(method)?"Loading...":"Refresh",x+3*(w+4),y,span-18-3*(w+4),false,()->{data.refreshStart();data.loadPrices(minecraft::execute,this::refresh);refresh();}).active=live&&!data.startLoading(method);
+    }
+    private void selectHeldTool(){
+        var list=tools();List<String> labels=new ArrayList<>();labels.add("Not chosen (assume the best owned tool)");
+        for(var t:list)labels.add(t.name()+" ("+t.location()+")");
+        var i=data.inputs(method);
+        minecraft.setScreen(new ChoiceScreen(this,"Tool you hold now",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
     }
     private void pickRanked(){
         var rows=data.comparisonRows();int n=0;List<String> labels=new ArrayList<>();
@@ -176,7 +193,7 @@ public final class ProgressionScreen extends Screen {
             card("Connect your profile",CYAN,1).line("Start the local companion, then press Load. Your application key stays in the companion.",MUTED).line("Enable Inventory API in SkyBlock Settings for gear recommendations.",TEXT);
         }else if(!p.inventoryEnabled&&tab<BREAKDOWN){card("Inventory unavailable",RED,0).line("Gear recommendations are paused. Enable Inventory API in SkyBlock Settings, then reload after the profile cache expires.",TEXT);}
         else if(calculating){card("Calculating upgrades...",CYAN,0).line("You can switch tabs or close this screen while calculations run.",MUTED);}
-        else switch(tab){case 0->overviewCards(p);case 1,2->upgradeCards();case BREAKDOWN->breakdownCards();case RATES->rateCards();case COMPARE->compareCards();case OTHER->otherCards(p);}
+        else switch(tab){case 0->overviewCards(p);case 1,2->upgradeCards();case BREAKDOWN->breakdownCards();case START->startCards();case RATES->rateCards();case COMPARE->compareCards();case OTHER->otherCards(p);}
         layoutCards();
     }
     /** The SkyBlock item's own icon (texture packs can retexture it), else a generic one for the slot. */
@@ -449,6 +466,96 @@ public final class ProgressionScreen extends Screen {
             if(!l.notes.isEmpty()){Card n=card("Notes | "+l.stat.label,MUTED,col);l.notes.forEach(t->n.line(t,MUTED));}
         }
     }
+    /** Hourly rate of the method for one loadout's totals, or null when it cannot be computed. */
+    private Double rateOf(StartWith.Scenario s,double efficiency){
+        if(s==null||s.stats==null)return null;
+        try{double v=MethodRates.perHour(method,s.stats,efficiency,s.ability);return Double.isFinite(v)?v:null;}catch(IllegalArgumentException e){return null;}
+    }
+    private String rateText(Double perHour,Double each){
+        if(perHour==null)return "rate unavailable";
+        return (MethodComparison.lowerBound(method)?"at least ":"")+fmt(perHour)+" "+MethodComparison.itemName(method)+" / hour, "+(each==null?"coins unknown":coins(perHour*each)+" / hour");
+    }
+    private static String gainPercent(Double before,Double after){
+        return before==null||after==null||before<=0?"?":(after>=before?"+":"")+fmt((after/before-1)*100)+"%";
+    }
+    private static String changeText(Double before,Double after,Double each){
+        if(before==null||after==null)return "rate change unknown";
+        return gainPercent(before,after)+(each==null?", coins unknown":", "+(after>=before?"+":"-")+coins(Math.abs(after-before)*each)+" / hour");
+    }
+    private void startCards(){
+        if(data.demo){card("Start with",GOLD,0).line("Demo has no API data. Load your player to see which owned gear to use.",TEXT);return;}
+        StartWith.Report r=data.start(method);
+        if(r==null){
+            String error=data.startError(method);
+            if(!error.isEmpty())card("Start with unavailable",RED,0).line(error,TEXT).line("Press Refresh to retry.",MUTED);
+            else card("Finding your best owned gear...",CYAN,0).line("Comparing what you own with what you wear, in the companion. You can keep using the other tabs.",MUTED);
+            return;
+        }
+        var i=data.inputs(method);var mode=data.priceMode;double eff=i.efficiency;
+        Double each=MethodComparison.coinsPerItem(data.prices,method,mode);
+        Double before=rateOf(r.current,eff),after=rateOf(r.bestOwned,eff);
+        StatContext.Zone zone=data.zone(method);
+        Card head=card("Start with | "+method.label,GOLD,0);
+        if(!r.inventoryKnown)head.line("Inventory API off or unreadable: ownership of armor, equipment, tools and accessories is unknown. Only the pet can be compared.",RED);
+        if(!r.petsKnown)head.line("Pet data unavailable: pet ownership is unknown.",RED);
+        if(r.swaps.isEmpty())head.line(r.inventoryKnown?"You already wear the best owned gear for "+method.label+". Nothing to swap.":"No swaps found in the readable data.",GREEN);
+        else head.line(r.swaps.size()+" swap"+(r.swaps.size()==1?"":"s")+" from your own storage, nothing to buy.",CYAN);
+        head.line("Now: "+rateText(before,each),TEXT);
+        head.line("Best owned: "+rateText(after,each),after!=null&&before!=null&&after>before?GREEN:TEXT);
+        if(!r.swaps.isEmpty())head.line("Total: "+changeText(before,after,each),GOLD);
+        head.line(fmt(eff)+"% efficiency | "+(zone==null?"no zone":zone.label)+" | God Potion "+(r.godPotion?"on":"off")+" | "+mode.label+" price"+(each==null?" unknown":""),MUTED);
+        if(!r.current.complete||!r.bestOwned.complete)head.line("Some counted stat sources have unknown values, so these rates are lower bounds.",RED);
+        if(!i.stats.isEmpty())head.line("Type Stats values are not applied here: gear is compared by its automatic totals.",MUTED);
+        // Largest rate gain first; swaps whose rate cannot be computed go last.
+        record Ranked(StartWith.Swap swap,Double rate){}
+        List<Ranked> ranked=new ArrayList<>();for(var sw:r.swaps)ranked.add(new Ranked(sw,rateOf(sw.after(),eff)));
+        ranked.sort(Comparator.comparing((Ranked x)->x.rate()==null?1:0).thenComparing(x->x.rate()==null?0:-x.rate()));
+        int n=0;
+        for(var x:ranked){
+            var sw=x.swap();var to=sw.to();var from=sw.from();
+            Card c=card("#"+(++n)+"  "+sw.slot()+": "+to.name()+" | "+gainPercent(before,x.rate()),GREEN,n%2==1?1:0);
+            c.icon=icon(to.id(),sw.slot());
+            c.line("Fetch from: "+to.location()+(to.detail().isEmpty()?"":" ("+to.detail()+")"),CYAN);
+            String action=switch(sw.slot()){
+                case "Accessory"->"Put it in your accessory bag"+(from==null?".":", in place of "+from.name()+" (same family).");
+                case "HOTM tree"->"Switch to it in Loadouts (the API does not show the active tree).";
+                default->from==null?"The slot is empty now.":"Replaces "+from.name()+(from.detail().isEmpty()?"":" ("+from.detail()+")")+".";
+            };
+            c.line(action,TEXT);
+            StringJoiner delta=new StringJoiner(", ");
+            for(Stat st:method.relevantStats()){double d=stat(sw.after().stats,st)-stat(r.current.stats,st);if(Math.abs(d)>1e-9)delta.add((d>0?"+":"")+fmt(d)+" "+st.label);}
+            if(delta.length()>0)c.line(delta.toString(),TEXT);
+            if(!Objects.equals(sw.after().ability,r.current.ability))c.line("Tool ability: "+abilityText(sw.after().ability),TEXT);
+            c.line("Rate: "+changeText(before,x.rate(),each),GOLD);
+            c.line(rateText(x.rate(),each),MUTED);
+        }
+        if(r.swaps.size()>1)card("About the swaps",CYAN,0).line("Each swap is rated alone on what you wear now. All of them together give the total above, which can differ from the sum (set bonuses, tick thresholds).",MUTED);
+        Card best=card("Best owned loadout",CYAN,0);
+        if(r.best.isEmpty())best.line(r.inventoryKnown?"No readable mining gear.":"Ownership unknown.",MUTED);
+        for(var piece:r.best)best.line(piece.slot()+": "+piece.name()+(piece.detail().isEmpty()?"":", "+piece.detail())+"  ("+(piece.worn()?"wearing":piece.location())+")",piece.worn()?TEXT:CYAN);
+        if(r.otherAccessories>0)best.line(r.otherAccessories+" other accessories add no "+method.label+" stats.",MUTED);
+        best.line(StatBreakdown.treeLabel(r.hotmTree)+(r.hotmTrees>1?" of "+r.hotmTrees+" (Loadouts): best for "+method.label+"; the API does not show which tree is active.":""),TEXT);
+        best.line("Chosen like the Breakdown tab: one copy per slot from all readable storage, one tool, one pet, one accessory per family. Zone follows the Breakdown tab.",MUTED);
+        hintCard(r);
+        if(!r.notes.isEmpty()){Card notes=card("Notes",MUTED,1);r.notes.forEach(t->notes.line(t,MUTED));}
+    }
+    private static String abilityText(MethodRates.Ability a){
+        return a==null?"none shown":a.name()+(a.cooldown()==null?"":", "+fmt(a.cooldown())+"s cooldown");
+    }
+    /** Best method by coins / hour with the gear worn now (this report) and with the best owned gear (Compare tab data). */
+    private void hintCard(StartWith.Report r){
+        Card c=card("Best method for this gear",GOLD,1);var mode=data.priceMode;
+        List<MethodComparison.Row> worn=new ArrayList<>();
+        for(var e:r.worn){if(e==null||e.method==null||e.stats==null)continue;var in=data.inputs(e.method);Map<Stat,Double> stats=new EnumMap<>(Stat.class);stats.putAll(e.stats);stats.putAll(in.stats);
+            worn.add(MethodComparison.row(e.method,stats,e.complete,in.efficiency,e.ability,data.prices,mode,e.tool));}
+        var wornTop=MethodComparison.rank(worn).stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
+        c.line(wornTop==null?"Gear worn now: no method has a known price.":"Gear worn now: "+wornTop.method().label+", "+coins(wornTop.coinsPerHour())+" / hour",wornTop!=null&&wornTop.method()==method?GREEN:TEXT);
+        var bestTop=data.comparisonRows().stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
+        if(data.comparison()==null)c.line(data.compareError().isEmpty()?"Best owned gear: loading the method comparison...":"Best owned gear: "+data.compareError(),MUTED);
+        else c.line(bestTop==null?"Best owned gear: no method has a known price.":"Best owned gear: "+bestTop.method().label+", "+coins(bestTop.coinsPerHour())+" / hour",bestTop!=null&&bestTop.method()==method?GREEN:TEXT);
+        c.line("At the "+mode.label+" price, each method in its usual zone with its Type Stats values and efficiency. Full ranking on the Compare tab.",MUTED);
+        if(data.comparison()!=null&&data.comparison().godPotion!=r.godPotion)c.line("God Potion is "+(r.godPotion?"on":"off")+" here but "+(data.comparison().godPotion?"on":"off")+" on Compare.",GOLD);
+    }
     private static String stateTitle(Breakdown.State state){
         return switch(state){case COUNTED->"Counted";case SITUATIONAL->"Situational, not counted";case MISSING->"Missing";
             case TEMPORARY->"Temporary, not counted";case UNTRACKABLE->"Not in the API";};
@@ -504,7 +611,7 @@ public final class ProgressionScreen extends Screen {
         if(wide)g.text(font,"Fabric 26.1.2",left+108,top+13,MUTED,false);
         Profile p=data.profile();String state=data.loading?"LOADING":data.demo?"DEMO":p==null?"OFFLINE":"PROFILE LOADED";
         if(wide)g.text(font,state,left+span-95-font.width(state),top+13,data.demo?GOLD:data.loading?CYAN:p==null?MUTED:GREEN,false);
-        if(tab!=BREAKDOWN&&tab!=COMPARE&&(wide||height>=330)){panel(g,left+9,bodyTop-30,span-18,24,PANEL);
+        if(tab!=BREAKDOWN&&tab!=COMPARE&&tab!=START&&(wide||height>=330)){panel(g,left+9,bodyTop-30,span-18,24,PANEL);
         String summary=p==null?"Mining progression":p.player+" / "+p.name+" ["+p.mode+"]";
         g.text(font,fit(font,summary,wide?span/2:span-34),left+15,bodyTop-22,TEXT,false);
         if(wide)g.text(font,fit(font,statSummary(),span/2-22),left+span/2,bodyTop-22,CYAN,false);

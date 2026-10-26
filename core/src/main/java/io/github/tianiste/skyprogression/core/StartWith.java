@@ -31,8 +31,8 @@ public final class StartWith {
         public List<MethodComparison.Entry> worn = new ArrayList<>();
         public List<String> notes = new ArrayList<>();
     }
-    /** One piece: slot label, key (instance, item ID or "pet"), name, readable storage, pet item or similar, and whether it is worn. */
-    public record Piece(String slot, String key, String name, String location, String detail, boolean worn) {}
+    /** One piece: slot label, key (instance, item ID or "pet"), item ID (pet type for pets), name, readable storage, pet item or similar, and whether it is worn. */
+    public record Piece(String slot, String key, String id, String name, String location, String detail, boolean worn) {}
     /** Totals of every supported stat for one loadout; complete is false when a counted source of a method stat is unknown. */
     public static final class Scenario {
         public Map<Stat, Double> stats = new EnumMap<>(Stat.class);
@@ -65,7 +65,7 @@ public final class StartWith {
             Item item = slot(Loadout.ARMOR.contains(slot) ? best.armor : best.equipment, slot);
             if (item != null) r.best.add(piece(item, equipped));
         }
-        if (best.tool != null) r.best.add(new Piece("Tool", key(best.tool), best.tool.name, where(best.tool.location),
+        if (best.tool != null) r.best.add(new Piece("Tool", key(best.tool), best.tool.id, best.tool.name, where(best.tool.location),
                 r.toolKnown ? "" : "held tool not in the API", r.toolKnown && best.tool == equipped.tool));
         if (best.pet != null) r.best.add(piece(best.pet, Objects.equals(best.pet, equipped.pet)));
         for (Item item : best.accessories) {
@@ -82,7 +82,7 @@ public final class StartWith {
         if (r.toolKnown && best.tool != null && best.tool != equipped.tool) {
             Loadout l = equipped.copy(); l.tool = best.tool;
             add(r, member, context, m, equipped.tool == null ? null
-                    : new Piece("Tool", key(equipped.tool), equipped.tool.name, where(equipped.tool.location), "held", true), piece(best.tool, equipped), l);
+                    : new Piece("Tool", key(equipped.tool), equipped.tool.id, equipped.tool.name, where(equipped.tool.location), "held", true), piece(best.tool, equipped), l);
         }
         if (best.pet != null && !Objects.equals(best.pet, equipped.pet)) {
             Loadout l = equipped.copy(); l.pet = best.pet;
@@ -97,8 +97,8 @@ public final class StartWith {
         }
         if (!r.hotmTree.equals(r.currentTree)) {
             Loadout l = equipped.copy(); l.hotmTree = r.hotmTree;
-            add(r, member, context, m, new Piece("HOTM tree", r.currentTree, StatBreakdown.treeLabel(r.currentTree), "Loadouts", "", true),
-                    new Piece("HOTM tree", r.hotmTree, StatBreakdown.treeLabel(r.hotmTree), "Loadouts", "", false), l);
+            add(r, member, context, m, new Piece("HOTM tree", r.currentTree, "", StatBreakdown.treeLabel(r.currentTree), "Loadouts", "", true),
+                    new Piece("HOTM tree", r.hotmTree, "", StatBreakdown.treeLabel(r.hotmTree), "Loadouts", "", false), l);
         }
 
         for (MiningMethod other : MiningMethod.values()) {
@@ -150,10 +150,10 @@ public final class StartWith {
     private static String key(Item item) { return item.instance.isBlank() ? item.id : item.instance; }
     private static Piece piece(Item item, Loadout equipped) {
         boolean worn = equipped.armor.contains(item) || equipped.equipment.contains(item) || equipped.accessories.contains(item);
-        return new Piece(slotLabel(item.category), key(item), item.name, where(item.location), "", worn);
+        return new Piece(slotLabel(item.category), key(item), item.id, item.name, where(item.location), "", worn);
     }
     private static Piece piece(Loadout.Pet pet, boolean active) {
-        return new Piece("Pet", "pet", pet.label(), pet.active() ? "active pet" : "pets menu",
+        return new Piece("Pet", "pet", pet.type(), pet.label(), pet.active() ? "active pet" : "pets menu",
                 pet.heldItem().isBlank() ? "no pet item" : "holding " + petItem(pet.heldItem()), active);
     }
     private static String slotLabel(String category) {
