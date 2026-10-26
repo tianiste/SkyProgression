@@ -5,8 +5,8 @@ import java.util.regex.*;
 import static io.github.tianiste.skyprogression.core.Model.*;
 
 /**
- * Method rate engine. Implemented for Magma Fields gemstones (MF Gems / Ruby / Topaz); rules and sources are
- * in docs/CALCULATIONS.md ("Rates: Magma Fields gemstones"). Averages one hour of mining, including the
+ * Method rate engine. Implemented for Magma Fields gemstones (MF Gems / Ruby / Topaz) and Fairy Grotto Jasper;
+ * rules and sources are in docs/CALCULATIONS.md ("Rates: Magma Fields gemstones", "Rates: Fairy Grotto"). Averages one hour of mining, including the
  * Mining Speed Boost cycle, at the player's efficiency (share of time spent breaking blocks).
  */
 public final class MethodRates {
@@ -16,22 +16,27 @@ public final class MethodRates {
     public record Ability(String name, Double boostPercent, Double duration, Double cooldown) {
         public boolean speedBoost() { return name.equals("Mining Speed Boost") && boostPercent != null && duration != null && cooldown != null && cooldown > 0; }
     }
-    /** One gemstone of the method: block strength (wiki Block Strength), the flawless item and the guide's reference rate. */
-    public record Gem(String name, double strength, String flawless, double guideFlawlessPerHour) {}
+    /**
+     * One gemstone of the method: block strength (wiki Block Strength), the flawless item, and the method guide's
+     * reference rate with the efficiency it assumes and a short note on what the reference covers.
+     */
+    public record Gem(String name, double strength, String flawless, double guideFlawlessPerHour, double guideEfficiency, String guideNote) {}
     public record GemRate(Gem gem, double speed, int ticks, int boostedTicks, double uptime, double blocksPerHour,
                           double roughPerBlock, double flawlessPerHour, List<String> assumptions) {}
 
     /** Average of the 3-5 Rough base yield per gemstone block (wiki Gemstone). */
     public static final double BASE_ROUGH = 4;
     public static final double ROUGH_PER_FLAWLESS = 80 * 80 * 80;
-    /** Guide reference efficiency: the Magma Fields guide's rates use 60% Block Efficiency. */
-    public static final double GUIDE_EFFICIENCY = 60;
+    private static final String MF_NOTE = "Magma Fields guide, hypermax";
 
     public static Gem gem(MiningMethod m) {
         return switch (m) {
-            case MF_RUBY -> new Gem("Ruby", 2300, "FLAWLESS_RUBY_GEM", 23.5);
-            case MF_TOPAZ -> new Gem("Topaz", 3800, "FLAWLESS_TOPAZ_GEM", 16.5);
-            case MF_GEMS -> new Gem("Amber (also Sapphire, Jade, Amethyst)", 3000, "FLAWLESS_AMBER_GEM", 20.1);
+            case MF_RUBY -> new Gem("Ruby", 2300, "FLAWLESS_RUBY_GEM", 23.5, 60, MF_NOTE);
+            case MF_TOPAZ -> new Gem("Topaz", 3800, "FLAWLESS_TOPAZ_GEM", 16.5, 60, MF_NOTE);
+            case MF_GEMS -> new Gem("Amber (also Sapphire, Jade, Amethyst)", 3000, "FLAWLESS_AMBER_GEM", 20.1, 60, MF_NOTE);
+            // Fairy Grotto guide: Mansion up to 12 Jasper plus 3.1 other Flawless / hour; Palace 11 plus 4.6 (0% Magma Fields).
+            case GROTTO -> new Gem("Jasper", 4800, "FLAWLESS_JASPER_GEM", 12, 65,
+                    "Fairy Grotto guide, Mansion; Palace 11. Plus 3.1-4.6 other Flawless/h; full Magma Fields grottos about x1.15");
             default -> null;
         };
     }
@@ -91,6 +96,8 @@ public final class MethodRates {
         double pristine = Math.clamp(stat(stats, Stat.PRISTINE), 0, 100);
         double rough = BASE_ROUGH * (1 + pristine * .79) * (1 + fortune / 100);
         assumptions.add("Every Gemstone Spread block is another gemstone; no travel time beyond the efficiency setting.");
+        if (m == MiningMethod.GROTTO) assumptions.add("All mining time is on Jasper with the ability used on Jasper. The other gems a grotto route also mines, "
+                + "grotto size, griefed veins and the Magma Fields share are not modelled (unknown; they lower the real Jasper rate).");
         assumptions.add("Rough per block = 4 x (1 + 0.79 x Pristine) x (1 + (Mining + Gemstone Fortune) / 100); Flawless = 512,000 Rough.");
         return new GemRate(gem, speed, ticks, boosted, uptime, blocksPerHour, rough, blocksPerHour * rough / ROUGH_PER_FLAWLESS, assumptions);
     }

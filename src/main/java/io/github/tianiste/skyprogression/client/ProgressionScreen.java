@@ -232,7 +232,7 @@ public final class ProgressionScreen extends Screen {
             c.line("Mining Speed "+fmt(rate.speed())+": "+rate.ticks()+" ticks per block"+(rate.uptime()>0?", "+rate.boostedTicks()+" during the ability ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
             double next=MethodRates.nextTickSpeed(rate.speed(),gem.strength());
             if(Double.isFinite(next))c.line("Next tick: "+fmt(next)+" Mining Speed ("+MethodRates.ticks(next,gem.strength())+" ticks); speed between thresholds adds nothing",MUTED);
-            c.line("Guide reference (hypermax, "+fmt(MethodRates.GUIDE_EFFICIENCY)+"% efficiency): "+fmt(gem.guideFlawlessPerHour())+" Flawless / hour",MUTED);
+            c.line("Guide reference ("+gem.guideNote()+", "+fmt(gem.guideEfficiency())+"% efficiency): "+fmt(gem.guideFlawlessPerHour())+" Flawless / hour",MUTED);
             for(String a:rate.assumptions())c.line(a,MUTED);
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
     }

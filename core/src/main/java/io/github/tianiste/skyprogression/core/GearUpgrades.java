@@ -151,7 +151,7 @@ public final class GearUpgrades {
         for(String tank:FUEL_TANKS.keySet())ids.add(tank.toUpperCase(Locale.ROOT));
         for(int n=1;n<=5;n++)ids.add("ENCHANTMENT_PRISTINE_"+n);
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");
-        for(String type:List.of("RUBY","SAPPHIRE","AMETHYST"))ids.add("FLAWLESS_"+type+"_GEM"); // MF gem rate values
+        for(String type:List.of("RUBY","SAPPHIRE","AMETHYST","JASPER"))ids.add("FLAWLESS_"+type+"_GEM"); // gem rate values
         for(Item item:catalog) {
             ids.add(item.id);
             if(item.slots!=null)for(Slot slot:item.slots)if(slot!=null&&slot.costs!=null)for(Ingredient c:slot.costs)if(c.type.equals("ITEM"))ids.add(c.item_id);
