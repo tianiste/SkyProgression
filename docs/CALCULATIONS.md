@@ -85,3 +85,65 @@ Rule references:
 - https://hypixelskyblock.minecraft.wiki/w/Polarvoid_Book
 - https://hypixelskyblock.minecraft.wiki/w/Gemstone
 - https://hypixelskyblock.minecraft.wiki/w/Gemstone_Slot
+
+## Stat breakdown: Mining Fortune and Mining Speed
+
+`core/` `Loadout`, `StatContext`, `StatBreakdown` and `Breakdown` build a source ledger. No UI or
+companion endpoint uses them yet.
+
+Loadouts:
+- **Equipped**: `inv_armor`, `equipment_contents`, the accessory bag and the active pet, plus a tool
+  the player selects (the API does not expose the held item). Without a selected tool, the ledger
+  carries a MANUAL "Mining tool" entry with no value. Stored items are never equipped implicitly.
+- **Best owned**: a separate, hypothetical choice of one copy per slot from all readable storage.
+  It also picks one accessory per family and the best catalogued pet. It is not what the player wears.
+- Accessories of one catalogued family do not stack. The highest-rarity copy counts; uncatalogued
+  accessories are deduplicated by item ID. Accessories carried in the inventory are not counted.
+
+Contribution states: COUNTED, SITUATIONAL (owned, condition not met or not checkable), MISSING,
+TEMPORARY (reported by the API) and UNTRACKABLE (never in the API). Confidence: KNOWN, UNKNOWN, MANUAL.
+The total sums only COUNTED entries with a known value. An unknown value stays null and is listed
+as unresolved, so the total is then a lower bound. A context (zone, block target) decides whether
+location or block conditions are met. Conditions the API cannot check are always situational.
+
+Rules:
+- Gear: the displayed lore stat line counts once and replaces base catalog stats. On the
+  Titanium Drill DR-X655 the line `Mining Fortune: +235 [+5] (+20) (+50)` decomposes as
+  120 base + 45 Fortune IV + 20 Auspicious + 50 Perfect Jade = 235. Speed decomposes as
+  1600 + 210 Efficiency X + 75 + 100 = 1985. So the bracketed `[+N]` is outside the total. It equals
+  the Polarvoid Book bonus (+10 Mining Speed per book up to 5, +5 Mining Fortune once), and is
+  counted separately only when the bracket matches that rule. Drill engine and upgrade-module
+  paragraphs (e.g. Ruby-Polished Drill Engine +250/+30, Sunny Side omelette +50) are also outside
+  the total and count separately. Lore paragraphs with a condition ("while ...") are situational.
+  Percentage bonuses (Auspicious Bonus +1% Mining Fortune) stay UNKNOWN until we know what the
+  percentage applies to. Full Set Bonus paragraphs count once per set, and only when the loadout
+  holds every piece.
+- Haste Artifact: Haste III effect +150 Mining Speed, situational (only without a stronger Haste).
+- Pet: level from `exp` and rarity using the pet XP table (`pet-levels.json`, NotEnoughUpdates-REPO
+  `constants/pets.json`). Catalogued pets: Bal (Epic+, 1 Mining Fortune per level), Scatha (Rare+,
+  1.25 Fortune / 1 Speed per level), Mithril Golem (0.25 Fortune), Silverfish (0.2 Fortune). Mole
+  and Glacite Golem stay unknown because the wiki's level 1 and level 100 values disagree with a
+  linear rate. Quick Claw: +1 Fortune and +1 Speed per 2 pet levels. Other held items are unknown.
+- HOTM (`skill_tree.nodes.mining`; `toggle_<perk>` false = situational, not counted): Mining Speed
+  20/level, Speedy Mineman 40/level, Professional 50+5/level on Gemstones, Strong Arm 5/level on
+  Dwarven Metals, Mining Fortune 2/level, Fortunate Mineman 3/level, Rags to Riches 4/level in
+  Glacite Mineshafts, Sky Mall +50 Fortune / +100 Speed on the matching random day (situational).
+  Front Loaded, Mineshaft Mayhem and Eager Adventurer are not encoded: their API keys are unobserved.
+  The Blue Cheese omelette's +1 perk level is not applied.
+- Mining skill: 4 Mining Fortune per level (level from the official skills resource).
+- Collections: "+N Mining Fortune" unlock rewards for reached tiers from the official collections resource.
+- Attributes (`attributes.stacks` = shards syphoned, levelled by the wiki rarity table; effect
+  linear per level): Fortunate Miner 2.5 Fortune, Rotten Pickaxe 3 Speed, Quartz Speed 10 Speed
+  during Weather (situational).
+- Essence: Eager Miner (Gold Essence) 10 Mining Speed per level on Mining Islands.
+- `active_effects` / `temp_stat_buffs` entries are TEMPORARY with unknown values (mapping unverified).
+  Potions, lanterns, weather, Better Together, Mining Fiesta and cakes are UNTRACKABLE.
+
+Sources (fetched 2026-10-26):
+- https://hypixelskyblock.minecraft.wiki/w/Mining_Fortune and https://hypixelskyblock.minecraft.wiki/w/Mining_Speed (source tables)
+- https://hypixelskyblock.minecraft.wiki/w/Heart_of_the_Mountain (perk templates `Template:Heart_of_the_Mountain/List/Tier_N`)
+- https://hypixelskyblock.minecraft.wiki/w/Polarvoid_Book, https://hypixelskyblock.minecraft.wiki/w/Quick_Claw,
+  https://hypixelskyblock.minecraft.wiki/w/Bal_Pet, https://hypixelskyblock.minecraft.wiki/w/Dwarven_Geode
+- https://hypixelskyblock.minecraft.wiki/w/Attributes, https://hypixelskyblock.minecraft.wiki/w/Flitter_Shard,
+  https://hypixelskyblock.minecraft.wiki/w/Miner_Zombie_Shard, https://hypixelskyblock.minecraft.wiki/w/Quartzfang_Shard
+- https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO/blob/master/constants/pets.json (pet XP table)

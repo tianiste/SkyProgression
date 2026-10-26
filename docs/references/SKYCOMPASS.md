@@ -73,3 +73,16 @@ Sum of the listed counted sources: 640 + 81 + 320 + 6.5 + 145 + 250 + 240 + 17 +
 Verify every mechanic independently from Hypixel data, the wiki or in-game testing.
 Prefer the owner's in-game stat menu as ground truth. When our results differ, record the
 discrepancy and the source of truth used instead of matching SkyCompass's number.
+
+## Comparison with our breakdown (2026-10-26)
+
+Our engine (`StatBreakdown`, equipped loadout with the DR-X655 selected) on the fixture:
+- **Mining Fortune 1,724.5**, matching SkyCompass. The per-source amounts also match. The drill's
+  270 is our 235 lore line + 5 Polarvoid + 30 Ruby-Polished engine, and the omelette's 50 is separate.
+  We additionally flag the drill's Auspicious Bonus (+1% Mining Fortune) as unresolved.
+  SkyCompass's sum suggests it does not add it either; the mechanic is unverified.
+- **Mining Speed 6,950 with no zone chosen, 7,050 in the Dwarven Mines** (adds Eager Miner +100),
+  vs SkyCompass **7,150.5**. Gap 100.5. We have no SkyCompass speed breakdown, so the cause is
+  unknown. Candidates we keep situational on purpose: Sky Mall +100 (random daily buff), Haste III
+  from the Haste Artifact (+150). Neither explains the .5. Not tuned; needs the owner's in-game
+  stat menu.

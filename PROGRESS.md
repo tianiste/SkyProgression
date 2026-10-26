@@ -27,11 +27,14 @@ effective player stats. Target scope (feature spec from SkyCompass, see
 1. **Done (2026-10-26).** Sanitized fixture `core/src/test/resources/fixtures/debotes-zucchini.json`
    (regenerate: `./gradlew :core:extractFixture`), field map in
    `docs/references/API-FIELDS.md`, `ProfileFixtureTest`. HOTM now read from `skill_tree`.
-2. **Next.** Implement a typed loadout/context and stat breakdown with each contribution's source,
-   conditions and confidence (known/unknown/manual). Separate equipped from best owned.
-3. Start with Mining Fortune and Mining Speed; compare against the owner's in-game stat
-   menu first, then SkyCompass totals (1,724.5 Fortune / 7,150.5 Speed observed).
-4. Expose it via our companion HTTP API (e.g. `/stats`), then wire automatic totals into
+2. **Done (2026-10-26).** `Loadout` (equipped vs best owned, selected tool), `StatContext`
+   (zone/target conditions), `Breakdown` (per-source state + confidence) and `StatBreakdown`
+   for Mining Fortune and Mining Speed. Rules and sources: docs/CALCULATIONS.md "Stat breakdown".
+3. **Partly done.** Fixture: Fortune 1,724.5 (= SkyCompass); Speed 7,050 in the Dwarven Mines vs
+   SkyCompass 7,150.5 (unexplained 100.5, see SKYCOMPASS.md). **Next: owner compares against the
+   in-game stat menu** (same-time API snapshot). Open: Auspicious +1% mechanic, Mole/Glacite Golem
+   pet rates, Front Loaded/Mineshaft Mayhem/Eager Adventurer API keys, Blue Cheese +1 perk level.
+4. **Next task.** Expose it via our companion HTTP API (e.g. `/stats`), then wire automatic totals into
    the existing screens with a Stats breakdown view; retain optional manual overrides.
 5. Document numerical discrepancies instead of tuning constants to match references.
 
@@ -99,7 +102,10 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (Step 1 fixtures): build succeeded, **33 core tests passed**.
+Latest verification (Step 2 breakdown): `./gradlew build :service:installDist` succeeded; one
+minimal fixture totals test added (owner asked for minimal tests; manual testing by the owner).
+No in-game comparison yet.
+Earlier verification (Step 1 fixtures): build succeeded, **33 core tests passed**.
 Verification at 0.3.0: local build succeeded; **29 core tests passed** (26 calculation/
 parser tests + 3 HTTP success/size/stalled-body tests). No in-game visual or freeze
 reproduction was performed by the agent. Owner confirmed an earlier build worked;
@@ -253,3 +259,15 @@ fixture changed no values: every extracted field and inventory blob was identica
 was number formatting (raw API E-notation vs. the earlier PowerShell-written copy).
 Build succeeded, 33 core tests passed. Gear/profile state is therefore current as of
 this refetch; refetch again after the owner changes gear.
+
+2026-10-26 (Step 2, stat breakdown): added `Loadout`, `StatContext`, `Breakdown`, `StatBreakdown`
+and `pet-levels.json` in core; `Item.lore` (transient) keeps cleaned lore lines. Equipped loadout =
+worn armor/equipment, accessory bag, active pet and a selected tool (MANUAL entry when none).
+Best owned is a separate per-slot choice. Gear lore line counts once; drill Polarvoid bracket and
+part paragraphs count separately (decomposition evidence in CALCULATIONS.md). HOTM (toggles
+respected), mining skill, collections, attributes, Eager Miner, pet + Quick Claw are derived;
+situational/missing/untrackable sources are listed and excluded. Unknowns stay null and make the
+breakdown incomplete (fixture: Auspicious Bonus +1% only). Fortune matches SkyCompass at 1,724.5;
+Speed differs by 100.5 (documented, not tuned). Resolved the `polarvoid` vs "Prismatic V" question
+in API-FIELDS.md. Tests: one minimal totals test per the owner's request. Not done: companion
+`/stats`, UI, other stat groups. Next: owner's in-game stat menu comparison, then Step 4.

@@ -32,8 +32,9 @@ the inventory and a handful of accessories.
 | Glacite progress | `glacite_player_data.fossils_donated`, `corpses_looted`, `mineshafts_entered` | Fossil donations relate to permanent rewards; effect not yet mapped. |
 
 Observed caveats:
-- The drill lore lists "Prismatic V" while ExtraAttributes stores `polarvoid: 5`; the
-  stored key name does not match the displayed modifier name. Research before encoding.
+- Resolved 2026-10-26: `polarvoid: 5` is the Polarvoid Book count, shown as the bracketed
+  `[+50]` Speed / `[+5]` Fortune on the drill's stat lines. "Prismatic V" in the lore is the
+  enchantment stored as `enchantments.pristine: 5`.
 - Gem objects can be `{quality: PERFECT}` (with UUID) or a plain quality string
   (`POWER_RING` uses `"RUBY_0": "FINE"`). Parsers must accept both shapes.
 - Lore totals reflect the item's last rendered context; situational lines are stored as

@@ -28,6 +28,7 @@ public final class GearReader {
         JsonElement lore=at(nbt,"tag","display","Lore");
         if(lore.isJsonArray()) for(JsonElement line:lore.getAsJsonArray()) {
             String text=clean(string(line,""));
+            gear.lore.add(text);
             for(Stat stat:Stat.values()) {
                 Matcher match=Pattern.compile("^"+Pattern.quote(stat.label)+":\\s*([+-]?[0-9,]+(?:\\.[0-9]+)?)(?![0-9.%])").matcher(text);
                 if(match.find()) {

@@ -14,6 +14,8 @@ public final class Model {
         public com.google.gson.JsonObject extra = new com.google.gson.JsonObject();
         public List<Slot> slots = new ArrayList<>();
         public List<MiningMethod> methods = new ArrayList<>();
+        /** Cleaned lore lines of an observed copy; kept for the stat ledger, not serialized. */
+        public transient List<String> lore = new ArrayList<>();
         public boolean applies(MiningMethod m) { return methods.isEmpty() || methods.contains(m); }
     }
     public static class Slot {
