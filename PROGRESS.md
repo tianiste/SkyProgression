@@ -44,10 +44,13 @@ effective player stats. Target scope (feature spec from SkyCompass, see
 4. **Implemented (2026-10-26), awaiting the owner's in-game test.** Companion `GET /stats` (`StatsReport`,
    see CALCULATIONS.md "Stat breakdown") and a new **Breakdown** tab: held-tool picker (owned tools), zone
    picker (defaults to the method's usual zone), God Potion toggle, Refresh. Automatic Fortune/Speed feed
-   Upgrades/Rates and the header (marked "auto"); Type Stats values override per stat, blank = automatic
+   Upgrades/Rates and the header (marked "auto"). Owner decision: default to the best owned gear and tool
+   for the method (`Loadout.bestFor`/`bestTool`, commit after `0a462ce`); **Gear** toggles to equipped,
+   **Tool** picks a specific tool, and a "Gear used" card lists each piece's storage location; Type Stats values override per stat, blank = automatic
    or unknown. Selections persist per profile+method in `skyprogression-inputs.json`. Older saved inputs
    hold all ten stats, so they act as overrides until cleared. Live check: `/stats` for Debotes with
-   TITANIUM_DRILL_4 in the Dwarven Mines returned Speed 7,250 and Fortune 1,767.0 (= fixture).
+   TITANIUM_DRILL_4 in the Dwarven Mines returned Speed 7,250 and Fortune 1,767.0 (= fixture). With the
+   automatic best gear (Coal) the tool resolved to the DR-X655 and the gear to the worn Divan set, same totals.
    **Next:** owner tests the Breakdown tab in-game (tool/zone/God Potion changes update totals without
    stutter; overrides win; Demo and companion-offline show clear messages). Then extend the ledger to
    Gemstone/Ore/Dwarven Metal/Block Fortune and Pristine so method yield stops needing typed values.

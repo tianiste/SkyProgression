@@ -35,7 +35,8 @@ upgrades, using owned materials before buying and including socket unlock/remova
 Overview includes modifier progress bars. Unknown prices remain unknown.
 Pets, complete HOTM stat math, reforges, recipe/resale costing and exact method rates
 still need further implementation. Mining Fortune and Mining Speed are computed automatically from
-the profile (Breakdown tab, held tool and zone chosen by you); other stats are still entered manually.
+the profile using the best gear and tool you own for the method (Breakdown tab; you can switch to your
+equipped gear or a specific tool); other stats are still entered manually.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API
 key for Demo. Real profile lookup requires your own registered Hypixel application key
 in the local companion service. The mod never asks for a key.

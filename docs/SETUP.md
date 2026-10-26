@@ -49,8 +49,9 @@ this development companion is designed for the project owner's machine.
   Ranks supported gear upgrades and base-item alternatives by purchase cost per estimated 1% more drops.
 - **Stats:** ranks supported gear upgrades and base-item alternatives by purchase cost per point of the selected stat.
 - **Breakdown:** automatic Mining Fortune and Mining Speed itemized by source (counted, situational,
-  missing, temporary, not in the API), with the best-owned loadout total. Choose the held tool (the API
-  does not report it) and the zone; God Potion is assumed on and can be switched off. Refresh retries.
+  missing, temporary, not in the API). By default it uses the best gear and tool you own for the method,
+  listed with where each piece is stored; **Gear** switches to what you wear now, and **Tool** picks a
+  specific tool. Choose the zone; God Potion is assumed on and can be switched off. Refresh retries.
 - **Rates:** enter effective stats, active blocks per second, base drops per block, efficiency,
   sale price per item and optionally Coleweight per item. Inputs are saved per profile/method.
 - **Other:** known profile milestones plus a checklist of bonuses not modeled automatically.

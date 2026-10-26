@@ -89,8 +89,13 @@ Rule references:
 ## Stat breakdown: Mining Fortune and Mining Speed
 
 `core/` `Loadout`, `StatContext`, `StatBreakdown` and `Breakdown` build a source ledger. The companion
-serves it as `GET /stats?ign=&profile=&tool=&zone=&target=&god=` (`StatsReport`: equipped ledger per
-supported stat, best-owned total, owned tools). The mod's Breakdown tab shows it; automatic totals feed
+serves it as `GET /stats?ign=&profile=&method=&gear=best|equipped&tool=&zone=&target=&god=` (`StatsReport`:
+ledger per supported stat, equipped and best-owned totals, the gear used, owned tools). Owner decision
+2026-10-26: by default the gear is the best owned for the method (`Loadout.bestFor`) and the tool is the
+best owned tool (`Loadout.bestTool`). Items are scored like the upgrade ranking: Mining Fortune + the
+method's fortune type + Pristine x 100 / Spread + Mining Speed x 0.01 (speed ignored for instant blocks).
+Slots are chosen independently, so a set bonus can be broken. The best catalogued pet is chosen; an
+active pet whose stats are not catalogued is kept because it cannot be compared. The mod's Breakdown tab shows it; automatic totals feed
 Upgrades and Rates unless the player typed a manual value for that stat. The zone defaults to the
 method's usual location and the block target follows the method's fortune type (`MiningMethod`).
 
