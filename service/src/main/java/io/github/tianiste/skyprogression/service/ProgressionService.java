@@ -150,7 +150,7 @@ public final class ProgressionService {
                 try {
                     if (itemId.contains(";")) { fresh.put(itemId, petPrice(itemId)); return; }
                     JsonObject response = get("https://sky.coflnet.com/api/item/price/" + itemId + "/current?minAgeSeconds=120", false);
-                    Price p = new Price(); p.buy = number(response.get("buy"), 0);
+                    Price p = new Price(); p.buy = number(response.get("buy"), 0); p.sell = Math.max(0, number(response.get("sell"), 0));
                     p.available = p.buy > 0 && number(response.get("available"), 0) > 0;
                     p.source = "true".equals(string(response.get("isAh"), "false")) ? "Auction House (Coflnet)" : "Bazaar (Coflnet)";
                     p.updatedAt = string(response.get("updatedAt"), "Unknown quote time");

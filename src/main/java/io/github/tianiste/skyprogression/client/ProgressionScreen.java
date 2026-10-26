@@ -211,7 +211,9 @@ public final class ProgressionScreen extends Screen {
             else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
             if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned",GREEN);
             if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
-            var quote=data.prices.get(u.item().id);c.line(quote!=null?quote.source:u.item().source,MUTED);
+            var quote=data.prices.get(u.item().id);
+            if(quote!=null&&!u.item().modification)c.line(quote.source,MUTED);
+            if(quote==null||u.item().modification||u.item().source.matches("^(Cheaper|Buying|No buy|Price unknown).*"))c.line(u.item().source,MUTED);
         }
         if(!focused)planCard(rated);
         Card comparison=card("Cost efficiency",CYAN,1);

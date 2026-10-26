@@ -63,6 +63,9 @@ public final class ProfileParser {
                 if (!sacks.isJsonObject()) sacks = at(member, "sacks_counts");
                 if (sacks.isJsonObject()) sacks.getAsJsonObject().entrySet().forEach(e -> p.owned.merge(e.getKey(), (int)number(e.getValue(), 0), Integer::sum));
             }
+            JsonElement collected = at(member, "collection");
+            if (collected.isJsonObject()) collected.getAsJsonObject().entrySet().forEach(e -> p.collections.put(e.getKey(), number(e.getValue(), 0)));
+            else p.collections = null; // Collections API off: recipe unlocks cannot be checked.
             // Current profiles store HOTM under skill_tree; mining_core.experience is the legacy location.
             double xp = number(at(member, "skill_tree", "experience", "mining"), number(at(member, "mining_core", "experience"), -1));
             long[] thresholds = HOTM_XP;

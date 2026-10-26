@@ -37,7 +37,8 @@ public final class Model {
         public double coins;
     }
     public static class Price {
-        public double buy;
+        /** buy: what buying costs now; sell: Coflnet's sale estimate (instant sell on the bazaar, after tax on the AH); 0 = none. */
+        public double buy, sell;
         public String source = "", updatedAt = "";
         public boolean available;
         public Price() {}
@@ -54,6 +55,8 @@ public final class Model {
         public List<String> notes = new ArrayList<>();
         public Map<String, Double> progress = new LinkedHashMap<>();
         public List<Milestone> milestones = new ArrayList<>();
+        /** Collection counts by item key; null when the Collections API is off. */
+        public Map<String, Double> collections = new HashMap<>();
     }
     public static class Report {
         public List<Profile> profiles = new ArrayList<>();

@@ -56,11 +56,12 @@ public final class GearUpgrades {
         for(var e:plan.materials.entrySet()) {
             int owned=Math.min(e.getValue(),Math.max(0,profile.owned.getOrDefault(e.getKey(),0)));
             int buy=e.getValue()-owned;allOwned &= buy==0;
-            detail.add(e.getKey()+": "+owned+" owned, "+buy+" to buy");
+            detail.add(e.getKey()+": "+owned+" owned, "+buy+" to get");
             if(buy>0) {
-                Price p=prices.get(e.getKey());
-                if(p==null||!p.available||p.buy<=0||!Double.isFinite(p.buy))known=false;
-                else sum+=p.buy*buy;
+                Recipes.Path path=Recipes.acquire(e.getKey(),buy,profile,prices);
+                if(path.coins()==null)known=false;
+                else sum+=path.coins();
+                if(!path.detail().isEmpty())detail.add(path.detail().replaceAll("\\.$",""));
             }
         }
         if(plan.fees>0)detail.add("Fees: "+plan.fees+" coins");
@@ -302,6 +303,7 @@ public final class GearUpgrades {
         for(Reforges.Reforge r:Reforges.all())if(r.stone()!=null)ids.add(r.stone());
         ids.addAll(PetUpgrades.priceIds());
         ids.addAll(ProfileUpgrades.priceIds());
+        ids.addAll(Recipes.inputIds());
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");
         for(String type:List.of("RUBY","SAPPHIRE","AMETHYST","JASPER"))ids.add("FLAWLESS_"+type+"_GEM"); // gem rate values
         for(Item item:catalog) {

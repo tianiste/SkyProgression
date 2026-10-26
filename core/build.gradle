@@ -30,6 +30,13 @@ tasks.register('extractCatalog', JavaExec) {
     workingDir = rootProject.projectDir
 }
 
+tasks.register('extractRecipes', JavaExec) {
+    description = 'Regenerates the crafting and forge recipe table from the NotEnoughUpdates repository (MIT).'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.tianiste.skyprogression.core.RecipeExtractor'
+    workingDir = rootProject.projectDir
+}
+
 tasks.register('extractNeu', JavaExec) {
     description = 'Regenerates the mining reforge table from the NotEnoughUpdates repository (MIT).'
     classpath = sourceSets.test.runtimeClasspath

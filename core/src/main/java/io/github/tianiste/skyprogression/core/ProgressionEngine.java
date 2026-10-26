@@ -281,13 +281,17 @@ public final class ProgressionEngine {
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
             if (!Double.isFinite(gain) || gain <= 1e-9) continue;
             boolean have = p.owned.getOrDefault(i.id, 0) > 0;
-            Price quote = prices.get(i.id);
             Double cost = null;
+            Item shown = i;
             if (have) cost = 0.0;
-            else if (quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy)) cost = quote.buy;
+            else {
+                Recipes.Path path = Recipes.acquire(i.id, 1, p, prices);
+                cost = path.coins();
+                if (!path.detail().isEmpty()) { shown = i.copy(); shown.source = path.detail(); }
+            }
             String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : "";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
-            result.add(new Candidate(new Upgrade(i, current, delta, cost, gain, have, blocked, 1, before, after), null, Map.of()));
+            result.add(new Candidate(new Upgrade(shown, current, delta, cost, gain, have, blocked, 1, before, after), null, Map.of()));
         }
         // Full sets whose set bonus has mining stats: all four pieces at once.
         for (SetDef set : SETS) {
@@ -312,8 +316,8 @@ public final class ProgressionEngine {
                 hotm = Math.max(hotm, i.hotm);
                 if (owned.get(i.group) != null && owned.get(i.group).id.equals(i.id) || p.owned.getOrDefault(i.id, 0) > 0) continue;
                 have = false;
-                Price quote = prices.get(i.id);
-                cost = cost == null || quote == null || !quote.available || !(quote.buy > 0) || !Double.isFinite(quote.buy) ? null : cost + quote.buy;
+                Double piece = Recipes.acquire(i.id, 1, p, prices).coins();
+                cost = cost == null || piece == null ? null : cost + piece;
             }
             Item display = new Item(); display.id = pieces.getFirst().id; display.name = "Full " + set.name() + " set";
             display.group = pieces.getFirst().group; display.source = "All four pieces, for the set bonus; owned pieces cost nothing.";
