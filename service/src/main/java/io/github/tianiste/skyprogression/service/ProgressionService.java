@@ -251,8 +251,31 @@ public final class ProgressionService {
             }));
             for (Future<?> job : jobs) job.get();
         }
+        try {
+            Map<String, Double> npc = npcPrices();
+            String at = npcAt.toString();
+            for (String id : MethodComparison.npcIds()) {
+                Double v = npc.get(id);
+                if (v == null || !(v > 0)) continue;
+                Price p = fresh.computeIfAbsent(id, ignored -> { Price none = new Price(); none.source = "No Coflnet quote"; none.updatedAt = "unknown"; return none; });
+                p.npc = v; p.npcUpdatedAt = at;
+            }
+        } catch (Exception ignored) { /* NPC prices stay unknown. */ }
         quotes = Map.copyOf(fresh); quotedAt = Instant.now();
         return quotes;
+    }
+    private Map<String, Double> npcPrices = Map.of();
+    private Instant npcAt = Instant.EPOCH;
+    /** npc_sell_price per item ID from the official items resource (no key needed), refreshed every six hours. */
+    private Map<String, Double> npcPrices() throws Exception {
+        if (npcAt.plusSeconds(6 * 3600).isAfter(Instant.now())) return npcPrices;
+        Map<String, Double> out = new HashMap<>();
+        for (JsonElement item : get("https://api.hypixel.net/v2/resources/skyblock/items", false).getAsJsonArray("items")) {
+            JsonElement price = at(item, "npc_sell_price");
+            if (price.isJsonPrimitive()) out.put(string(at(item, "id"), ""), number(price, 0));
+        }
+        npcPrices = Map.copyOf(out); npcAt = Instant.now();
+        return npcPrices;
     }
     /** "PET_TYPE;RARITY;LEVEL": lowest Auction House BIN with that rarity and level (Coflnet filters). */
     private Price petPrice(String key) throws Exception {

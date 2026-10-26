@@ -107,8 +107,8 @@ public final class ProgressionScreen extends Screen {
     }
     private void compareControls(int y){
         boolean live=data.profile()!=null&&!data.demo;int w=(span-18-12)/4,x=left+9;
-        boolean instant=data.priceMode==MethodComparison.PriceMode.INSTANT_SELL;
-        button("Price: "+(instant?"Instant-sell":"Sell offer"),x,y,w,true,()->{data.priceMode=instant?MethodComparison.PriceMode.SELL_OFFER:MethodComparison.PriceMode.INSTANT_SELL;refresh();});
+        var modes=MethodComparison.PriceMode.values();
+        button("Price: "+data.priceMode.label,x,y,w,true,()->{data.priceMode=modes[(data.priceMode.ordinal()+1)%modes.length];refresh();});
         button("God Potion: "+(data.compareGodPotion?"On":"Off"),x+w+4,y,w,data.compareGodPotion,()->{data.compareGodPotion=!data.compareGodPotion;scroll=0;refresh();}).active=live;
         button("Pick method v",x+2*(w+4),y,w,false,this::pickRanked).active=!data.comparisonRows().isEmpty();
         button(data.compareLoading()?"Loading...":"Refresh",x+3*(w+4),y,span-18-3*(w+4),false,()->{data.refreshCompare();data.loadPrices(minecraft::execute,this::refresh);refresh();}).active=live&&!data.compareLoading();
@@ -258,7 +258,7 @@ public final class ProgressionScreen extends Screen {
     }
     /** The upgrade's coins/hour here, and its rate gain and coins/hour in the best method (Compare tab ranking). */
     private void crossMethodLine(Card c,Upgrade u){
-        Double each=MethodComparison.coinsPerItem(data.prices.get(MethodComparison.priceId(method)),data.priceMode);
+        Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
         double hours=MethodRates.windowHours(method,ability());
         String here=each==null?"coins unknown":"+"+compact((u.rateAfter()-u.rateBefore())/hours*each)+" coins / hour";
         if(bestRow==null||bestRow.method()==method){if(each!=null)c.line("Here: "+here+" ("+data.priceMode.label+")",CYAN);return;}
@@ -292,7 +292,7 @@ public final class ProgressionScreen extends Screen {
         try{
             var rate=MethodRates.gems(method,data.effective(method),i.efficiency,r==null?null:r.ability);
             c.line(fmt(rate.flawlessPerHour())+" Flawless "+gem.name().split(" ")[0]+" / hour",CYAN);
-            coinLines(c,rate.flawlessPerHour(),gem.flawless());
+            coinLines(c,rate.flawlessPerHour());
             c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.roughPerBlock())+" Rough / block",TEXT);
             c.line("Mining Speed "+fmt(rate.speed())+": "+rate.ticks()+" ticks per block"+(rate.uptime()>0?", "+rate.boostedTicks()+" during the ability ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
             double next=MethodRates.nextTickSpeed(rate.speed(),gem.strength());
@@ -312,7 +312,7 @@ public final class ProgressionScreen extends Screen {
             var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability);
             String window=rate.windowHours()==1?"hour":b.abilityCycle()?"ability cycle ("+fmt(rate.windowHours()*3600)+"s)":b.window();
             c.line(fmt(rate.perWindow())+" "+b.unit()+" per "+window+(rate.windowHours()==1?"":" | "+fmt(rate.perHour())+" / hour"),CYAN);
-            coinLines(c,rate.perHour(),b.product());
+            coinLines(c,rate.perHour());
             if(rate.windowHours()!=1)c.line("Window: "+MethodComparison.window(method,r==null?null:r.ability),MUTED);
             c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.dropsPerBlock())+" "+b.unit()+" / block",TEXT);
             c.line("Mining Speed "+fmt(rate.speed())+": "+ticksText(rate.groundTicks())+" on the ground, "+ticksText(rate.airTicks())+" airborne"
@@ -326,13 +326,12 @@ public final class ProgressionScreen extends Screen {
             for(String a:rate.assumptions())c.line(a,MUTED);
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
     }
-    /** Coins per hour at both Coflnet figures, labelled; an unknown figure stays unknown. */
-    private void coinLines(Card c,double perHour,String priceId){
-        var quote=data.prices.get(priceId);
-        for(var mode:MethodComparison.PriceMode.values()){Double each=MethodComparison.coinsPerItem(quote,mode);
-            c.line(each==null?"Coins / hour, "+mode.label+": unknown (no Coflnet figure for "+priceId+")"
-                    :coins(perHour*each)+" / hour, "+mode.label+" ("+fmt(each)+" each)",each==null?MUTED:mode==data.priceMode?GOLD:TEXT);}
-        if(quote!=null)c.line(quote.source+", "+quote.updatedAt+"; before Bazaar tax",MUTED);
+    /** Coins per hour at both Coflnet figures and the NPC sell price, labelled; an unknown figure stays unknown. */
+    private void coinLines(Card c,double perHour){
+        for(var mode:MethodComparison.PriceMode.values()){Double each=MethodComparison.coinsPerItem(data.prices,method,mode);
+            c.line(each==null?"Coins / hour, "+mode.label+": unknown"
+                    :coins(perHour*each)+" / hour, "+mode.label+" ("+fmt(each)+" each)",each==null?MUTED:mode==data.priceMode?GOLD:TEXT);
+            String source=MethodComparison.priceSource(data.prices,method,mode);if(each!=null&&!source.isEmpty())c.line("  "+source,MUTED);}
     }
     /** Pickaxe ability of the evaluated tool, or null before the stats load. */
     private MethodRates.Ability ability(){StatsReport r=data.stats(method);return r==null?null:r.ability;}
@@ -364,7 +363,8 @@ public final class ProgressionScreen extends Screen {
         head.line("Profile data from "+r.fetchedAt+". Each card names its Coflnet quote time (cached up to 15 minutes).",MUTED);
         card("How coins / hour is computed",CYAN,1).line("Coins / hour = items / hour x the quote. A missing quote stays unknown and sorts last; the item rate is still shown.",TEXT)
                 .line("Windows: Coal is valued per 30 minutes with two lobby hops (x2 per hour, hop time inside the efficiency); Obsidian per Mining Speed Boost cycle (cycles per hour); gems, metals and Shafting per hour.",MUTED)
-                .line("Gross, before Bazaar tax. Not counted: Hard Stone, the grotto's other gems, mineshaft loot, NPC sale and crafting into enchanted items.",MUTED)
+                .line("Bazaar figures are gross, before Bazaar tax. NPC sell uses the official items resource; Flawless gems have no NPC price there, so they count as Rough (same NPC value per Rough as Flawed and Fine).",MUTED)
+                .line("Not counted: Hard Stone, the grotto's other gems, mineshaft loot and crafting into enchanted items.",MUTED)
                 .line("Coleweight / hour is not shown: its coefficients could not be verified from a primary source.",MUTED);
         Card same=card("Same change, different value",CYAN,1);
         same.line("+50 Mining Fortune / +100 Mining Speed, on each method's own stats:",TEXT);

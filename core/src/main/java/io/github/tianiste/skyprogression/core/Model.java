@@ -40,6 +40,9 @@ public final class Model {
         /** buy: what buying costs now; sell: Coflnet's sale estimate (instant sell on the bazaar, after tax on the AH); 0 = none. */
         public double buy, sell;
         public String source = "", updatedAt = "";
+        /** NPC sell price from the official items resource (npc_sell_price) and when it was fetched; 0 = none listed. */
+        public double npc;
+        public String npcUpdatedAt = "";
         public boolean available;
         public Price() {}
         public Price(double buy, String source) { this.buy = buy; this.source = source; available = true; }

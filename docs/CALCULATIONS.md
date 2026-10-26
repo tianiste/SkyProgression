@@ -677,7 +677,16 @@ including block fortune"): with Fortune 1,522 and Spread 400 the model gives 59,
   Both are gross: the Bazaar sales tax is not applied (its current rate and account reductions are not verified here).
   When `buy` is more than twice `sell` the card warns that sell offers may not fill (thin market). Checked 2026-10-26:
   Red Sand (`SAND:1`) 3.2 sell / 133.7 buy, Mycelium (`MYCEL`) 1.9 / 47.3, Coal 4.4 / 7.7; `ENDER_STONE` had no sell figure,
-  so End Stone's instant-sell coins were unknown. NPC sale prices and crafting into enchanted items are not counted.
+  so End Stone's instant-sell coins were unknown. Crafting into enchanted items is not counted.
+- NPC sell (third mode): `npc_sell_price` from the official items resource
+  (<https://api.hypixel.net/v2/resources/skyblock/items>, no key), fetched by the companion at most every six hours and
+  attached to the `/prices` quotes as `npc` with its fetch time. Block products use their own entry. The resource lists no
+  NPC price for Flawless or Perfect gems, but Rough, Flawed and Fine sell for the same amount per Rough (checked 2026-10-27:
+  Ruby/Amber/Topaz 3 / 240 / 19,200, Jasper 4 / 320 / 25,600, which are x80 per tier), so a gem method's NPC value per Flawless
+  = the Rough gem's NPC price x 512,000, labelled so. An item without `npc_sell_price` stays unknown. Values checked
+  2026-10-27: Coal 1, Obsidian 7, Tungsten 10, Umber 10, Glacite 12, Gold Ingot 3, End Stone 2, Cobblestone 1, Mycelium 5,
+  Red Sand (`SAND:1`) 5. Fixture at NPC sell: MF Ruby about 21.3M / hour, Red Sand and Mycelium 19.5M, MF Gems 18.5M,
+  Gold 16.6M, End Stone 9.4M; Glacite, Mycelium, Red Sand and Gold Ingot sell higher to an NPC than instant-sell.
 - Priced product: the Flawless gem for gem methods (Rough converted at 512,000 Rough per Flawless, as in the rate model);
   the block product otherwise (`MethodRates.Block.product`). Only drops the rate model covers are counted: no Hard Stone on
   Coal (guide 3-6M / hour), no other grotto gems (guide 3.1-4.6 Flawless / hour), no mineshaft loot. Tungsten and Umber are

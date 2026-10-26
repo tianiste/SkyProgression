@@ -28,10 +28,11 @@ public final class MethodComparison {
         public String tool = "", zone = "", hotmTree = "mining";
     }
 
-    /** Which Coflnet figure values the items. */
+    /** Which price values the items: a Coflnet Bazaar figure or the official NPC sell price. */
     public enum PriceMode {
         INSTANT_SELL("instant-sell", "Coflnet sell estimate: selling now into the highest buy order"),
-        SELL_OFFER("sell offer", "Coflnet buy quote: listing a sell order at the current lowest offer; fills only when someone buys");
+        SELL_OFFER("sell offer", "Coflnet buy quote: listing a sell order at the current lowest offer; fills only when someone buys"),
+        NPC_SELL("NPC sell", "Hypixel items resource npc_sell_price: selling to an NPC merchant, no buyer needed");
         public final String label, meaning;
         PriceMode(String label, String meaning) { this.label = label; this.meaning = meaning; }
     }
@@ -90,11 +91,37 @@ public final class MethodComparison {
     }
     public static boolean lowerBound(MiningMethod m) { return m == MiningMethod.TUNGSTEN || m == MiningMethod.UMBER; }
 
-    /** Coins per item in the mode, or null when Coflnet has no usable figure (never 0). */
+    /** Coins per item in the mode, or null when there is no usable figure (never 0). */
     public static Double coinsPerItem(Price p, PriceMode mode) {
         if (p == null) return null;
-        double v = mode == PriceMode.INSTANT_SELL ? p.sell : p.available ? p.buy : 0;
+        double v = switch (mode) { case INSTANT_SELL -> p.sell; case SELL_OFFER -> p.available ? p.buy : 0; case NPC_SELL -> p.npc; };
         return v > 0 && Double.isFinite(v) ? v : null;
+    }
+    /**
+     * Coins per priced item of the method. The items resource lists no NPC price for Flawless gems, but Rough, Flawed and Fine
+     * sell for the same amount per Rough (Rough 3, Flawed 240 = 80 x 3, Fine 19,200 for Ruby), so a gem method's NPC value per
+     * Flawless is the Rough gem's NPC price x 512,000.
+     */
+    public static Double coinsPerItem(Map<String, Price> prices, MiningMethod m, PriceMode mode) {
+        if (mode == PriceMode.NPC_SELL && MethodRates.gem(m) != null) {
+            Double rough = coinsPerItem(prices.get(m.product), mode);
+            return rough == null ? null : rough * MethodRates.ROUGH_PER_FLAWLESS;
+        }
+        return coinsPerItem(prices.get(priceId(m)), mode);
+    }
+    /** Items whose NPC price the companion attaches: block products and the Rough gems of gem methods. */
+    public static Set<String> npcIds() {
+        Set<String> ids = new LinkedHashSet<>();
+        for (MiningMethod m : MiningMethod.values()) if (MethodRates.supported(m)) ids.add(MethodRates.gem(m) != null ? m.product : priceId(m));
+        return ids;
+    }
+    /** Where the mode's figure comes from, for labels. */
+    public static String priceSource(Map<String, Price> prices, MiningMethod m, PriceMode mode) {
+        boolean gem = MethodRates.gem(m) != null;
+        Price p = prices.get(mode == PriceMode.NPC_SELL && gem ? m.product : priceId(m));
+        if (p == null) return "";
+        if (mode != PriceMode.NPC_SELL) return p.source + ", " + p.updatedAt + "; before Bazaar tax";
+        return "Hypixel items resource, fetched " + p.npcUpdatedAt + (gem ? "; Rough NPC price x 512,000 per Flawless" : "");
     }
 
     public static Row row(MiningMethod m, Map<Stat, Double> stats, boolean complete, double efficiency, MethodRates.Ability ability,
@@ -104,12 +131,13 @@ public final class MethodComparison {
         try { items = MethodRates.perHour(m, stats, efficiency, ability); }
         catch (IllegalArgumentException e) { error = e.getMessage(); }
         Price p = prices.get(id);
-        Double each = coinsPerItem(p, mode);
+        Double each = coinsPerItem(prices, m, mode);
         Double coins = each == null || !Double.isFinite(items) ? null : items * each;
-        String note = p == null ? "No Coflnet quote for " + id + "; coins unknown"
-                : each == null ? "Coflnet has no " + mode.label + " figure for " + id + "; coins unknown"
-                : fmt(each) + " each, " + mode.label + " (" + p.source + ", " + p.updatedAt + "), before Bazaar tax";
-        if (each != null && p.sell > 0 && p.buy > 2 * p.sell) note += "; buy and sell quotes differ more than 2x (thin market), so sell offers may not fill";
+        String note = each != null ? fmt(each) + " each, " + mode.label + " (" + priceSource(prices, m, mode) + ")"
+                : mode == PriceMode.NPC_SELL ? "No NPC sell price listed for " + (MethodRates.gem(m) != null ? m.product : id) + "; coins unknown"
+                : p == null ? "No Coflnet quote for " + id + "; coins unknown"
+                : "Coflnet has no " + mode.label + " figure for " + id + "; coins unknown";
+        if (each != null && mode != PriceMode.NPC_SELL && p.sell > 0 && p.buy > 2 * p.sell) note += "; buy and sell quotes differ more than 2x (thin market), so sell offers may not fill";
         return new Row(m, itemName(m), id, items, each, coins, note, efficiency, model(m), window(m, ability), drops(m), lowerBound(m), complete, tool, error);
     }
     /** Highest coins per hour first; unknown coins after every known value, then by item rate errors last. */

@@ -58,7 +58,7 @@ this development companion is designed for the project owner's machine.
   manual scenario next to it takes active blocks per second, base drops, efficiency, a sale price and optionally
   your own Coleweight per item. Inputs are saved per profile/method.
 - **Compare:** every method ranked by coins per hour, each with its own best owned gear and tool in its usual zone
-  (that method's Type Stats values and efficiency apply). **Price** switches instant-sell / sell offer, **God Potion**
+  (that method's Type Stats values and efficiency apply). **Price** cycles instant-sell / sell offer / NPC sell, **God Potion**
   toggles the assumption, **Pick method** or a click on a card selects the method. A missing price stays unknown
   and sorts last. The Upgrades tab then also shows each upgrade's coins per hour here and in the best method.
 - **Other:** known profile milestones plus a checklist of bonuses not modeled automatically.

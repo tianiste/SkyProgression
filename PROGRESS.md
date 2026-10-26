@@ -83,6 +83,9 @@ fix them later; do not block on the in-game test. Order:
    instant-sell (default, Coflnet `sell`) / sell offer (Coflnet `buy`), God Potion toggle, Pick method or click a card to select.
    Unknown prices stay "coins unknown" and sort last (End Stone had no sell figure). Rates tab cards show both figures. Upgrades
    cards show coins/h here and the same change's gain/coins in the best method; Compare lists +50 Fortune / +100 Speed per method.
+   NPC sell (owner request, 2026-10-27, in-game test pending): third price mode from the official items resource's
+   `npc_sell_price` (companion, 6 h cache); gems count as Rough x 512,000 (Flawless has no NPC price; Rough/Flawed/Fine
+   pay the same per Rough). End Stone now has a known value (NPC 2); Glacite, Mycelium, Red Sand, Gold sell higher to NPCs.
    Coleweight: no verifiable coefficients (module archived, no weights in its repo), recorded unknown and not shown.
    Rules: CALCULATIONS.md "Coins per hour across methods".
    **Next:** owner restarts the companion (new `/compare`) and checks the Compare tab (ranking, both price modes, click/Pick,
