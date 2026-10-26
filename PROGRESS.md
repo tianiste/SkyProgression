@@ -244,3 +244,12 @@ Open questions recorded in API-FIELDS.md: attribute stack→level/effect tables,
 effects, `polarvoid` key vs displayed "Prismatic", `_total` powder meaning.
 Next: Step 2, typed loadout/context and Mining Fortune/Speed source ledger against
 the fixture (acceptance in "Resume here").
+
+2026-10-26 (live refetch): refetched `v2/skyblock/profiles` for Debotes with the stored
+key (HTTP 200, success, 1 profile, Zucchini selected, Inventory API on). The raw
+response now replaces `service-data/debotes-profiles.json`; the earlier copy is kept as
+`service-data/debotes-profiles-20261026-1431.json` (both ignored). Regenerating the
+fixture changed no values: every extracted field and inventory blob was identical, and the only diff
+was number formatting (raw API E-notation vs. the earlier PowerShell-written copy).
+Build succeeded, 33 core tests passed. Gear/profile state is therefore current as of
+this refetch; refetch again after the owner changes gear.

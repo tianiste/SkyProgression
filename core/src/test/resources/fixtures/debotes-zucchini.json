@@ -88,8 +88,8 @@
           },
           "player_data": {
             "experience": {
-              "SKILL_MINING": 251573724.21235678,
-              "SKILL_ENCHANTING": 30317098.495679125
+              "SKILL_MINING": 2.5157372421235678E8,
+              "SKILL_ENCHANTING": 3.0317098495679125E7
             },
             "perks": {
               "dwarven_training": 3,
@@ -245,7 +245,7 @@
             "pets": [
               {
                 "type": "ARMADILLO",
-                "exp": 13642750.328750817,
+                "exp": 1.3642750328750817E7,
                 "active": false,
                 "tier": "LEGENDARY",
                 "candyUsed": 0,
@@ -254,7 +254,7 @@
               },
               {
                 "type": "MOLE",
-                "exp": 24171961.809454076,
+                "exp": 2.4171961809454076E7,
                 "active": false,
                 "tier": "LEGENDARY",
                 "heldItem": "PET_ITEM_MINING_SKILL_BOOST_RARE",
@@ -274,7 +274,7 @@
               },
               {
                 "type": "BAL",
-                "exp": 20900763.27687998,
+                "exp": 2.090076327687998E7,
                 "active": true,
                 "tier": "LEGENDARY",
                 "heldItem": "PET_ITEM_QUICK_CLAW",
@@ -295,7 +295,7 @@
             },
             "inv_contents": {
               "type": 0,
-              "data": "H4sIAAAAAAAA/21V3VLbRhQ+jkkxLiU/7SRtmottp8yEGIJwEH93xhag1jYe26QhmYxmLa3NjiWtql01uFftM3R61+vyHjxKHyCP0OlZScZ4EgYYnb/v/J8tAyxBgZcBoFCGsiuCSIQsVLIEXwU8ZG5Mh+qAKxY4gfCYDwcXk4hfMt+R48nAF+44FW4moUsVG4mY/8a8TcUVDXkSOF7MfR//O5c7plmCxzNIJYSveORINfEZPP4INZioC+7CHbjDvcKjAtytiyRUGGNR0dESLLDQvQD9U4DPz8JBzOiYDnxWKMLSCffYkU9HEqX/lWHR4zLy6QSNmiJmJeQ+hy+vr/YOtREPR6Qj3rOY7KPgwfXVboMGdMQOyPWVW9k1YQdZLR5qvV7EmKcFO5Wt9f09E7/231ZM453+eIbKa/jhPatsGcYaPEW7TsylwpS1jVnZfmFm8uoabM9Qj0Sskkxnp1J9OUXNQatGDmoi5rdodcwCqbBH83amAY9nkD9z6YlAS15W9uHglpVM1d/i34ff/8L/73KSfvjjz1sk+/fvfzSJJXmEYWAA11f+kS/eS4VtJrZtw9fIr+O4UFcR+zXa7e0Z++vm9h7cQ4k1HHKXY5Mm5DXc14zLiMWagdav4Avk5PFPySaNuEfjCXkFK0jq0gVUcRdpAITfxSD7+Vxt2OEwkcwjRwnzSZ+GY/gu1cDfatVcNwyDtOhlJq5TjJGrCaxOVejG9irpcHdMLxmpDbiPUlLHgfTE+3DmrZsMJhsd4XN5ga4aepSJFY6wn/Ak1cB2mQbWkdyej7RJWvbSwJqS+SbPwHtJGE5ID0eVHIuBz0NijXASaazA1P2KKS5h3tqPcVBjnQwSRXBJZBZamp4rQpkETJJfEurFSeQz1GAIU9WlQIUXGMHTrA6ao6ehurWDw2xgAzer5hjlW+g1r8rBXGrkUAipCNpgAH7XPj7pk3rTrv8EG/MhY1lWSTZj8wCoNhSx7reuwZYp05D0Mk7LryOiezt6d5G9X0tkhIMkEonOw0TC83lPW5mfTxVIp/o9ImOoz0nqYUNEpCcSf4CnRMeSiqCSTff11ZheX8Uko1rn/RO7Thpdu9kkM4USLLRpwOAHZN0KbTqX+ZA0uhuv8d5BGe5ZlyqmNaVijt1isgj3YhpjYZ0kGsXUYzpPfbMi4dP4V8E9pO8WoZwdziG2COCwX4ISXl8+5CyGMr3xW4QVN9tAJz2aEpbfNMuwrG8jVijQdxyx2M0uIni5CCU/X7XM1+LwZjYXkMoRkVpC1Si/YJnqwwRvNm4lc4bTW4CCovZxs94aBjNfyRPUz0bi49XFOw5Pjk8Pm3bbOW1ZTavft5zeWbt97vTshgUl+CZLOsIdcOat4cko3RFHBMxnCv1LvT6OxPUpw8IIj1sZPvux1rAcowSLOPx6eGGxY3WPrHofwym17LbdPv60eAmjDXUBmedIX+jHD/DlyQFntviW1FqHVvfTKCVYnio6GBHc7Z92am+Q/eBWXiy/HzHeFifKb0v+TGYyTCT7yEvWPTs8dzqnTbt3YjWcdCAdq31st3XJtMb9vt2vte2zVi7cxqf7lkc9Q47SJ/LhzbN8wyvAiidCbKPnBHhQk6CQJp49gfp1/R96PJp6IAgAAA=="
+              "data": "H4sIAAAAAAAA/21V3VLbRhQ+jkkxbkp+mknaNBfbTjKTxJDIDiLAnbEFqLWNxzYpJJPRrKW12bGkVbWrBveqfYZO73pd3oNH6QPkETo9K8kYT2CA0fn7zv/ZMsAKFHgZAAplKLsiiETIQiVLcD/gIXNjOlI7XLHACYTHfNg5nUb8jPmOnEyHvnAnqfBVErpUsbGI+W/Me6W4oiFPAseLue/jf+ds0zRL8HAOqYTwFY8cqaY+g4efoQZTdcpduAE3uFd4UICbDZGECmMsKjpegSUWuqegfwrw5VE4jBmd0KHPCkVYOeAe2/PpWKL0vzIse1xGPp2iUUvErITcF/D1xfnWrjbi4Zh0xUcWk20U3L04f9OkAR2zHXJx7lbemLCJrDYPtV4/YszTgs1KdW17y8Sv7fcV0/igP56h8nP88J5VqobxHB6jXTfmUmHK2sasbLw0M3ntOWzMUfdErJJMZ7NSez1DzUFrRg5qIuZ3aLXPAqmwR4t2pgEP55A/c+mJQEteV7Zh54qVTNXf49+n3//C/x9ykn76488rJPv37380iSV5gGFgABfn/p4vPkqFbSa2bcM3yG/guFBXEfsY7ba2jO01c2MLbqPEGo24y7FJU3IMdzTjLGKxZqD1W/gKOXn8M7JFI+7ReErewiqSunQBVdxFGgDh32CQg3yu1u1wlEjmkb2E+WRAwwl8n2rgb61mrhmGQdr0LBM3KMbI1RSezlTo+sZT0uXuhJ4xUh9yH6WkgQPpiY/h3FsvGU7Xu8Ln8hRdNfUoEyscYz/hUaqB7TINrCO5Oh9pk7TstYE1JYtNnoP3kzCckj6OKtkXQ5+HxBrjJNJYgan7FVNcwry1n+OgxhoZJorgksgstDQ9V4QyCZgkvyTUi5PIZ6jBEKamS4EKLzGCx1kdNEdPQ626icNsYANf1cwJyqvoNa/KzkJqZFcIqQjaYAB+z94/GJBGy278BOuLIWNZnpJsxhYBUG0kYt1vXYOqKdOQ7qPvWfl1RLRqbOnlxSXdricywkkSiUTvYSLhxaKraubougrpXH9AaIz1BUldrIuI9EXiD/GW6GBSEVSy8b44n9CL85hkVPtkcGA3SLNnt1pkrlCCpQ4NGDxB1pXQZoOZT0mzt36MBw/KcNs6UzGtKxVzbBeTRbgd0xgr6yTROKYe03nqoxUJn8a/Cu4hfbMI5exyjrBHALuDEpTw/PIRZzGU6aXfIqy62Qo66dWUcOtdqwy39HHECgX6kCMWu1xGBC8XoeTnu5b5Wh5dDucSUjkiUiuoGuUnLFO9l+DRxrVkzmh2DFBQ1D4u91vDYOareYL63Uh8PLt4yOHR/uFuy+44h22rZQ0GltM/6nROnL7dtKAE32ZJR7gEzqI1PBqnS+KIgPlMoX+p98eRuD9lWBrjdSvDFz/Wm5ZjlGAZp19PLyx3rd6e1RhgOKW23bE7+9eLVzDaUBeQeY70hX79AJ+eHHBui49Jvb1r9a5HKcGtmaKDEcHNwWG3/g7Zd6/kxfIDEuNxcaL8uOTvZCbDRLKPvGS9o90Tp3vYsvsHVtNJB9KxOvt2R5dMa9wZ2IN6xz5q58INfLuveNQz5Ch9I+9dvsuXvAKseiLENnpOgBc1CQpp4tkbqJ/X/wGGQ5LWIQgAAA=="
             },
             "bag_contents": {
               "talisman_bag": {
