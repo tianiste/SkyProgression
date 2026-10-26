@@ -24,6 +24,9 @@ public final class StatsReport {
     public int hotmTrees = 1;
     /** Pickaxe ability shown on the evaluated tool's lore, for the rate engine; null when none is shown. */
     public MethodRates.Ability ability;
+    /** Counted stats of the evaluated pet (empty without a pet, null when not catalogued) and the pet alternatives. */
+    public Map<Stat, Double> petStats;
+    public List<PetUpgrades.Option> petOptions = new ArrayList<>();
     public List<Ledger> stats = new ArrayList<>();
 
     public record Tool(String key, String name, String location) {}
@@ -62,6 +65,11 @@ public final class StatsReport {
         if (main.pet != null) r.loadout.add(new Tool("pet", main.pet.label(), main.pet.active() ? "active pet" : "pets menu"));
         r.accessories = main.accessories.size();
         r.ability = MethodRates.ability(main.tool);
+        boolean drill = main.tool != null && main.tool.category.equals("DRILL");
+        if (main.petsKnown) {
+            r.petStats = StatBreakdown.petStats(main.pet, context, drill);
+            if (r.petStats != null) r.petOptions.addAll(PetUpgrades.options(owned, main.pet, context, drill));
+        }
         for (Stat stat : StatBreakdown.SUPPORTED) {
             Breakdown b = StatBreakdown.compute(member, main, context, stat);
             Ledger l = new Ledger();

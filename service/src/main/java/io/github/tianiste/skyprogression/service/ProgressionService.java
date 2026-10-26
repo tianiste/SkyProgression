@@ -148,6 +148,7 @@ public final class ProgressionService {
             List<Future<?>> jobs = new ArrayList<>();
             for (String itemId : GearUpgrades.priceIds(Catalog.load())) jobs.add(pool.submit(() -> {
                 try {
+                    if (itemId.contains(";")) { fresh.put(itemId, petPrice(itemId)); return; }
                     JsonObject response = get("https://sky.coflnet.com/api/item/price/" + itemId + "/current?minAgeSeconds=120", false);
                     Price p = new Price(); p.buy = number(response.get("buy"), 0);
                     p.available = p.buy > 0 && number(response.get("available"), 0) > 0;
@@ -160,6 +161,16 @@ public final class ProgressionService {
         }
         quotes = Map.copyOf(fresh); quotedAt = Instant.now();
         return quotes;
+    }
+    /** "PET_TYPE;RARITY;LEVEL": lowest Auction House BIN with that rarity and level (Coflnet filters). */
+    private Price petPrice(String key) throws Exception {
+        String[] part = key.split(";");
+        JsonObject response = get("https://sky.coflnet.com/api/item/price/" + part[0] + "/bin?Rarity=" + part[1] + "&PetLevel=" + part[2], false);
+        Price p = new Price(); p.buy = number(response.get("lowest"), 0);
+        p.available = p.buy > 0;
+        p.source = "Auction House lowest BIN, level " + part[2] + " (Coflnet)";
+        p.updatedAt = "Current lowest BIN";
+        return p;
     }
     private JsonObject get(String url, boolean authenticated) throws Exception {
         var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(12))

@@ -90,7 +90,18 @@ public final class StatBreakdown {
             new PetStat("SCATHA", "LEGENDARY", "MYTHIC", Stat.GEMSTONE_FORTUNE, 1.25, "Drill Infusion", true, Condition.NONE),
             new PetStat("ARMADILLO", "LEGENDARY", "MYTHIC", Stat.MINING_SPREAD, 3, "Long Claws", false, Condition.target(Target.HARD_STONE, "While mining Hard Stone")),
             new PetStat("MITHRIL_GOLEM", "COMMON", Stat.MINING_FORTUNE, .25),
-            new PetStat("SILVERFISH", "COMMON", Stat.MINING_FORTUNE, .2));
+            new PetStat("SILVERFISH", "COMMON", Stat.MINING_FORTUNE, .2),
+            // NEU petnums (level 1 and 100 linear): Bee's Busy Buzz Buzz adds its value again to the pet's Mining Fortune.
+            new PetStat("BEE", "RARE", "RARE", Stat.MINING_FORTUNE, .2, "", false, Condition.NONE),
+            new PetStat("BEE", "EPIC", "LEGENDARY", Stat.MINING_FORTUNE, .3, "", false, Condition.NONE),
+            new PetStat("BEE", "MYTHIC", "MYTHIC", Stat.MINING_FORTUNE, .4, "", false, Condition.NONE),
+            new PetStat("BEE", "RARE", "RARE", Stat.MINING_FORTUNE, .2, "Busy Buzz Buzz", false, Condition.NONE),
+            new PetStat("BEE", "EPIC", "LEGENDARY", Stat.MINING_FORTUNE, .3, "Busy Buzz Buzz", false, Condition.NONE),
+            new PetStat("BEE", "MYTHIC", "MYTHIC", Stat.MINING_FORTUNE, .4, "Busy Buzz Buzz", false, Condition.NONE),
+            new PetStat("GLACITE_GOLEM", "COMMON", "LEGENDARY", Stat.MINING_SPEED, 1.25, "", false, Condition.NONE),
+            new PetStat("GLACITE_GOLEM", "RARE", "RARE", Stat.MINING_FORTUNE, .75, "Iceborn", false, Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In the Glacite Mineshafts")),
+            new PetStat("GLACITE_GOLEM", "EPIC", "LEGENDARY", Stat.MINING_FORTUNE, 1, "Iceborn", false, Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In the Glacite Mineshafts")),
+            new PetStat("MOLE", "LEGENDARY", "LEGENDARY", Stat.MINING_SPEED, 1.5, "", false, Condition.NONE));
     private static final List<String> TIERS = List.of("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC");
 
     private static final Pattern BRACKET = Pattern.compile("^(.+?):\\s*[+-]?[0-9,.]+\\s*\\[\\+([0-9,.]+)\\]");
@@ -246,10 +257,38 @@ public final class StatBreakdown {
      * Catalogued pet value for a stat (base stat, perks and Quick Claw) in a context, or null if any part is
      * unknown. A drill is assumed for drill-only perks.
      */
-    static Double petValue(Loadout.Pet pet, Stat stat, StatContext context) {
+    static Double petValue(Loadout.Pet pet, Stat stat, StatContext context) { return petValue(pet, stat, context, true); }
+    static Double petValue(Loadout.Pet pet, Stat stat, StatContext context, boolean drill) {
         Breakdown scratch = new Breakdown(stat, Loadout.Kind.BEST_OWNED, context);
-        petContributions(scratch, pet, true);
+        petContributions(scratch, pet, drill);
         return scratch.complete() ? scratch.total() : null;
+    }
+    /** Counted value of every supported stat for a pet (zeros for no pet), or null when any part is unknown. */
+    public static Map<Stat, Double> petStats(Loadout.Pet pet, StatContext context, boolean drill) {
+        Map<Stat, Double> out = new EnumMap<>(Stat.class);
+        if (pet == null) return out;
+        if (PET_STATS.stream().noneMatch(s -> s.type.equals(pet.type()))) return null;
+        for (Stat stat : SUPPORTED) {
+            Double v = petValue(pet, stat, context, drill);
+            if (v == null) return null;
+            if (v != 0) out.put(stat, v);
+        }
+        return out;
+    }
+    /** Catalogued pets: type to the rarities whose catalogued stats differ from the rarity below (others add nothing). */
+    public static Map<String, List<String>> petTiers() {
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        for (PetStat s : PET_STATS) out.putIfAbsent(s.type, new ArrayList<>());
+        out.forEach((type, tiers) -> {
+            String previous = null;
+            for (String tier : TIERS) {
+                String key = PET_STATS.stream().filter(s -> s.type.equals(type) && s.fits(tier)).map(s -> s.stat + ":" + s.perLevel + ":" + s.perk).sorted().toList().toString();
+                if (key.equals("[]")) continue;
+                if (!key.equals(previous)) tiers.add(tier);
+                previous = key;
+            }
+        });
+        return out;
     }
 
     private static void pet(Breakdown b, Loadout l) {

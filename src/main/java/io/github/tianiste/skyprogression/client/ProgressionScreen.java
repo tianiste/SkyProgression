@@ -127,7 +127,8 @@ public final class ProgressionScreen extends Screen {
         calculating=true;buildCards();
         var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
-        StatsReport report=data.stats(method);var basis=new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report==null?null:report.ability);
+        StatsReport report=data.stats(method);var basis=report==null?new ProgressionEngine.RateBasis(data.inputs(method).efficiency,null)
+                :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions==null?List.of():report.petOptions);
         analysis=ClientData.WORK.submit(()->{
             try {
                 var base=data.engine.overview(p,selectedMethod,selectedStat);
@@ -160,6 +161,7 @@ public final class ProgressionScreen extends Screen {
             case "Leggings" -> Items.DIAMOND_LEGGINGS;
             case "Boots" -> Items.DIAMOND_BOOTS;
             case "Lantern" -> Items.LANTERN;
+            case "Pet" -> Items.BONE;
             default -> Items.AMETHYST_SHARD;
         });
     }

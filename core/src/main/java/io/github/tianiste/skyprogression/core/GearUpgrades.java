@@ -228,6 +228,7 @@ public final class GearUpgrades {
         for(var table:List.of(FUEL_TANKS.keySet(),ENGINES.keySet(),MODULES.keySet()))for(String key:table)ids.add(key.toUpperCase(Locale.ROOT));
         for(int n=1;n<=5;n++)ids.add("ENCHANTMENT_PRISTINE_"+n);
         for(Reforges.Reforge r:Reforges.all())if(r.stone()!=null)ids.add(r.stone());
+        ids.addAll(PetUpgrades.priceIds());
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");
         for(String type:List.of("RUBY","SAPPHIRE","AMETHYST","JASPER"))ids.add("FLAWLESS_"+type+"_GEM"); // gem rate values
         for(Item item:catalog) {

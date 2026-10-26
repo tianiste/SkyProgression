@@ -41,8 +41,18 @@ public final class ProgressionEngine {
                         .mapToDouble(i->Model.stat(i.stats,stat)).findFirst().orElse(0) : 0,
                 Model.stat(e.getValue().stats, stat))).toList();
     }
-    /** Player settings the rate model needs: efficiency (%) and the evaluated tool's pickaxe ability (null when none). */
-    public record RateBasis(double efficiency, MethodRates.Ability ability) {}
+    /**
+     * Player settings the rate model needs: efficiency (%) and the evaluated tool's pickaxe ability (null when none),
+     * plus the evaluated pet's counted stats and the pet alternatives (null / empty when unknown).
+     */
+    public record RateBasis(double efficiency, MethodRates.Ability ability, Map<Stat, Double> pet, List<PetUpgrades.Option> petOptions) {
+        public RateBasis(double efficiency, MethodRates.Ability ability) { this(efficiency, ability, null, List.of()); }
+        RateBasis with(MethodRates.Ability a) { return new RateBasis(efficiency, a, pet, petOptions); }
+        /** After taking a pet option: it becomes the pet; a new pet drops the pet-item options for the old one. */
+        RateBasis withPet(PetUpgrades.Option taken) {
+            return new RateBasis(efficiency, ability, taken.stats(), petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList());
+        }
+    }
     /** How a method's upgrades are valued: its rate model when it has one, else the drop multiplier. */
     public static boolean rateModel(MiningMethod m) { return MethodRates.supported(m); }
 
@@ -83,7 +93,8 @@ public final class ProgressionEngine {
             }
             if (best == null) break;
             Upgrade u = best.upgrade();
-            if (best.apply() != null) {
+            if (best.pet() != null) current = current.withPet(best.pet());
+            else if (best.apply() != null) {
                 best.apply().accept(u.current());
                 u.delta().forEach((s, v) -> u.current().stats.merge(s, v, Double::sum));
                 best.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
@@ -91,7 +102,7 @@ public final class ProgressionEngine {
             stats = plus(stats, u.delta());
             if (u.cooldownFactor() != 1 && current != null && current.ability() != null && current.ability().cooldown() != null) {
                 var a = current.ability();
-                current = new RateBasis(current.efficiency(), new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * u.cooldownFactor()));
+                current = current.with(new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * u.cooldownFactor()));
             }
             total += u.cost();
             double now = metric(m, stats, current);
@@ -106,7 +117,9 @@ public final class ProgressionEngine {
     }
 
     /** An upgrade plus what applying it needs: the gear change (null for a replacement item) and the materials used. */
-    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) {}
+    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet) {
+        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null); }
+    }
     /**
      * With a rate basis and no stat focus, methods with a rate model rank by rate after / rate before - 1 (so Mining
      * Speed counts only when it changes ticks and ability cooldown counts through uptime); other methods use the drop
@@ -145,6 +158,23 @@ public final class ProgressionEngine {
             String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : "";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
             result.add(new Candidate(new Upgrade(i, current, delta, cost, gain, have, blocked, 1, before, after), null, Map.of()));
+        }
+        // Pets: option stats minus the evaluated pet's, both counted in the same context.
+        if (basis != null && basis.pet() != null) for (PetUpgrades.Option o : basis.petOptions()) {
+            Map<Stat, Double> delta = new EnumMap<>(Stat.class);
+            for (Stat s : Stat.values()) {
+                double d = o.stats().getOrDefault(s, 0.0) - basis.pet().getOrDefault(s, 0.0);
+                if (d != 0) delta.put(s, d);
+            }
+            Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
+            double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
+            if (!Double.isFinite(gain) || gain <= 1e-9) continue;
+            Item display = new Item(); display.id = "pet:" + o.priceId(); display.name = o.label(); display.group = "Pet";
+            display.source = o.heldItem() ? "Pet item; replaces the current pet item" : "Auction House, level 100; the current pet item is not carried over";
+            Price quote = prices.get(o.priceId());
+            Double cost = o.owned() ? 0.0 : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? quote.buy : null;
+            String blocked = !o.owned() && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after), null, Map.of(), o));
         }
         return result;
     }
