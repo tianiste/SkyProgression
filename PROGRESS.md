@@ -278,6 +278,12 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
 
 ## Handoff log
 
+2026-10-26 (first in-game test fixes): Load stopped at once because every report carries `"error": ""`
+(fixed `e2bdbb3`); `/sp` now auto-loads the typed player once per opening (`ca9108a`); `Start-Service.cmd`
+is checked out with CRLF (`0bfbcbd`). Cards now use each item's own icon with its SkyBlock ID in
+custom_data so texture packs can retexture it (`08eee63`; table from `./gradlew :core:extractIcons`).
+Owner confirmed loading works; icon textures with the owner's pack are not yet confirmed.
+
 2026-10-26 (method stats and MF gem rates): extended `StatBreakdown` to all mining stats except Cold
 Resistance; new HOTM perks (Gem Lover, Old-School, Blockhead, Metal Head, Efficient Miner, Mole, Mining
 Master, Front Loaded with an unobserved key), pet perks (Bal Furnace, Scatha Drill Infusion, Armadillo Long
