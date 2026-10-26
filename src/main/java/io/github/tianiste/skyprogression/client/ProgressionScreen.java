@@ -126,11 +126,12 @@ public final class ProgressionScreen extends Screen {
         calculating=true;buildCards();
         var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
+        StatsReport report=data.stats(method);var basis=new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report==null?null:report.ability);
         analysis=ClientData.WORK.submit(()->{
             try {
                 var base=data.engine.overview(p,selectedMethod,selectedStat);
                 var selectedGear=new ArrayList<>(data.engine.bestOwned(p,selectedMethod,selectedStat).values());
-                var ranked=selectedTab==1||selectedTab==2?data.engine.upgrades(p,selectedMethod,selectedTab==2?selectedStat:null,effective,quotes):List.<Upgrade>of();
+                var ranked=selectedTab==1||selectedTab==2?data.engine.upgrades(p,selectedMethod,selectedTab==2?selectedStat:null,effective,quotes,basis):List.<Upgrade>of();
                 minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;gear=selectedGear;upgrades=ranked;calculating=false;buildCards();});
             }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
         });
@@ -187,16 +188,23 @@ public final class ProgressionScreen extends Screen {
     private void upgradeCards(){
         boolean focused=tab==2;
         if(!focused&&!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Automatic method stats come from your loaded profile. Type Stats adds or overrides values.",TEXT).line("The Stats tab works without these inputs and ranks coins per stat point.",CYAN);return;}
-        card(focused?stat.label+" | cheapest points first":method.label+" | best value first",GOLD,0).line("Each recommendation compares to your current setup. Alternatives are not a combined shopping list.",MUTED);
+        boolean rated=!focused&&upgrades.stream().anyMatch(u->u.rateBefore()!=null);
+        Card head=card(focused?stat.label+" | cheapest points first":method.label+" | best value first",GOLD,0);
+        if(!focused)head.line(rated?"Model: rate gain (automatic "+method.label+" rate, Flawless / hour)":ProgressionEngine.rateModel(method)?"Model: drop multiplier (rate unavailable for these stats)":"Model: drop multiplier (no rate model for "+method.label+" yet)",CYAN)
+                .line(rated?"Mining Speed counts only when it changes ticks; ability cooldown counts through uptime.":"Fortune x Spread x Pristine; Mining Speed and ability cooldown are not valued.",MUTED);
+        head.line("Each recommendation compares to your current setup. Alternatives are not a combined shopping list.",MUTED);
         if(upgrades.isEmpty())card("No supported upgrades found",CYAN,0).line("This does not mean your account is fully maxed. Try another method or stat.",TEXT);
         int rank=0;
         for(var u:upgrades){
             Card c=card("#"+(++rank)+"  "+u.item().name,u.blocked().isEmpty()?GOLD:RED,0);
             c.icon=icon(u.item().modification&&u.current()!=null?u.current().id:u.item().id,u.current()!=null?u.current().group:u.item().group);
             if(u.current()!=null)c.line((u.item().modification?"On: ":"Replaces: ")+u.current().name,MUTED);
-            StringJoiner changes=new StringJoiner(" / ");u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});c.line(changes.toString(),CYAN);
+            StringJoiner changes=new StringJoiner(" / ");u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});
+            if(u.cooldownFactor()!=1)changes.add("ability cooldown x"+fmt(u.cooldownFactor()));
+            if(changes.length()>0)c.line(changes.toString(),CYAN);
             c.line(u.cost()==null?"Price unknown":coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
-            if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
+            if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" Flawless / hour",GREEN);
+            else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
             if(u.owned())c.line(u.item().modification?"Materials already owned":"Item already owned",GREEN);
             if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
             var quote=data.prices.get(u.item().id);c.line(quote!=null?quote.source:u.item().source,MUTED);
@@ -206,7 +214,7 @@ public final class ProgressionScreen extends Screen {
         double max=known.stream().mapToDouble(Upgrade::costPerUnit).max().orElse(1);
         for(var u:known){comparison.line(u.item().name,TEXT);comparison.lines.add(new Line(coins(u.costPerUnit())+(focused?" / point":" / 1%"),CYAN,u.costPerUnit()/Math.max(1,max)));}
         comparison.line("Shorter bars cost less per gain. These are separate alternatives.",MUTED);
-        card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("No assumed resale credit or transfer of modifiers onto replacement gear.",MUTED).line("Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
+        card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("No assumed resale credit or transfer of modifiers onto replacement gear.",MUTED).line(rated?"Rate gains use your efficiency and the tool's Mining Speed Boost; route and travel are part of the efficiency.":"Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
     }
     /** Automatic Magma Fields gem rate from the effective stats, the tool's ability and the player's efficiency. */
     private void gemRateCard(){
@@ -222,6 +230,8 @@ public final class ProgressionScreen extends Screen {
             else c.line("Flawless price unknown; coins/hour not shown.",MUTED);
             c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.roughPerBlock())+" Rough / block",TEXT);
             c.line("Mining Speed "+fmt(rate.speed())+": "+rate.ticks()+" ticks per block"+(rate.uptime()>0?", "+rate.boostedTicks()+" during the ability ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
+            double next=MethodRates.nextTickSpeed(rate.speed(),gem.strength());
+            if(Double.isFinite(next))c.line("Next tick: "+fmt(next)+" Mining Speed ("+MethodRates.ticks(next,gem.strength())+" ticks); speed between thresholds adds nothing",MUTED);
             c.line("Guide reference (hypermax, "+fmt(MethodRates.GUIDE_EFFICIENCY)+"% efficiency): "+fmt(gem.guideFlawlessPerHour())+" Flawless / hour",MUTED);
             for(String a:rate.assumptions())c.line(a,MUTED);
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}

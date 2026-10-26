@@ -14,7 +14,16 @@ public final class GearUpgrades {
     private static final double[] REMOVAL={1,100,10000,100000,500000};
     public record Plan(Map<String,Integer> materials,double fees,String instruction) {}
     public record Cost(Double coins,boolean materialsOwned,String detail) {}
-    public record Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked) {}
+    /** cooldownFactor: new / old pickaxe ability cooldown (fuel tanks); 1 when the ability is unchanged. */
+    public record Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor) {
+        public Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked){this(gear,label,delta,plan,blocked,1);}
+    }
+    /** Fuel tanks by drill-part key and Pickaxe Ability Cooldown reduction (wiki Drill Parts); only one tank fits a drill. */
+    public static final Map<String,Double> FUEL_TANKS=new LinkedHashMap<>();
+    static {
+        FUEL_TANKS.put("mithril_fuel_tank",.02);FUEL_TANKS.put("titanium_fuel_tank",.04);
+        FUEL_TANKS.put("gemstone_fuel_tank",.06);FUEL_TANKS.put("perfectly_cut_fuel_tank",.10);
+    }
 
     public static Cost cost(Plan plan,Profile profile,Map<String,Price> prices) {
         double sum=plan.fees; boolean known=true,allOwned=true;
@@ -68,10 +77,22 @@ public final class GearUpgrades {
                     if(books==0)delta.put(Stat.MINING_FORTUNE,5.0);
                     out.add(new Proposal(gear,"Polarvoid Books "+books+" -> "+n,delta,new Plan(Map.of("POLARVOID_BOOK",n-books),0,"Apply to this drill; Fortune bonus applies only to the first book."),""));
                 }
+                String tank=string(at(gear.extra,"drill_part_fuel_tank"),"");
+                double old=FUEL_TANKS.getOrDefault(tank,0.0);
+                for(var e:FUEL_TANKS.entrySet())if(e.getValue()>old) {
+                    String id=e.getKey().toUpperCase(Locale.ROOT);
+                    out.add(new Proposal(gear,"Fuel tank: "+tankName(id)+" (-"+Math.round(e.getValue()*100)+"% ability cooldown)",Map.of(),
+                            new Plan(Map.of(id,1),0,"Apply at a Drill Mechanic. Replaces "+(tank.isEmpty()?"no tank":tankName(tank.toUpperCase(Locale.ROOT)))+"; no resale credit assumed."),"",
+                            (1-e.getValue())/(1-old)));
+                }
             }
         }
         gemstones(gear,method,out);
         return out;
+    }
+    private static String tankName(String id) {
+        return switch(id){case "MITHRIL_FUEL_TANK"->"Mithril-Infused";case "TITANIUM_FUEL_TANK"->"Titanium-Infused";
+            case "GEMSTONE_FUEL_TANK"->"Gemstone";case "PERFECTLY_CUT_FUEL_TANK"->"Perfectly-Cut";default->id;};
     }
     public static double gemValue(String type,String quality,String tier,boolean accessory) {
         int q=QUALITIES.indexOf(quality),r=TIERS.indexOf(tier);
@@ -127,6 +148,7 @@ public final class GearUpgrades {
     }
     public static Set<String> priceIds(List<Item> catalog) {
         Set<String> ids=new LinkedHashSet<>(List.of("ENCHANTMENT_FORTUNE_4","ENCHANTMENT_EFFICIENCY_5","SIL_EX","POLARVOID_BOOK"));
+        for(String tank:FUEL_TANKS.keySet())ids.add(tank.toUpperCase(Locale.ROOT));
         for(int n=1;n<=5;n++)ids.add("ENCHANTMENT_PRISTINE_"+n);
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");
         for(String type:List.of("RUBY","SAPPHIRE","AMETHYST"))ids.add("FLAWLESS_"+type+"_GEM"); // MF gem rate values

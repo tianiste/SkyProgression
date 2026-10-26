@@ -52,8 +52,15 @@ public final class Model {
         public String fetchedAt = "", error = "";
         public List<String> warnings = new ArrayList<>();
     }
+    /**
+     * One alternative against the current setup. cooldownFactor scales the pickaxe ability cooldown (1 = unchanged).
+     * rateBefore/rateAfter are the method rate (Flawless / hour) when the method has a rate model, else null.
+     */
     public record Upgrade(Item item, Item current, Map<Stat, Double> delta, Double cost,
-                          double gain, boolean owned, String blocked) {
+                          double gain, boolean owned, String blocked, double cooldownFactor, Double rateBefore, Double rateAfter) {
+        public Upgrade(Item item, Item current, Map<Stat, Double> delta, Double cost, double gain, boolean owned, String blocked) {
+            this(item, current, delta, cost, gain, owned, blocked, 1, null, null);
+        }
         public double costPerUnit() { return cost == null || gain <= 0 ? Double.POSITIVE_INFINITY : cost / gain; }
     }
     public record Overview(String group, Item current, Item target, double value, double maximum) {}

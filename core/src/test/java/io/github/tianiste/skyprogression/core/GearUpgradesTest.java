@@ -52,7 +52,7 @@ class GearUpgradesTest {
         assertTrue(GearUpgrades.forItem(i,MiningMethod.COAL,p,Map.of()).stream().noneMatch(c->c.label().startsWith("Fortune")));
     }
     @Test void maxedEnchantmentsAreNotRecommendedAgain() {
-        Item i=drill();i.enchantments.putAll(Map.of("fortune",4,"efficiency",10,"pristine",5));i.extra.addProperty("polarvoid",5);
+        Item i=drill();i.enchantments.putAll(Map.of("fortune",4,"efficiency",10,"pristine",5));i.extra.addProperty("polarvoid",5);i.extra.addProperty("drill_part_fuel_tank","perfectly_cut_fuel_tank");
         assertTrue(GearUpgrades.forItem(i,MiningMethod.MF_GEMS,profile(i),Map.of()).isEmpty());
     }
     @Test void prismaticUsesHalfPointPerLevelAndCheaperCombination() {

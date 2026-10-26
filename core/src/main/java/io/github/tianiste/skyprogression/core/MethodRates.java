@@ -62,6 +62,14 @@ public final class MethodRates {
         return (int)Math.max(4, Math.round(30 * strength / speed));
     }
 
+    /** Lowest Mining Speed that breaks the block in fewer ticks than now, or NaN when already at 1 tick. */
+    public static double nextTickSpeed(double speed, double strength) {
+        int now = ticks(speed, strength);
+        if (now <= 1) return Double.NaN;
+        if (now <= 4) return Math.floor(60 * strength) + 1; // Below the 4-tick soft cap only instamining is faster.
+        return Math.floor(30 * strength / (now - .5)) + 1;
+    }
+
     public static GemRate gems(MiningMethod m, Map<Stat, Double> stats, double efficiency, Ability ability) {
         Gem gem = gem(m);
         if (gem == null) throw new IllegalArgumentException("No rate model for " + m.label + " yet");

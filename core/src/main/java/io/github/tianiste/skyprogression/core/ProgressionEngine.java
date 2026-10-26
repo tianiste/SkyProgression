@@ -41,19 +41,35 @@ public final class ProgressionEngine {
                         .mapToDouble(i->Model.stat(i.stats,stat)).findFirst().orElse(0) : 0,
                 Model.stat(e.getValue().stats, stat))).toList();
     }
+    /** Player settings the rate model needs: efficiency (%) and the evaluated tool's pickaxe ability (null when none). */
+    public record RateBasis(double efficiency, MethodRates.Ability ability) {}
+    /** How a method's upgrades are valued: its rate model when it has one, else the drop multiplier. */
+    public static boolean rateModel(MiningMethod m) { return MethodRates.supported(m); }
+
     public List<Upgrade> upgrades(Profile p, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices) {
+        return upgrades(p, m, focus, baseline, prices, null);
+    }
+    /**
+     * With a rate basis and no stat focus, methods with a rate model rank by rate after / rate before - 1 (so Mining
+     * Speed counts only when it changes ticks and ability cooldown counts through uptime); other methods use the drop
+     * multiplier, which gives speed and cooldown no value.
+     */
+    public List<Upgrade> upgrades(Profile p, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis) {
         if (!p.inventoryEnabled) return List.of(); // Missing API is not an empty inventory.
         var owned = bestOwned(p, m, focus);
         List<Upgrade> result = new ArrayList<>();
+        Double before = focus == null && basis != null && rateModel(m) ? rate(m, baseline, basis, 1) : null;
+        if (before != null && !(before > 0)) before = null; // No rate to compare against; fall back to drops.
         for(Item gear:owned.values()) for(var proposal:GearUpgrades.forItem(gear,m,p,prices)) {
-            double gain=focus==null?yieldGain(m,baseline,proposal.delta()):stat(proposal.delta(),focus);
-            if(!Double.isFinite(gain)||gain<=0)continue;
+            Double after=before==null?null:rate(m,plus(baseline,proposal.delta()),basis,proposal.cooldownFactor());
+            double gain=before!=null?(after==null?Double.NaN:(after/before-1)*100):focus==null?yieldGain(m,baseline,proposal.delta()):stat(proposal.delta(),focus);
+            if(!Double.isFinite(gain)||gain<=1e-9)continue;
             var cost=GearUpgrades.cost(proposal.plan(),p,prices);
             Item display=new Item();display.id="upgrade:"+gear.instance+":"+proposal.label();display.name=proposal.label();
             display.modification=true;display.source=cost.detail();
             String blocked=proposal.blocked();
             if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
-            result.add(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked));
+            result.add(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after));
         }
         for (Item i : catalog) {
             if (!i.applies(m)) continue;
@@ -61,8 +77,9 @@ public final class ProgressionEngine {
             if (current != null && i.id.equals(current.id)) continue;
             Map<Stat, Double> delta = new EnumMap<>(Stat.class);
             for (Stat s : Stat.values()) delta.put(s, stat(i.stats, s) - (current == null ? 0 : stat(current.stats, s)));
-            double gain = focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
-            if (!Double.isFinite(gain) || gain <= 0) continue;
+            Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
+            double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
+            if (!Double.isFinite(gain) || gain <= 1e-9) continue;
             boolean have = p.owned.getOrDefault(i.id, 0) > 0;
             Price quote = prices.get(i.id);
             Double cost = null;
@@ -70,10 +87,22 @@ public final class ProgressionEngine {
             else if (quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy)) cost = quote.buy;
             String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : "";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
-            result.add(new Upgrade(i, current, delta, cost, gain, have, blocked));
+            result.add(new Upgrade(i, current, delta, cost, gain, have, blocked, 1, before, after));
         }
         result.sort(Comparator.comparing((Upgrade u) -> !u.blocked().isEmpty()).thenComparingDouble(Upgrade::costPerUnit));
         return result;
+    }
+    private static Map<Stat, Double> plus(Map<Stat, Double> baseline, Map<Stat, Double> delta) {
+        Map<Stat, Double> after = new EnumMap<>(Stat.class);
+        for (Stat s : Stat.values()) after.put(s, stat(baseline, s) + stat(delta, s));
+        return after;
+    }
+    /** Flawless / hour with the ability cooldown scaled by cooldownFactor; null when the stats are invalid for the model. */
+    private static Double rate(MiningMethod m, Map<Stat, Double> stats, RateBasis basis, double cooldownFactor) {
+        var a = basis.ability();
+        if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * cooldownFactor);
+        try { return MethodRates.gems(m, stats, basis.efficiency(), a).flawlessPerHour(); }
+        catch (IllegalArgumentException e) { return null; }
     }
     /** Drop-only model. Does not pretend speed, cold, route, abilities or tick thresholds are linear yield. */
     public static double yieldMultiplier(MiningMethod m, Map<Stat, Double> stats) {
@@ -83,8 +112,7 @@ public final class ProgressionEngine {
         return (1 + fortune / 100) * (1 + spread / 100) * (1 + pristine * .79);
     }
     public static double yieldGain(MiningMethod m, Map<Stat, Double> baseline, Map<Stat, Double> delta) {
-        Map<Stat, Double> after = new EnumMap<>(Stat.class);
-        for (Stat s : Stat.values()) after.put(s, stat(baseline, s) + stat(delta, s));
+        Map<Stat, Double> after = plus(baseline, delta);
         return (yieldMultiplier(m, after) / yieldMultiplier(m, baseline) - 1) * 100;
     }
     public record Rate(double itemsPerHour, double coinsPerHour, double coleweightPerHour) {}
