@@ -8,8 +8,22 @@ public final class Model {
         public String id = "", name = "", group = "", source = "Auction House / Bazaar";
         public Map<Stat, Double> stats = new EnumMap<>(Stat.class);
         public int hotm;
+        public String tier = "", category = "", instance = "", location = "", modifier = "";
+        public boolean observed, modification, recombobulated;
+        public Map<String, Integer> enchantments = new HashMap<>();
+        public com.google.gson.JsonObject extra = new com.google.gson.JsonObject();
+        public List<Slot> slots = new ArrayList<>();
         public List<MiningMethod> methods = new ArrayList<>();
         public boolean applies(MiningMethod m) { return methods.isEmpty() || methods.contains(m); }
+    }
+    public static class Slot {
+        public String slot_type = "";
+        public List<Ingredient> costs = new ArrayList<>();
+    }
+    public static class Ingredient {
+        public String type = "", item_id = "";
+        public int amount;
+        public double coins;
     }
     public static class Price {
         public double buy;
@@ -23,6 +37,9 @@ public final class Model {
         public boolean selected, inventoryEnabled;
         public int hotm;
         public Map<String, Integer> owned = new HashMap<>();
+        public List<Item> gear = new ArrayList<>();
+        public transient Set<String> seenUuids = new HashSet<>();
+        public int enchantingLevel = -1;
         public List<String> notes = new ArrayList<>();
         public Map<String, Double> progress = new LinkedHashMap<>();
         public List<Milestone> milestones = new ArrayList<>();

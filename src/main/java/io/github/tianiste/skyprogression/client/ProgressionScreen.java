@@ -95,6 +95,16 @@ public final class ProgressionScreen extends Screen {
             }
         }
         if (!p.inventoryEnabled) return;
+        add("Your gear - "+stat.label,GOLD);
+        for(Item gear:data.engine.bestOwned(p,method,stat).values()) {
+            add(gear.name+": "+fmt(Model.stat(gear.stats,stat))+(gear.observed?" (item lore)":" (base only)"),WHITE);
+            if(!gear.location.isBlank())add("Found in "+gear.location,MUTED);
+            for(var m:GearUpgrades.progress(gear,method,stat)) {
+                add(m.name(),WHITE);
+                rows.add(new Row(fmt(m.current())+" / "+fmt(m.maximum())+" "+m.unit(),m.current()>=m.maximum()?GOLD:GREEN,
+                        Math.clamp(m.current()/m.maximum(),0,1)));
+            }
+        }
         add(stat.label+" - base item progress",GOLD);
         add("Best owned per slot / catalog maximum. Bars exclude item modifiers; this is not full maxed-setup progress.",MUTED);
         for(var row:data.engine.overview(p,method,stat)) {
@@ -112,13 +122,13 @@ public final class ProgressionScreen extends Screen {
             add("Use Stats now to rank base-item improvements by coins per point.",WHITE);return;
         }
         add(focus==null?"Best value for "+method.label:focus.label+" - cheapest points first",GOLD);
-        add("Base-item alternatives against best owned gear. Check modifiers before replacing. Full purchase cost; no assumed resale credit.",MUTED);
+        add("Upgrades to your actual item copies plus bare-item replacements. Owned materials are used first. Alternatives are independent; no resale credit.",MUTED);
         if(focus==null)add("Drop-only estimate: speed thresholds, abilities, route and cold effects are excluded. Inspect speed/cold in Stats.",MUTED);
         var list=data.engine.upgrades(p,method,focus,input.stats,data.prices);
         if(list.isEmpty())add("No positive upgrades in this base-item catalog. This does not mean your setup is fully maxed.",WHITE);
         for(var u:list) {
-            add("",MUTED);add(u.item().name+(u.owned()?" - already owned":""),GOLD);
-            if(u.current()!=null)add("Replaces "+u.current().name,MUTED);
+            add("",MUTED);add(u.item().name+(u.owned()?(u.item().modification?" - materials owned":" - already owned"):""),GOLD);
+            if(u.current()!=null)add((u.item().modification?"On ":"Replaces ")+u.current().name+(u.current().location.isBlank()?"":" ["+u.current().location+"]"),MUTED);
             StringJoiner changes=new StringJoiner(", ");
             u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});
             add(changes.toString(),WHITE);
@@ -151,7 +161,7 @@ public final class ProgressionScreen extends Screen {
         add("Before buying",GOLD);
         add("Check HOTM perks and powder, Mining level, gemstone slots/quality, reforges, enchants, drill modules/fuel, pet level/item, collections, attributes and temporary buffs.",WHITE);
         add("Ownership includes API-visible inventory, armor, equipment, wardrobe, bags, ender chest, backpacks and sacks. Stored gear is not necessarily equipped.",MUTED);
-        add("Only the base-item catalog is ranked. Recipe materials, resale values and manual upgrades are not priced automatically yet.",MUTED);
+        add("Supported: Fortune, Efficiency/Silex, Prismatic, Polarvoid Books, Jade/Amber/Topaz sockets. Gem unlock/removal fees and owned materials are included. Reforge/pet/HOTM upgrades and resale remain manual.",MUTED);
         add("Inventory API: SkyBlock Menu > Settings > API Settings > Inventory API: ON. Refresh after the 5-minute profile cache expires.",MUTED);
     }
     private int visibleRows(){return Math.max(1,(height-172)/18);}

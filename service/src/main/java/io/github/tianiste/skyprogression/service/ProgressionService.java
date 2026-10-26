@@ -97,14 +97,14 @@ public final class ProgressionService {
         // Bounded parallelism avoids issuing dozens of requests at once.
         try (var pool = Executors.newFixedThreadPool(3)) {
             List<Future<?>> jobs = new ArrayList<>();
-            for (Item item : Catalog.load()) jobs.add(pool.submit(() -> {
+            for (String itemId : GearUpgrades.priceIds(Catalog.load())) jobs.add(pool.submit(() -> {
                 try {
-                    JsonObject response = get("https://sky.coflnet.com/api/item/price/" + item.id + "/current?minAgeSeconds=120", false);
+                    JsonObject response = get("https://sky.coflnet.com/api/item/price/" + itemId + "/current?minAgeSeconds=120", false);
                     Price p = new Price(); p.buy = number(response.get("buy"), 0);
                     p.available = p.buy > 0 && number(response.get("available"), 0) > 0;
                     p.source = "true".equals(string(response.get("isAh"), "false")) ? "Auction House (Coflnet)" : "Bazaar (Coflnet)";
                     p.updatedAt = string(response.get("updatedAt"), "Unknown quote time");
-                    fresh.put(item.id, p);
+                    fresh.put(itemId, p);
                 } catch (Exception ignored) { /* Missing prices stay unknown, never zero-cost. */ }
             }));
             for (Future<?> job : jobs) job.get();

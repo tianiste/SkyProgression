@@ -9,7 +9,9 @@ public final class ProgressionEngine {
     public ProgressionEngine(List<Item> catalog) { this.catalog = List.copyOf(catalog); }
     public Map<String, Item> bestOwned(Profile p, MiningMethod method, Stat focus) {
         Map<String, Item> result = new LinkedHashMap<>();
-        for (Item item : catalog) {
+        List<Item> candidates=new ArrayList<>(p.gear);
+        for(Item base:catalog)if(p.gear.stream().noneMatch(g->g.id.equals(base.id)))candidates.add(base);
+        for (Item item : candidates) {
             if (!item.applies(method) || p.owned.getOrDefault(item.id, 0) == 0) continue;
             Item old = result.get(item.group);
             if (old == null || score(item, method, focus) > score(old, method, focus)) result.put(item.group, item);
@@ -35,13 +37,24 @@ public final class ProgressionEngine {
             if (old == null || Model.stat(i.stats, stat) > Model.stat(old.stats, stat)) maximum.put(i.group, i);
         }
         return maximum.entrySet().stream().map(e -> new Overview(e.getKey(), current.get(e.getKey()), e.getValue(),
-                current.containsKey(e.getKey()) ? Model.stat(current.get(e.getKey()).stats, stat) : 0,
+                current.containsKey(e.getKey()) ? catalog.stream().filter(i->i.id.equals(current.get(e.getKey()).id))
+                        .mapToDouble(i->Model.stat(i.stats,stat)).findFirst().orElse(0) : 0,
                 Model.stat(e.getValue().stats, stat))).toList();
     }
     public List<Upgrade> upgrades(Profile p, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices) {
         if (!p.inventoryEnabled) return List.of(); // Missing API is not an empty inventory.
         var owned = bestOwned(p, m, focus);
         List<Upgrade> result = new ArrayList<>();
+        for(Item gear:owned.values()) for(var proposal:GearUpgrades.forItem(gear,m,p,prices)) {
+            double gain=focus==null?yieldGain(m,baseline,proposal.delta()):stat(proposal.delta(),focus);
+            if(!Double.isFinite(gain)||gain<=0)continue;
+            var cost=GearUpgrades.cost(proposal.plan(),p,prices);
+            Item display=new Item();display.id="upgrade:"+gear.instance+":"+proposal.label();display.name=proposal.label();
+            display.modification=true;display.source=cost.detail();
+            String blocked=proposal.blocked();
+            if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
+            result.add(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked));
+        }
         for (Item i : catalog) {
             if (!i.applies(m)) continue;
             Item current = owned.get(i.group);

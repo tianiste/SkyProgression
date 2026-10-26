@@ -59,6 +59,12 @@ public final class ProfileParser {
             if (!miningXp.isJsonNull()) p.progress.put("Mining skill XP", number(miningXp, 0));
             JsonObject rules = Catalog.progressionRules();
             JsonElement levels = at(rules, "mining", "levels");
+            JsonElement enchantingXp=at(member,"player_data","experience","SKILL_ENCHANTING");
+            if(!enchantingXp.isJsonNull()&&levels.isJsonArray()) {
+                p.enchantingLevel=0;
+                for(JsonElement rule:levels.getAsJsonArray())if(number(enchantingXp,0)>=number(at(rule,"totalExpRequired"),Double.MAX_VALUE))
+                    p.enchantingLevel=Math.max(p.enchantingLevel,(int)number(at(rule,"level"),0));
+            }
             if (!miningXp.isJsonNull() && levels.isJsonArray()) {
                 int level = 0;
                 for (JsonElement rule : levels.getAsJsonArray())
@@ -86,7 +92,7 @@ public final class ProfileParser {
                 if ("true".equals(string(at(pet, "active"), "false")))
                     p.notes.add("Active pet: " + string(at(pet, "type"), "Unknown") + " (" + string(at(pet, "tier"), "Unknown") + "). Pet bonuses need your effective stats.");
             }
-            p.notes.add("Base item stats only. Reforges, gems, enchants, pet bonuses, HOTM perks, attributes and temporary buffs are not included in this subtotal.");
+            p.notes.add("Gear values use stored item lore when available; these include displayed modifiers but may reflect the item's last context. Pet, HOTM, attributes and temporary buffs still require effective stats.");
             result.add(p);
         }
         return result;
@@ -97,10 +103,9 @@ public final class ProfileParser {
         try {
             JsonElement items = new InventoryReader().read(data).get("i");
             if (items == null || !items.isJsonArray()) throw new java.io.IOException("Missing inventory item list");
-            for (JsonElement item : items.getAsJsonArray()) {
-                String id = string(at(item, "tag", "ExtraAttributes", "id"), "");
-                if (!id.isEmpty()) p.owned.merge(id, Math.max(1, (int)number(at(item, "Count"), 1)), Integer::sum);
-            }
+            List<Item> catalog = Catalog.load();
+            int slot=0;
+            for (JsonElement item : items.getAsJsonArray()) GearReader.accept(item,p,catalog,label,slot++);
         } catch (Exception e) {
             p.inventoryEnabled = false;
             p.notes.add("Could not read " + label + ". Recommendations are paused because ownership is incomplete. Refresh later.");

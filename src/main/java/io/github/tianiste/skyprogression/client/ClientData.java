@@ -85,7 +85,7 @@ final class ClientData {
             catch (Exception e) { return Map.<String, Price>of(); }
         }).thenAccept(p -> dispatch.accept(() -> {
             if (demo || generation != requestGeneration) return;
-            prices = p; message = p.isEmpty() ? "Prices unavailable. Costs remain unknown." : "Loaded " + p.size() + " price quotes. Estimates exclude fees and item modifiers.";
+            prices = p; message = p.isEmpty() ? "Prices unavailable. Costs remain unknown." : "Loaded " + p.size() + " price quotes. Supported socket fees included; no resale credit.";
             changed.run();
         }));
     }
@@ -106,9 +106,18 @@ final class ClientData {
         demo = true; profileIndex = 0; report = new Report();
         Profile p = new Profile(); p.player = "Demo"; p.name = "Example only"; p.id = "demo"; p.inventoryEnabled = true; p.hotm = 7;
         for (String id : List.of("DIVAN_HELMET","DIVAN_CHESTPLATE","DIVAN_LEGGINGS","DIVAN_BOOTS","TITANIUM_DRILL_4","MINERAL_TALISMAN","MITHRIL_NECKLACE")) p.owned.put(id,1);
+        p.enchantingLevel = 30;
+        Item drill = catalog.stream().filter(i -> i.id.equals("TITANIUM_DRILL_4")).findFirst().orElseThrow();
+        p.gear.add(GearReader.read(JsonParser.parseString("""
+            {"tag":{"ExtraAttributes":{"uuid":"demo-drill","enchantments":{"fortune":3,"efficiency":7,"pristine":3},
+            "gems":{"JADE_0":"FLAWLESS","AMBER_0":"FINE"}},
+            "display":{"Name":"Demo Titanium Drill","Lore":["Mining Fortune: +200","Mining Speed: +2,000","Pristine: +1.5"]}}}
+            """), drill, "Demo inventory", 0));
+        p.owned.put("SIL_EX", 1);
+        p.owned.put("GEMSTONE_CHAMBER", 1);
         p.notes.add("DEMO DATA. Example ownership and prices, not your real profile.");
         report.profiles.add(p); prices = new HashMap<>();
-        int n = 1; for (Item i : catalog) prices.put(i.id, new Price(250_000.0 * n++, "Demo price"));
+        int n = 1; for (String id : GearUpgrades.priceIds(catalog)) prices.put(id, new Price(250_000.0 * n++, "Demo price"));
         message = "DEMO - example inventory and prices. Load your player for real data.";
     }
 }

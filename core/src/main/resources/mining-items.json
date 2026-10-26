@@ -9,7 +9,28 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "HELMET",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "SORROW_HELMET",
@@ -21,7 +42,72 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "HELMET",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 100000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      },
+      {
+        "slot_type": "UNIVERSAL",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 250000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_TOPAZ_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_RUBY_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMETHYST_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_SAPPHIRE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JASPER_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "DIVAN_HELMET",
@@ -33,7 +119,61 @@
     },
     "hotm": 6,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "HELMET",
+    "slots": [
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "TOPAZ",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "MINERAL_HELMET",
@@ -44,7 +184,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "HELMET",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLOSSY_MINERAL_HELMET",
@@ -55,7 +200,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "HELMET",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLACITE_CHESTPLATE",
@@ -67,7 +217,28 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "CHESTPLATE",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "SORROW_CHESTPLATE",
@@ -79,7 +250,72 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "CHESTPLATE",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 100000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      },
+      {
+        "slot_type": "UNIVERSAL",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 250000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_TOPAZ_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_RUBY_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMETHYST_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_SAPPHIRE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JASPER_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "DIVAN_CHESTPLATE",
@@ -91,7 +327,61 @@
     },
     "hotm": 6,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "CHESTPLATE",
+    "slots": [
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "TOPAZ",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "MINERAL_CHESTPLATE",
@@ -102,7 +392,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "CHESTPLATE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLOSSY_MINERAL_CHESTPLATE",
@@ -113,7 +408,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "CHESTPLATE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLACITE_LEGGINGS",
@@ -125,7 +425,28 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "LEGGINGS",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "SORROW_LEGGINGS",
@@ -137,7 +458,72 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "LEGGINGS",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 100000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      },
+      {
+        "slot_type": "UNIVERSAL",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 250000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_TOPAZ_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_RUBY_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMETHYST_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_SAPPHIRE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JASPER_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "DIVAN_LEGGINGS",
@@ -149,7 +535,61 @@
     },
     "hotm": 6,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "LEGGINGS",
+    "slots": [
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "TOPAZ",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "MINERAL_LEGGINGS",
@@ -160,7 +600,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "LEGGINGS",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLOSSY_MINERAL_LEGGINGS",
@@ -171,7 +616,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "LEGGINGS",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLACITE_BOOTS",
@@ -183,7 +633,28 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "BOOTS",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 5000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "SORROW_BOOTS",
@@ -195,7 +666,72 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "BOOTS",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 100000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      },
+      {
+        "slot_type": "UNIVERSAL",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 250000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMBER_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_TOPAZ_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_RUBY_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_AMETHYST_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_SAPPHIRE_GEM",
+            "amount": 20
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JASPER_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "DIVAN_BOOTS",
@@ -207,7 +743,61 @@
     },
     "hotm": 6,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "BOOTS",
+    "slots": [
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "AMBER",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "slot_type": "TOPAZ",
+        "costs": [
+          {
+            "type": "ITEM",
+            "item_id": "GEMSTONE_CHAMBER",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "MINERAL_BOOTS",
@@ -218,7 +808,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "BOOTS",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLOSSY_MINERAL_BOOTS",
@@ -229,7 +824,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "BOOTS",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "FRACTURED_MITHRIL_PICKAXE",
@@ -254,7 +854,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "BANDAGED_MITHRIL_PICKAXE",
@@ -279,7 +884,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MITHRIL_PICKAXE",
@@ -304,7 +914,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "PICKAXE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "REFINED_MITHRIL_PICKAXE",
@@ -329,7 +944,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "PICKAXE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_PICKAXE",
@@ -353,7 +973,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "PICKAXE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "REFINED_TITANIUM_PICKAXE",
@@ -377,7 +1002,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "PICKAXE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MITHRIL_DRILL_1",
@@ -402,7 +1032,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "DRILL",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MITHRIL_DRILL_2",
@@ -427,7 +1062,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "DRILL",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GEMSTONE_DRILL_1",
@@ -453,7 +1093,28 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 50000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "GEMSTONE_DRILL_2",
@@ -479,7 +1140,28 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 50000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "GEMSTONE_DRILL_3",
@@ -505,7 +1187,28 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 50000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "GEMSTONE_DRILL_4",
@@ -531,7 +1234,28 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 50000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "TITANIUM_DRILL_1",
@@ -556,7 +1280,12 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "DRILL",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_DRILL_2",
@@ -581,7 +1310,14 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      }
+    ]
   },
   {
     "id": "TITANIUM_DRILL_3",
@@ -606,7 +1342,28 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 50000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "TITANIUM_DRILL_4",
@@ -631,7 +1388,52 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 50000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      },
+      {
+        "slot_type": "MINING",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 250000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FLAWLESS_JADE_GEM",
+            "amount": 1
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FLAWLESS_AMBER_GEM",
+            "amount": 1
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FLAWLESS_TOPAZ_GEM",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "DIVAN_DRILL",
@@ -656,7 +1458,69 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "MYTHIC",
+    "category": "DRILL",
+    "slots": [
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 50000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 20
+          }
+        ]
+      },
+      {
+        "slot_type": "JADE",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 100000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FINE_JADE_GEM",
+            "amount": 40
+          }
+        ]
+      },
+      {
+        "slot_type": "MINING",
+        "costs": [
+          {
+            "type": "COINS",
+            "coins": 250000
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FLAWLESS_JADE_GEM",
+            "amount": 1
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FLAWLESS_AMBER_GEM",
+            "amount": 1
+          },
+          {
+            "type": "ITEM",
+            "item_id": "FLAWLESS_TOPAZ_GEM",
+            "amount": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "GEMSTONE_GAUNTLET",
@@ -680,7 +1544,26 @@
       "END_STONE",
       "COBBLESTONE"
     ],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "GAUNTLET",
+    "slots": [
+      {
+        "slot_type": "JADE"
+      },
+      {
+        "slot_type": "AMBER"
+      },
+      {
+        "slot_type": "TOPAZ"
+      },
+      {
+        "slot_type": "SAPPHIRE"
+      },
+      {
+        "slot_type": "AMETHYST"
+      }
+    ]
   },
   {
     "id": "MITHRIL_NECKLACE",
@@ -692,7 +1575,12 @@
     },
     "hotm": 2,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "NECKLACE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_NECKLACE",
@@ -704,7 +1592,12 @@
     },
     "hotm": 3,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "NECKLACE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MITHRIL_CLOAK",
@@ -716,7 +1609,12 @@
     },
     "hotm": 2,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "CLOAK",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_CLOAK",
@@ -728,7 +1626,12 @@
     },
     "hotm": 3,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "CLOAK",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MITHRIL_BELT",
@@ -740,7 +1643,12 @@
     },
     "hotm": 2,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "BELT",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_BELT",
@@ -752,7 +1660,12 @@
     },
     "hotm": 3,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "BELT",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MITHRIL_GAUNTLET",
@@ -764,7 +1677,12 @@
     },
     "hotm": 2,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "GLOVES",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_GAUNTLET",
@@ -776,7 +1694,12 @@
     },
     "hotm": 3,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "GLOVES",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "DWARVEN_HANDWARMERS",
@@ -789,7 +1712,12 @@
     },
     "hotm": 8,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "GLOVES",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MINERAL_TALISMAN",
@@ -800,7 +1728,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "ACCESSORY",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLOSSY_MINERAL_TALISMAN",
@@ -811,7 +1744,12 @@
     },
     "hotm": 0,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "ACCESSORY",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_TALISMAN",
@@ -822,7 +1760,12 @@
     },
     "hotm": 2,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "UNCOMMON",
+    "category": "ACCESSORY",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_RING",
@@ -833,7 +1776,12 @@
     },
     "hotm": 3,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "RARE",
+    "category": "ACCESSORY",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_ARTIFACT",
@@ -844,7 +1792,12 @@
     },
     "hotm": 4,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "EPIC",
+    "category": "ACCESSORY",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_RELIC",
@@ -855,7 +1808,12 @@
     },
     "hotm": 5,
     "methods": [],
-    "source": "Auction House / Bazaar; check item requirements"
+    "source": "Auction House / Bazaar; check item requirements",
+    "tier": "LEGENDARY",
+    "category": "ACCESSORY",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "MITHRIL_LANTERN",
@@ -879,7 +1837,12 @@
       "MF_RUBY",
       "MF_TOPAZ"
     ],
-    "source": "Auction House / Forge; deploy lantern to receive bonus"
+    "source": "Auction House / Forge; deploy lantern to receive bonus",
+    "tier": "UNCOMMON",
+    "category": "DEPLOYABLE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "TITANIUM_LANTERN",
@@ -903,7 +1866,12 @@
       "MF_RUBY",
       "MF_TOPAZ"
     ],
-    "source": "Auction House / Forge; deploy lantern to receive bonus"
+    "source": "Auction House / Forge; deploy lantern to receive bonus",
+    "tier": "RARE",
+    "category": "DEPLOYABLE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "GLACITE_LANTERN",
@@ -927,7 +1895,12 @@
       "MF_RUBY",
       "MF_TOPAZ"
     ],
-    "source": "Auction House / Forge; deploy lantern to receive bonus"
+    "source": "Auction House / Forge; deploy lantern to receive bonus",
+    "tier": "EPIC",
+    "category": "DEPLOYABLE",
+    "slots": [
+      null
+    ]
   },
   {
     "id": "WILL_O_WISP",
@@ -951,6 +1924,11 @@
       "MF_RUBY",
       "MF_TOPAZ"
     ],
-    "source": "Auction House / Forge; deploy lantern to receive bonus"
+    "source": "Auction House / Forge; deploy lantern to receive bonus",
+    "tier": "LEGENDARY",
+    "category": "DEPLOYABLE",
+    "slots": [
+      null
+    ]
   }
 ]
