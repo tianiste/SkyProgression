@@ -174,7 +174,7 @@ public final class ProgressionScreen extends Screen {
         for(var e:p.progress.entrySet())if(e.getKey().contains("powder")){powder.line(e.getKey(),MUTED).line(fmt(e.getValue()),CYAN);hasPowder=true;}
         if(!hasPowder)powder.line("Powder data unavailable.",MUTED);
         powder.line("Unspent powder, as shown in game. Targets depend on your HOTM build.",MUTED);
-        card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Unlocking new HOTM perks and non-gem rates are not covered yet.",MUTED);
+        card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Rates for methods other than Magma Fields gems and the Fairy Grotto are not modelled yet.",MUTED);
         for(var row:overview){
             Card c=card(row.group()+" | "+(row.current()==null?"Missing":row.current().name),GOLD,1);
             c.icon=icon(row.current()!=null?row.current().id:row.target().id,row.group());
@@ -206,10 +206,10 @@ public final class ProgressionScreen extends Screen {
             StringJoiner changes=new StringJoiner(" / ");u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});
             if(u.cooldownFactor()!=1)changes.add("ability cooldown x"+fmt(u.cooldownFactor()));
             if(changes.length()>0)c.line(changes.toString(),CYAN);
-            c.line(u.cost()==null?("HOTM".equals(u.item().group)?"Grind the powder (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
+            c.line(u.cost()==null?("GRIND".equals(u.item().category)?"Grinding (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
             if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" Flawless / hour",GREEN);
             else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
-            if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder":u.item().modification?"Materials already owned":"Item already owned",GREEN);
+            if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned",GREEN);
             if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
             var quote=data.prices.get(u.item().id);c.line(quote!=null?quote.source:u.item().source,MUTED);
         }

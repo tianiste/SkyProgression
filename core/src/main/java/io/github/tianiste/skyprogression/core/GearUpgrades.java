@@ -47,6 +47,7 @@ public final class GearUpgrades {
             Map.entry("starfall_seasoning","Starfall Seasoning"),Map.entry("goblin_omelette","Goblin Omelette"),
             Map.entry("goblin_omelette_pesto","Pesto Goblin Omelette"),Map.entry("goblin_omelette_spicy","Spicy Goblin Omelette"),
             Map.entry("goblin_omelette_blue_cheese","Blue Cheese Goblin Omelette"));
+    static final String BLUE_CHEESE="goblin_omelette_blue_cheese";
     static String partName(String key){return key.isEmpty()?"none":PART_NAMES.getOrDefault(key,key);}
 
     public static Cost cost(Plan plan,Profile profile,Map<String,Price> prices) {
@@ -65,7 +66,9 @@ public final class GearUpgrades {
         if(plan.fees>0)detail.add("Fees: "+plan.fees+" coins");
         return new Cost(known?Double.valueOf(sum):null,allOwned,detail+". "+plan.instruction);
     }
-    public static List<Proposal> forItem(Item gear,MiningMethod method,Profile profile,Map<String,Price> prices) {
+    public static List<Proposal> forItem(Item gear,MiningMethod method,Profile profile,Map<String,Price> prices) {return forItem(gear,method,profile,prices,Map.of());}
+    /** omelette: mining stats the Blue Cheese Goblin Omelette's +1 HOTM perk levels add (ProfileUpgrades.State.omeletteGain). */
+    public static List<Proposal> forItem(Item gear,MiningMethod method,Profile profile,Map<String,Price> prices,Map<Stat,Double> omelette) {
         if(gear.instance.isBlank())return List.of(); // Cannot infer modifiers from item ID alone.
         List<Proposal> out=new ArrayList<>();
         if(gear.group.equals("Tool")) {
@@ -111,8 +114,17 @@ public final class GearUpgrades {
                 for(var e:FUEL_TANKS.entrySet())if(e.getValue()>old)
                     out.add(new Proposal(gear,partName(e.getKey())+" (-"+Math.round(e.getValue()*100)+"% ability cooldown)",Map.of(),
                             part(e.getKey(),tank),"",(1-e.getValue())/(1-old),g->g.extra.addProperty("drill_part_fuel_tank",e.getKey())));
-                parts(gear,"drill_part_engine",ENGINES,out);
-                parts(gear,"drill_part_upgrade_module",MODULES,out);
+                parts(gear,"drill_part_engine",ENGINES,out,Map.of());
+                String module=string(at(gear.extra,"drill_part_upgrade_module"),"");
+                parts(gear,"drill_part_upgrade_module",MODULES,out,module.equals(BLUE_CHEESE)?omelette:Map.of());
+                if(!module.equals(BLUE_CHEESE)&&!omelette.isEmpty()) {
+                    Map<Stat,Double> delta=new EnumMap<>(omelette);
+                    double[] now=MODULES.getOrDefault(module,new double[2]);
+                    delta.merge(Stat.MINING_SPEED,-now[0],Double::sum);delta.merge(Stat.MINING_FORTUNE,-now[1],Double::sum);
+                    delta.values().removeIf(v->v==0);
+                    if(delta.values().stream().anyMatch(v->v>0))out.add(new Proposal(gear,partName(BLUE_CHEESE)+" (+1 HOTM perk levels)",delta,part(BLUE_CHEESE,module),"",
+                            g->g.extra.addProperty("drill_part_upgrade_module",BLUE_CHEESE)));
+                }
             }
         }
         reforges(gear,method,out);
@@ -209,19 +221,22 @@ public final class GearUpgrades {
         if(!unlocked.contains(new JsonPrimitive(key)))unlocked.add(key);
         o.add("unlocked_slots",unlocked);
     }
+    /** Fitting a part; the current part of that kind must be removed first for 9,999 coins and is given back (wiki part pages). */
     private static Plan part(String key,String current) {
-        return new Plan(Map.of(key.toUpperCase(Locale.ROOT),1),0,"Apply at a Drill Mechanic. Replaces "+partName(current)+"; no resale credit assumed.");
+        return new Plan(Map.of(key.toUpperCase(Locale.ROOT),1),current.isEmpty()?0:9999,
+                "Apply at the drill anvil."+(current.isEmpty()?"":" Removing the "+partName(current)+" costs 9,999 coins; you keep it."));
     }
     /** Engine or module swaps that add Mining Speed or Fortune over the current part of that kind (one per drill). */
-    private static void parts(Item gear,String field,Map<String,double[]> table,List<Proposal> out) {
+    /** lost: stats the current part gives outside the table (the Blue Cheese omelette's perk levels), lost on a swap. */
+    private static void parts(Item gear,String field,Map<String,double[]> table,List<Proposal> out,Map<Stat,Double> lost) {
         String current=string(at(gear.extra,field),"");
         double[] now=table.getOrDefault(current,new double[2]);
         for(var e:table.entrySet()) {
-            double speed=e.getValue()[0]-now[0],fortune=e.getValue()[1]-now[1];
-            if(e.getKey().equals(current)||(speed<=0&&fortune<=0))continue;
             Map<Stat,Double> delta=new EnumMap<>(Stat.class);
-            if(speed!=0)delta.put(Stat.MINING_SPEED,speed);
-            if(fortune!=0)delta.put(Stat.MINING_FORTUNE,fortune);
+            delta.put(Stat.MINING_SPEED,e.getValue()[0]-now[0]);delta.put(Stat.MINING_FORTUNE,e.getValue()[1]-now[1]);
+            lost.forEach((s,v)->delta.merge(s,-v,Double::sum));
+            delta.values().removeIf(v->v==0);
+            if(e.getKey().equals(current)||delta.values().stream().noneMatch(v->v>0))continue;
             out.add(new Proposal(gear,partName(e.getKey()),delta,part(e.getKey(),current),"",g->g.extra.addProperty(field,e.getKey())));
         }
     }
@@ -281,7 +296,7 @@ public final class GearUpgrades {
         }
     }
     public static Set<String> priceIds(List<Item> catalog) {
-        Set<String> ids=new LinkedHashSet<>(List.of("ENCHANTMENT_FORTUNE_4","ENCHANTMENT_EFFICIENCY_5","SIL_EX","POLARVOID_BOOK","RECOMBOBULATOR_3000","DIVAN_POWDER_COATING"));
+        Set<String> ids=new LinkedHashSet<>(List.of("ENCHANTMENT_FORTUNE_4","ENCHANTMENT_EFFICIENCY_5","SIL_EX","POLARVOID_BOOK","RECOMBOBULATOR_3000","DIVAN_POWDER_COATING","GOBLIN_OMELETTE_BLUE_CHEESE"));
         for(var table:List.of(FUEL_TANKS.keySet(),ENGINES.keySet(),MODULES.keySet()))for(String key:table)ids.add(key.toUpperCase(Locale.ROOT));
         for(int n=1;n<=5;n++)ids.add("ENCHANTMENT_PRISTINE_"+n);
         for(Reforges.Reforge r:Reforges.all())if(r.stone()!=null)ids.add(r.stone());

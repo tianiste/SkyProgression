@@ -57,6 +57,7 @@ public final class ProgressionEngine {
             return new RateBasis(efficiency, ability, taken.stats(), petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList(), profile);
         }
         RateBasis withProfile(ProfileUpgrades.Option taken) { return new RateBasis(efficiency, ability, pet, petOptions, profile.take(taken)); }
+        RateBasis withOmelette(boolean held) { return new RateBasis(efficiency, ability, pet, petOptions, profile.withOmelette(held)); }
     }
     /** How a method's upgrades are valued: its rate model when it has one, else the drop multiplier. */
     public static boolean rateModel(MiningMethod m) { return MethodRates.supported(m); }
@@ -74,7 +75,7 @@ public final class ProgressionEngine {
         List<Upgrade> result = new ArrayList<>();
         for (List<Upgrade> chain : chains.values()) {
             Upgrade best = chain.stream().min(Comparator.comparing((Upgrade u) -> !u.blocked().isEmpty()).thenComparing(u -> u.cost() == null)
-                    .thenComparingDouble(Upgrade::costPerUnit).thenComparing(Comparator.comparingDouble(Upgrade::gain).reversed())).orElseThrow();
+                    .thenComparingDouble(Upgrade::costPerUnit).thenComparingDouble(u -> u.cost() == null ? u.gain() : -u.gain())).orElseThrow(); // unpriced: nearest level
             if (chain.size() > 1) best.item().source += " (" + (chain.size() - 1) + " other level" + (chain.size() > 2 ? "s" : "") + " of this hidden; the plan steps through them.)";
             result.add(best);
         }
@@ -134,6 +135,8 @@ public final class ProgressionEngine {
             else if (best.set() != null) best.set().forEach(i -> owned.put(i.group, i.copy()));
             else if (best.apply() != null) {
                 best.apply().accept(u.current());
+                boolean omelette = StatBreakdown.blueCheese(u.current());
+                if (current != null && "DRILL".equals(u.current().category) && omelette != current.profile().omelette()) current = current.withOmelette(omelette);
                 u.delta().forEach((s, v) -> u.current().stats.merge(s, v, Double::sum));
                 best.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
             } else owned.put(u.item().group, u.item().copy());
@@ -251,7 +254,7 @@ public final class ProgressionEngine {
         List<Candidate> result = new ArrayList<>();
         Double before = focus == null && basis != null && rateModel(m) ? rate(m, baseline, basis, 1) : null;
         if (before != null && !(before > 0)) before = null; // No rate to compare against; fall back to drops.
-        for(Item gear:owned.values()) for(var proposal:GearUpgrades.forItem(gear,m,p,prices)) {
+        for(Item gear:owned.values()) for(var proposal:GearUpgrades.forItem(gear,m,p,prices,basis==null?Map.of():basis.profile().omeletteGain())) {
             Double after=before==null?null:rate(m,plus(baseline,proposal.delta()),basis,proposal.cooldownFactor());
             double gain=before!=null?(after==null?Double.NaN:(after/before-1)*100):focus==null?yieldGain(m,baseline,proposal.delta()):stat(proposal.delta(),focus);
             if(!Double.isFinite(gain)||gain<=1e-9)continue;
@@ -337,10 +340,10 @@ public final class ProgressionEngine {
         }
         // Essence perks, attribute shards and HOTM perk levels: target level stats minus the chain's current stats.
         if (basis != null) for (ProfileUpgrades.Option o : basis.profile().options()) {
-            Map<Stat, Double> now = basis.profile().chains().getOrDefault(o.chain(), Map.of());
+            Map<Stat, Double> now = basis.profile().current(o.chain()), then = basis.profile().stats(o);
             Map<Stat, Double> delta = new EnumMap<>(Stat.class);
             for (Stat s : Stat.values()) {
-                double d = o.stats().getOrDefault(s, 0.0) - now.getOrDefault(s, 0.0);
+                double d = then.getOrDefault(s, 0.0) - now.getOrDefault(s, 0.0);
                 if (d != 0) delta.put(s, d);
             }
             Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
@@ -350,9 +353,14 @@ public final class ProgressionEngine {
             double have = basis.profile().available().getOrDefault(o.resource(), 0.0), need = basis.profile().remaining(o);
             Item display = new Item(); display.id = "profile:" + o.chain() + ":" + o.rank(); display.name = o.label(); display.group = o.group();
             display.modification = true;
-            display.source = o.note() + String.format(Locale.ROOT, " Needs %,.0f %s, %,.0f available.", need, o.resource(), have);
+            if (o.grinding() && cost == null) display.category = "GRIND";
+            display.source = o.note() + (o.resource().startsWith("ESSENCE_") || o.resource().startsWith("SHARD_") || o.resource().startsWith("POWDER_")
+                    ? String.format(Locale.ROOT, " Needs %,.0f %s, %,.0f available.", need, o.resource(), have) : "");
+            int tokens = basis.profile().tokens(o);
+            if (tokens > 0) display.source += String.format(Locale.ROOT, " Needs %d Token%s of the Mountain, %,.0f unspent.", tokens, tokens > 1 ? "s" : "",
+                    basis.profile().available().getOrDefault("TOKEN", 0.0));
             String blocked = o.priceId() != null && need > have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode))
-                    ? "No bazaar purchases on " + p.mode : "";
+                    ? "No bazaar purchases on " + p.mode : p.hotm < o.tier() ? "Reach HOTM " + o.tier() + " first (grinding)" : "";
             result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, cost != null && cost == 0, blocked, 1, before, after), null, Map.of(), null, o, null));
         }
         return result;

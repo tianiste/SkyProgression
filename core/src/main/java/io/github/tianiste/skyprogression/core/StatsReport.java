@@ -68,7 +68,7 @@ public final class StatsReport {
         r.accessories = main.accessories.size();
         r.ability = MethodRates.ability(main.tool);
         boolean drill = main.tool != null && main.tool.category.equals("DRILL");
-        r.profileUpgrades = ProfileUpgrades.state(member, r.hotmTree, context);
+        r.profileUpgrades = ProfileUpgrades.state(member, r.hotmTree, context, StatBreakdown.blueCheese(main.tool));
         if (main.petsKnown) {
             r.petStats = StatBreakdown.petStats(main.pet, context, drill);
             if (r.petStats != null) r.petOptions.addAll(PetUpgrades.options(owned, main.pet, context, drill));

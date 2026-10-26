@@ -5,6 +5,8 @@ import java.util.*;
 import static io.github.tianiste.skyprogression.core.Model.*;
 
 public final class ProfileParser {
+    /** Cumulative HOTM XP for tiers 1..10 (wiki Heart of the Mountain tier table). */
+    public static final long[] HOTM_XP = {0, 3000, 12000, 37000, 97000, 197000, 347000, 557000, 847000, 1247000};
     public static JsonElement at(JsonElement value, String... path) {
         for (String part : path) {
             if (value == null || !value.isJsonObject()) return JsonNull.INSTANCE;
@@ -63,7 +65,7 @@ public final class ProfileParser {
             }
             // Current profiles store HOTM under skill_tree; mining_core.experience is the legacy location.
             double xp = number(at(member, "skill_tree", "experience", "mining"), number(at(member, "mining_core", "experience"), -1));
-            long[] thresholds = {0, 3000, 12000, 37000, 97000, 197000, 347000, 557000, 847000, 1247000};
+            long[] thresholds = HOTM_XP;
             if (xp >= 0) { p.hotm = 1; for (int i = 1; i < thresholds.length; i++) if (xp >= thresholds[i]) p.hotm = i + 1; }
             p.progress.put("Heart of the Mountain tier", (double)p.hotm);
             if (xp >= 0) p.milestones.add(new Milestone("Heart of the Mountain", p.hotm, 10, "tiers"));

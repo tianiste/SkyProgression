@@ -118,7 +118,7 @@ public final class StatBreakdown {
         b.notes.addAll(loadout.notes);
         gear(b, loadout, miningLevel(member));
         pet(b, loadout);
-        hotm(b, member, loadout.hotmTree);
+        hotm(b, member, loadout.hotmTree, blueCheese(loadout.tool));
         if (stat == Stat.MINING_FORTUNE) skill(b, member);
         collections(b, member);
         attributes(b, member);
@@ -377,7 +377,11 @@ public final class StatBreakdown {
         l.hotmTree = best;
         return best;
     }
-    private static void hotm(Breakdown b, JsonObject member, String tree) {
+    /** The drill holds a Blue Cheese Goblin Omelette: +1 level on every unlocked HOTM perk, past the cap (wiki). */
+    public static boolean blueCheese(Item tool) {
+        return tool != null && "goblin_omelette_blue_cheese".equals(string(at(tool.extra, "drill_part_upgrade_module"), ""));
+    }
+    private static void hotm(Breakdown b, JsonObject member, String tree, boolean omelette) {
         JsonElement nodes = at(member, "skill_tree", "nodes", tree);
         if (!nodes.isJsonObject()) nodes = at(member, "mining_core", "nodes");
         if (!nodes.isJsonObject()) {
@@ -394,7 +398,9 @@ public final class StatBreakdown {
                 continue;
             }
             Condition condition = enabled(nodes, perk.id) ? perk.condition : Condition.unchecked("Perk toggled off in the HOTM tree");
-            add(b, "HOTM", perk.name + " " + level, perk.at(level), perk.at(perk.maxLevel), condition, Confidence.KNOWN, "");
+            int effective = level + (omelette ? 1 : 0);
+            add(b, "HOTM", perk.name + " " + level + (omelette ? " (+1 Blue Cheese)" : ""), perk.at(effective), perk.at(perk.maxLevel + 1), condition, Confidence.KNOWN,
+                    omelette ? "Blue Cheese Goblin Omelette on the drill: +1 level." : "");
         }
         Double frontLoaded = FRONT_LOADED.get(b.stat);
         if (frontLoaded != null) {
