@@ -31,7 +31,8 @@ Estimated improvement % = `100 * (yield after / yield before - 1)`.
 Cost per 1% = `purchase cost / estimated improvement %`.
 Speed/cold-only changes are available in stat queries, not assigned imaginary drop gains.
 This drop multiplier ranks every method without a rate model (all except MF Gems, MF Ruby, MF Topaz, Grotto,
-Coal, Obsidian, Tungsten, Umber and Shafting); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
+Coal, Gold, Obsidian, Tungsten, Umber, Shafting, End Stone and Cobblestone; Mycelium and Red Sand stay on it because the
+wiki lists no block strength for them); those use "Upgrade ranking by rate" below. The Upgrades tab names the model in use.
 
 Items/hour = `3600 * efficiency/100 * active blocks/sec * base drops/block * yield`.
 Coins/hour and Coleweight/hour multiply that rate by the user-entered per-item values.
@@ -242,9 +243,9 @@ Mining Fortune and may be one temporary source. Not tuned.
 
 ## Upgrade ranking by rate
 
-Methods with a `MethodRates` model (MF Gems, MF Ruby, MF Topaz, Grotto, Coal, Obsidian, Tungsten, Umber, Shafting) rank upgrades on the Upgrades
+Methods with a `MethodRates` model (every method except Mycelium and Red Sand) rank upgrades on the Upgrades
 tab by gain % = 100 x (rate after / rate before - 1), with rate = Flawless / hour for the gem methods, Coal per 30
-minutes, Obsidian per Mining Speed Boost cycle and the Dwarven Metals per hour (sections below). The gain is always computed on the hourly rate; the
+minutes, Obsidian per Mining Speed Boost cycle, the others per hour (sections below). The gain is always computed on the hourly rate; the
 window only scales what is shown, and before and after use the baseline's window (a cooldown upgrade shortens the
 cycle, which would otherwise look like a loss). The plan's running total is hourly too. Before and
 after use the same effective stats as the Rates tab (automatic totals; Type Stats overrides still win), the
@@ -611,3 +612,30 @@ Metals), default efficiency 65%, all blocks mined on the ground (airborne share 
 Fixture (Debotes, best owned gear, DR-X655, 65%): Glacite Tunnels, Mining Speed 7,255 (23 ticks, 7 during the ability),
 Fortune 1,767 + Dwarven Metal 5, Spread 300: about 200,700 Tungsten or Umber / hour per base drop. Glacite Mineshafts
 (Glacite): 25 ticks, 7 during the ability, Fortune 1,771: about 190,600 / hour per base drop. Not validated.
+
+## Rates: Gold, End Stone, Cobblestone
+
+`MethodRates.blocks` with the Coal rules, per hour (no Mining Cat window was named for these), all blocks on the ground
+(airborne share unknown).
+- Gold (Mines of Divan): Pure Gold strength 600, instamine above 60 x 600 = 36,000 (wiki Block Strength; the Gold guide's
+  36,001). Otherwise 4 ticks above 4,000, so Mining Speed counts only when Mining Speed Boost lifts it above 36,000.
+  The guide's ability-loadout swap and the bugged Goblin/Strong Arm Gold bonuses it relies on are not modelled. Base drop
+  5-7 Gold per block (wiki Mines of Divan changelog, 9 Oct 2023: "from 2-4 to 5-7"), shown at the average 6; coins at
+  the `GOLD_INGOT` buy quote. Fortune: Mining Fortune + Ore Fortune, as for ores. Open: the same changelog page says (1 Aug
+  2023) only Redstone and Emerald in the Mines are affected by Mining Fortune; whether that still holds for Pure Gold is
+  not confirmed. The Gold guide lists Fortune gear and the Mining Cat Gold page values Fortune, so Fortune is counted.
+  Default efficiency 65%. No guide rate (the guide's rates are pending).
+- End Stone: strength 30, instamine above 30 x 30 = 900 (wiki; guide 901). Cobblestone: strength 20, above 600 (wiki;
+  guide 601). Both drop 1 block (vanilla drop), take Mining Fortune + Block Fortune and default to 82.5%. Above the
+  instamine speed, Mining Speed adds nothing (1 tick per block, 20 per second while breaking).
+- Maniac Miner, which both guides use (Blue Cheese on the main drill), is not modelled (no verified rule for its Fortune).
+
+Guide check: End Stone guide 11-16M / hour, Cobblestone guide 13-16M / hour (owner-supplied `service-data/guides/`).
+An assumed hypermax (Fortune + Block Fortune about 2,750, Spread 400) gives about 8.5M / hour at 82.5%, well below both
+guides. Unexplained; candidates are Maniac Miner's Fortune, higher Spread (full Glossy Mineral set) or a block rate above
+our 20 blocks per second x efficiency. Not tuned.
+
+Fixture (Debotes, best owned gear, DR-X655): Gold (Dwarven Mines default context, 65%): Mining Speed 7,250 (4 ticks,
+25,375 during the ability, still 4), Fortune 1,767 + Ore 100, Spread 300: about 5.5M Gold / hour. End Stone and
+Cobblestone (82.5%): Mining Speed 7,150 instamines, Fortune 1,767 + Block 115, Spread 300: about 4.7M / hour.
+Not validated.

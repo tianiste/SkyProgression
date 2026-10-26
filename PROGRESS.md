@@ -69,6 +69,10 @@ fix them later; do not block on the in-game test. Order:
    **Tungsten / Umber / Shafting (Glacite) rate models (in-game test pending):** 5,600 / 5,600 / 6,000 strength, tick model
    with MSB, Dwarven Metal Fortune, per hour. Base drops vary by block (vein mix unknown; Glacite's not on the wiki), so
    rates are per 1 base drop and labelled. Fixture ~200.7k/h Tungsten/Umber, ~190.6k/h Glacite at 65%. No guide rates.
+   **Gold / End Stone / Cobblestone rate models (in-game test pending):** Pure Gold 600 (instamine > 36,000, base 5-7),
+   End Stone 30 and Cobblestone 20 (instamine > 30 x strength). Fixture: Gold ~5.5M/h at 65%; End Stone/Cobble ~4.7M/h at
+   82.5%. Hypermax estimate ~8.5M/h vs guides 11-16M / 13-16M (gap documented; Maniac Miner not modelled). Open: whether
+   Mining Fortune applies to Pure Gold (2023 changelog). Mycelium/Red Sand stay on the drop multiplier (no wiki strength).
    **Next:** owner restarts the companion (new `/stats` resale fields and prices) and checks the Upgrades tab: grinding
    labels, craft/buy notes, net-cost lines, plan resale line. Then: rate models for non-gem methods (roadmap 2).
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,

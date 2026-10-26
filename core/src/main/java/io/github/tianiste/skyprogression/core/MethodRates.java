@@ -74,6 +74,12 @@ public final class MethodRates {
                     "Base drops: Terracotta 1, Brown Terracotta 2, Smooth Red Sandstone 3 (wiki Umber); the vein mix is unknown, so the rate is per 1 base drop");
             case SHAFTING -> new Block("Glacite (Packed Ice)", 6000, 60, 0, 1, "GLACITE", "Glacite", 1, "hour", false, "No Glacite guide rate supplied",
                     "Base drop per Packed Ice is not stated on the wiki; shown per 1 base drop. Mineshaft loot and gemstones are not counted");
+            // Wiki Block Strength: Pure Gold 600 (instamine above 36,000); wiki Mines of Divan changelog (Oct 2023): base Gold 5-7.
+            case GOLD -> new Block("Pure Gold", 600, 60, 0, 6, "GOLD_INGOT", "Gold", 1, "hour", false, "No Gold guide rate yet (the guide's rates are pending)",
+                    "Base drop 5-7 Gold per Pure Gold block (wiki Mines of Divan changelog, October 2023), shown at the average 6");
+            // Non-ore blocks instamine above 30 x strength (wiki Block Strength): End Stone 30 (901), Cobblestone 20 (601).
+            case END_STONE -> new Block("End Stone", 30, 30, 0, 1, "ENDER_STONE", "End Stone", 1, "hour", false, "End Stone guide: 11M-16M / hour");
+            case COBBLESTONE -> new Block("Cobblestone", 20, 30, 0, 1, "COBBLESTONE", "Cobblestone", 1, "hour", false, "Cobblestone guide: 13M-16M / hour");
             default -> null;
         };
     }
