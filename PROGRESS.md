@@ -43,6 +43,11 @@ fix them later; do not block on the in-game test. Order:
    Breakdown fix: Glacite Expert Miner = 2 x Mining level; Mineral/Glossy tiered bonus
    counted once per set (per-piece value x pieces worn). Checked with synthetic pieces (120 Speed at level 60; 3
    Mineral pieces = 300 Spread); the fixture wears neither, so its ledger is unchanged (Spread 300).
+   Later (`2727183`, `16debfa`, `bbbcf3d`): True Dwarf/Dwarf Wannabe equipment set bonuses in upgrades (fixture Coal:
+   Titanium Gauntlet now +14 Mining Fortune over the Handwarmers); one list entry per level chain; the plan bans an
+   earlier step that a later one would replace (fixture Grotto now goes straight to Ambered instead of Lustrous then
+   Ambered); powder fix: `powder_<type>` is the unspent amount (owner: 21.2M Gemstone; the overview showed ~42M and the
+   HOTM options used ~377k), so fixture Mining Master 9 -> 10 is now free from 4.6M Glacite Powder.
    **Next:** owner checks the Upgrades tab (new cards, grinding label, plan) after restarting the companion. Then:
    unlocking new HOTM perks, Blue Cheese omelette, collections/skill as grinding; rate models for non-gem methods.
 3. Upgrade coverage: one shared catalog of upgrades with real deltas from the current state,
@@ -170,8 +175,8 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
 Latest verification (recomb, coating, gem swaps, profile perks, set bonuses, 2026-10-26): `./gradlew build
 :service:installDist` succeeded after each step; existing tests pass (the maxed-drill test now also sets coating and
 recombobulation; no tests added). Plans checked on the fixture (MF Gems, Obsidian) with a scratch runner: coating
-+6.9% on the drill once Will-o'-wisp crosses the tick; Mining Master 9 -> 10 needs 1,419,857 Glacite Powder vs
-1,338,699 unspent, so it is shown as grinding; Obsidian picks Glossy Mineral pieces. Mod screens not run by the agent.
++6.9% on the drill once Will-o'-wisp crosses the tick; Mining Master 9 -> 10 needs 1,419,857 Glacite Powder (first
+shown as grinding from a wrong unspent value, fixed in `bbbcf3d`: 4.6M unspent, so free); Obsidian picks Glossy Mineral pieces. Mod screens not run by the agent.
 Earlier verification (catalog, reforges, pets, 2026-10-26): `./gradlew build :service:installDist` succeeded after
 each step; existing tests pass (the maxed-drill test now also allows reforge swaps; no tests added). Catalog
 regenerated from a saved items resource; NEU table generated from commit `f19539bb`; rankings and plans checked on

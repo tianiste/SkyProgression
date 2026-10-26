@@ -279,8 +279,15 @@ known cost per 1% (ties: larger gain), applies it and recomputes every candidate
 Gain per step is against the state after the previous step; the total is rate (or drop multiplier) now / at the
 start - 1. Blocked and unpriced upgrades are skipped, not assumed free. A replacement base item has no known
 modifiers, so no in-place upgrades are proposed for it afterwards. Prices are the current quotes for every step
-(no market impact), and no resale of replaced items is credited. The plan is greedy: a later step can replace an
-earlier one on the same item (for example a second reforge once a tick threshold is in reach); both costs count.
+(no market impact), and no resale of replaced items is credited. The plan never pays twice for one slot: when the
+best next step would replace what an earlier step bought (a second reforge, gem, fuel tank, engine or module on one
+item; a new item in a slot whose item an earlier step enchanted, coated or replaced; a new pet after a pet step or
+Quick Claw), the earlier step is banned and the plan is recomputed, so the later choice is taken directly. Added
+levels (Efficiency, Prismatic, Polarvoid, HOTM, essence, attributes) build on each other and are not conflicts.
+
+The Upgrades list shows one entry per level chain (each HOTM perk, essence perk, attribute, Efficiency, Prismatic,
+Polarvoid and gem slot): the lowest cost per 1% among its levels, with a note of how many were hidden. Different
+reforges, drill parts, items and pets stay separate entries.
 
 ## Item catalog
 
@@ -352,7 +359,9 @@ levels, and balances shrink by what was used.
 
 Armor set bonuses with mining stats (item lore in the NEU repository; wiki Mineral and Glossy Mineral Armor):
 Miner Outfit full set +40 Mining Speed; Glacite full set +2 Mining Speed per Mining level; Mineral +100 and Glossy
-Mineral +150 Mining Spread per piece on ores and blocks (Ore and Block Fortune methods). Every armor piece swap adds
+Mineral +150 Mining Spread per piece on ores and blocks (Ore and Block Fortune methods); Mithril equipment (necklace,
+cloak, belt, gauntlet) Dwarf Wannabe +30 Mining Speed and +5 Mining Fortune, Titanium equipment True Dwarf +50 and
++40, both only in the Dwarven Mines (counted for Coal and Gold, whose default zone is the Dwarven Mines). Every armor piece swap adds
 the bonus it completes and subtracts the one it breaks, and each set is also offered as a full four-piece purchase
 (owned pieces free). Mixed Mineral/Glossy pieces are counted per set (whether they combine is unknown). Not counted:
 Goblin Smart Miner (converts Intelligence, not known to the engine) and Yog Absorb (+1 Mining Speed per 5 Yog kills).
