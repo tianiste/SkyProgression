@@ -1,65 +1,76 @@
-# SkyProgression
+<p align="center">
+  <img src="docs/logo.png" alt="SkyProgression logo" width="160">
+</p>
 
-A client-side Hypixel SkyBlock progression mod, starting with mining. It shows every mining stat itemized by source,
-your rate for each method, which gear you already own to use, and which upgrades raise your rate most per coin.
-It advises only: nothing buys, equips or mines for you.
+<h1 align="center">SkyProgression</h1>
 
-Minecraft **26.1.2**, Fabric Loader **0.20.1+**, Fabric API and Java **25**.
+<p align="center">
+  Hypixel SkyBlock mining progression, inside Minecraft.<br>
+  Every stat broken down by source, your rate for each method, and the upgrades that raise it most per coin.
+</p>
+
+<p align="center">
+  <a href="https://github.com/tianiste/SkyProgression/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/tianiste/SkyProgression"></a>
+  <img alt="Minecraft 26.1.2" src="https://img.shields.io/badge/Minecraft-26.1.2-62B47A">
+  <img alt="Fabric" src="https://img.shields.io/badge/loader-Fabric-DBD0B4">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
+
+---
+
+## Features
+
+- **Stat breakdown.** Mining Fortune, Speed, Spread, Pristine, the type Fortunes, Wisdom, Breaking Power, ability
+  cooldown, Heat/Cold Resistance and powder buffs, each split by source (gear, HOTM, skill, pet, accessories and more)
+  next to the best value you could reach.
+- **Rates for every method.** Magma Fields gems, Fairy Grotto, Coal, Obsidian, Tungsten, Umber, Glacite, Gold, End Stone,
+  Cobblestone, Mycelium and Red Sand, modelled from block strength, tick thresholds, abilities, heat and cold.
+- **Upgrades that matter.** Every upgrade ranked by how much it raises your rate per coin, a step-by-step plan, buy vs
+  craft, and resale of what it replaces.
+- **Start with what you own.** The best loadout you already have for a method, and where each piece is stored.
+- **Compare methods.** Coins per hour across every method with your own gear (instant-sell, sell offer or NPC prices).
+
+SkyProgression only gives advice. It never buys, equips or mines for you.
 
 ## Install
 
-1. Download `skyprogression-<version>.jar` from the [latest release](https://github.com/tianiste/SkyProgression/releases/latest)
-   (not the companion zip, which is optional).
-2. Put it in your Fabric 26.1.2 instance's `mods` folder next to Fabric API.
-3. In SkyBlock, enable **SkyBlock Menu > Settings > API Settings > Inventory API** (and the skill/collection options).
-4. Open the screen with `/sp` or `/skyprogression`. Your profile loads automatically.
+1. Install **Fabric Loader 0.20.1+** and **Fabric API** for Minecraft **26.1.2** (Java **25**).
+2. Download `skyprogression-<version>.jar` from the [latest release](https://github.com/tianiste/SkyProgression/releases/latest)
+   and put it in your `mods` folder.
+3. In SkyBlock, turn on **SkyBlock Menu > Settings > API Settings > Inventory API**.
+4. Type `/sp`. Your profile loads automatically.
 
-No API key and no extra program are needed: profiles and prices come from the hosted SkyProgression API at
-`https://api.skyprogression.dev` ([source](https://github.com/tianiste/SkyProgression-API)), and every calculation runs
-inside the mod. **Demo** shows the interface with clearly labelled sample data.
+No API key and no extra program are needed. Want to try it first? Press **Demo** for clearly labelled sample data.
 
-More detail, the tabs and troubleshooting: [docs/SETUP.md](docs/SETUP.md). What changed: [CHANGELOG.md](CHANGELOG.md).
+More help, every tab explained and troubleshooting: [docs/SETUP.md](docs/SETUP.md). What changed: [CHANGELOG.md](CHANGELOG.md).
 
-## What it does
+## How it works
 
-- **Home:** your stats for the method against the best you could reach, the current rate with coins per hour, the best
-  next upgrade and every method's coins per hour.
-- **Gear:** the best loadout you own for the method, where each piece is stored, and every stat split by source
-  (gear, HOTM, skill, pet and more), current vs attainable maximum.
-- **Upgrades:** a step-by-step plan and every upgrade ranked by rate gain, with costs (buy or craft, owned materials,
-  resale of what it replaces); an **Other & progress** view for bonuses the API cannot show and progress to grind.
-- **Methods:** coins per hour across methods (instant-sell, sell offer or NPC prices) and the selected method's rate
-  model with its assumptions.
+All calculations run inside the mod. The hosted SkyProgression API at `api.skyprogression.dev`
+([source](https://github.com/tianiste/SkyProgression-API)) only supplies your raw SkyBlock profile and current prices,
+so no Hypixel key ever ships in the mod. Every formula and its source is documented in
+[docs/CALCULATIONS.md](docs/CALCULATIONS.md). Unknown values stay unknown and are never treated as zero or free.
 
-Rates are our own models, described with their sources in [docs/CALCULATIONS.md](docs/CALCULATIONS.md). Unknown
-prices stay unknown and are never treated as free. This is not yet full parity with Mining Cat or SkyCompass.
+**Privacy.** The mod sends the UUID of the player you look up to the SkyProgression API. Profiles are cached there for up
+to 30 minutes to save requests and are not stored afterwards. Other players' names are looked up at Mojang, and once per
+launch the mod asks GitHub whether a newer release exists. Nothing else about you or your game is sent.
 
-## Own key or development: the local companion
+**Own key or development.** An optional local companion answers the same requests with your own Hypixel key. See
+[docs/SETUP.md](docs/SETUP.md#local-companion).
 
-The companion is a small local service that answers the same endpoints as the hosted API with your own Hypixel key.
-It is optional. Download the `service-<version>.zip` from the release, start `Start-Service.cmd`, and set
-`"backend": "http://localhost:18475"` in `config/skyprogression.json` ([details](docs/SETUP.md#local-companion)).
+## Contributing
 
-## Development
+Bug reports, mechanic corrections and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Start with [AGENTS.md](AGENTS.md) and [PROGRESS.md](PROGRESS.md) (working agreement, verified state, next task).
+## Credits
 
-```powershell
-.\gradlew.bat build :service:installDist
-```
+Inspired by Mining Cat (Mycelium Larper) and SkyCompass (banana eater). SkyProgression is an independent implementation,
+not their code or an official integration. Reforge, recipe and pet data come from the
+[NotEnoughUpdates repository](https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO) (MIT); prices from
+[Coflnet](https://sky.coflnet.com) and the Hypixel API.
 
-Build output: `build/libs/skyprogression-<version>.jar`; companion in `service/build/install/service/` (keep its `bin`
-and `lib` together). `./gradlew runClient -Ppreview` opens the offline demo from the title screen. Version pins live in
-`gradle.properties`; the `core` module is independent of Minecraft. GitHub Actions builds every push and publishes a
-GitHub Release with the jar and companion zip for each `v*` tag.
-
-Interface notes and the freeze investigation: [docs/DESIGN.md](docs/DESIGN.md). Network, disk and calculation work runs
-off the render thread with bounded response sizes and timeouts.
-
-Inspired by Mining Cat (Mycelium Larper) and SkyCompass (banana eater). This is an independent implementation, not their
-code or an official integration. Not affiliated with or endorsed by Hypixel or Mojang.
+Not affiliated with or endorsed by Hypixel, Mojang or Microsoft.
 
 ## License
 
-MIT License, see [LICENSE](LICENSE). Bundled data from the NotEnoughUpdates repository is also MIT-licensed; see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE). Bundled third-party data: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

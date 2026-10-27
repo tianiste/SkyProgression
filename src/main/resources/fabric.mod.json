@@ -3,10 +3,11 @@
   "id": "skyprogression",
   "version": "${version}",
   "name": "SkyProgression",
-  "description": "Simple, personal SkyBlock progression. Mining first.",
+  "description": "Hypixel SkyBlock mining progression: every stat by source, your rate for each method, and the upgrades that raise it most per coin.",
   "authors": ["tianiste"],
-  "contact": {"sources": "https://github.com/tianiste/SkyProgression"},
+  "contact": {"homepage": "https://github.com/tianiste/SkyProgression", "sources": "https://github.com/tianiste/SkyProgression", "issues": "https://github.com/tianiste/SkyProgression/issues"},
   "license": "MIT",
+  "icon": "assets/skyprogression/icon.png",
   "environment": "client",
   "entrypoints": {"client": ["io.github.tianiste.skyprogression.client.SkyProgressionClient"]},
   "depends": {"fabricloader": ">=0.20.1", "minecraft": "${minecraft_version}", "java": ">=25", "fabric-api": "*"}
