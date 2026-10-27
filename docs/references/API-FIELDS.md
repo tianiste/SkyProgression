@@ -31,6 +31,13 @@ the inventory and a handful of accessories.
 | Pets | `pets_data.pets[]` (`type`, `tier`, `exp`, `active`, `heldItem`, `candyUsed`) | Level derives from `exp` and rarity. Active pet observed: BAL Legendary with Quick Claw. |
 | Collections | `collection.<ID>` | Mining collections include `MITHRIL_ORE`, `GEMSTONE_COLLECTION`, `HARD_STONE`, `GLACITE`, `TUNGSTEN`, `UMBER`. |
 | Fiesta progress | `leveling.mining_fiesta_ores_mined` | Not a stat by itself. |
+| Mayor / minister perks | `v2/resources/skyblock/election` → `mayor.perks[]`, `mayor.minister.perk` | Official resource, no key. Descriptions carry the amounts (2026-10-27: Cole, "Gain +25☯ Mining Wisdom, +25% Mining Fortune"). Read by the companion for temporary ledger lines. |
+| Power scroll | tool `ExtraAttributes.power_ability_scroll` | e.g. `AMBER_POWER_SCROLL` (key from the wiki item ID; the fixture's tools hold none). |
+| Fuel tank | tool `drill_part_fuel_tank` | Its lore paragraph shows `-4% Pickaxe Ability Cooldown`; the ability's `Cooldown: 108s` line leaves the tank out (a Golden Pickaxe without one shows 108 s too). |
+| Reaper Pepper | `player_data.reaper_peppers_eaten` | Assumed key; absent on this profile. |
+| HOTM perks with new stats | `seasoned_mineman`, `keep_it_cool`, `warm_heart`, `powder_buff` | Observed (100 / 25 / 1 / 25 on this profile). `mineshaft_mayhem` is assumed and not observed. |
+| Attributes with new stats | `cavern_wisdom`, `pickaxe_cooldown`, `yog_membrane`, `atomized_mithril`, `atomized_crystals`, `fiesta_fortune` | Observed. `cold_resistance` (Wumpa) and `atomized_glacite` (Stalagmight) are assumed from the attribute names. |
+| Essence perks with new stats | `dwarven_training` (observed, 3) | `frozen_skin` (Ice Essence) assumed. |
 | Glacite progress | `glacite_player_data.fossils_donated`, `corpses_looted`, `mineshafts_entered` | Fossil donations relate to permanent rewards; effect not yet mapped. |
 
 Observed caveats:

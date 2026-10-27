@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (Start with tab). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (rest of the stat model). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -95,7 +95,20 @@ fix them later; do not block on the in-game test. Order:
    first, total before/after, "already best" when none), and a best-method hint (gear worn now vs Compare's best owned).
    Held tool = the Tool choice shared with Breakdown (API has no held item; without it no tool swap). Rules: CALCULATIONS.md
    "Start with: best owned loadout".
-   **Next:** owner restarts the companion (new `/compare` and `/start`) and checks the Compare tab and the Start with tab: piece
+   **Rest of the stat model (`2fbfa62`, `5d1f3b5`, `8014139`, `3544f5c`; in-game test pending):** Mining Wisdom, Breaking Power,
+   Pickaxe Ability Cooldown (reductions multiply), Heat and Cold Resistance (no longer manual) and All/Mithril/Gemstone/Glacite
+   powder buffs in the same ledger and `/stats`; Breakdown tab **Stats** picker (Method, General, Gemstone, Blocks & Ores, Dwarven
+   Metal, Resistance, Powder, All). New sources: Seasoned Mineman, Keep It Cool, Warm Heart, Powder Buff, Mineshaft Mayhem, Sky
+   Mall cooldown/powder, fuel tank, Amber Power Scroll, Bal/Glacite Golem/Silverfish/Mithril Golem/Scatha perks, six attributes,
+   Dwarven Training, Frozen Skin, Reaper Pepper, Core of the Mountain notes. Temporary: mayor/minister perks from the official
+   election resource (Cole's Fiesta +25% Fortune / +25 Wisdom live), mapped potion effects; never counted. Rates use the cooldown
+   ledger (103.68 s vs lore 108 s: MF Gems 12.04 -> 12.14/h). Current vs attainable maximum per source and per stat (unknown
+   while gear lines have no known maximum). Snapshot vs SkyCompass: Heat 204.5, Cold 5.4, BP 9, powder 25/10/10/0 match;
+   Wisdom 84 = their 39 + God Potion 20 + Booster Cookie 25. Rules: CALCULATIONS.md "Stat breakdown: other stats, powder buffs,
+   temporary buffs, attainable maximum".
+   **Next:** owner restarts the companion (new `/compare`, `/start`, and `/stats` with the new stats and mayor perks) and checks the
+   Breakdown tab Stats picker, the new ledgers against the in-game stat menu (Wisdom, Breaking Power, Cooldown, Heat/Cold, powder),
+   the attainable lines and check marks; then the Compare tab and the Start with tab (Start with already confirmed): piece
    list and storage labels against the game (wardrobe slot and ender chest page numbering especially), swaps after moving a piece
    to storage, Held tool, Price, God Potion, Refresh, the hint, and the old-companion message. Then roadmap 4's remaining
    "Other Upgrades/progression" view. Open: a measured session for the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule;
@@ -222,7 +235,13 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (Start with, 2026-10-27): `./gradlew build :service:installDist` succeeded after each step; existing tests
+Latest verification (rest of the stat model, 2026-10-27): `./gradlew build :service:installDist` succeeded after each step;
+existing tests pass, no tests added. GitHub Actions Build succeeded for `2fbfa62`, `5d1f3b5`, `8014139` (and was checked for
+`3544f5c` at handoff). Scratch runner on the private snapshot with the live election resource: all 18 ledgers for MF Gems
+(0.24 s per report), values quoted above and in CALCULATIONS.md; rates with lore vs ledger cooldown for MF Gems, Grotto, Coal,
+Tungsten. The companion was compiled but not run as a service (the owner's companion on 18475 was not touched); the mod's
+Breakdown tab was not run by the agent. Not checked: the in-game stat menu for the new stats, any `active_effects` entry shape.
+Earlier verification (Start with, 2026-10-27): `./gradlew build :service:installDist` succeeded after each step; existing tests
 pass, no tests added. GitHub Actions Build succeeded for `69e34a3` and `51907cd`. Scratch runner on the owner's private snapshot
 (`service-data/debotes-profiles.json`): `StartWith.of` for MF Gems, Coal and Grotto (about 0.6-0.7 s each, 8-12 KB JSON, Gson
 round-trip with null `from` and the ability intact); with no held tool chosen and an unowned tool chosen; and on a modified copy
@@ -287,31 +306,35 @@ Recent milestones:
 
 ### 1. Accurate automatic stats and loadouts (our Stat Breakdown) — next
 
-- [ ] Stat model covering all groups listed in "Resume here", with current/max per source
-  and the counted / situational / missing / trackable / untrackable states.
-  *Partial:* Fortune/Speed (`2092b32`), the four type Fortunes, both Spreads and Pristine (`d567858`); Wisdom, Breaking
-  Power and Cooldown as stats, Heat/Cold Resistance and powder buffs not yet.
-- [ ] Trackable temporary sources from the API where available (active mayor/perks such
-  as Cole's Mining Fiesta, detectable consumables); label God Potion and other
-  never-reported effects as untrackable rather than absent.
+- [x] Stat model covering all groups listed in "Resume here", with current/max per source
+  and the counted / situational / missing / trackable / untrackable states (`2fbfa62`, `3544f5c`; in-game test pending).
+  Fortune/Speed (`2092b32`), type Fortunes, Spreads, Pristine (`d567858`); Wisdom, Breaking Power, Cooldown, Heat/Cold
+  Resistance and powder buffs (`2fbfa62`). Gear stat lines have no known maximum, so most stat maxima show "unknown, at least".
+- [x] Trackable temporary sources from the API where available (mayor/minister perks from the election resource incl. Cole's
+  Mining Fiesta, mapped `active_effects`/`paused_effects`/`temp_stat_buffs`; `5d1f3b5`); God Potion and never-reported
+  effects stay "Not in the API".
 - [x] Companion `/stats` endpoint and an in-game breakdown view (implemented; in-game test pending).
 
 - [x] Parse/evaluate selected and alternative valid loadouts; don't equip stored items
   implicitly or stack incompatible accessory/pet/gear alternatives (`Loadout`, `2092b32`).
 - [ ] Armor/equipment/tool base stats, reforges, recombobulation, gemstones, enchants,
   powder coatings, scrolls, drill engine/tank/omelette and set bonuses.
-  *Partial:* all of these except scrolls are in the ledger (Blue Cheese +1 HOTM level since `c2fbd33`).
+  *Partial:* all of these are in the ledger (Blue Cheese +1 HOTM level since `c2fbd33`; Amber Power Scroll since `2fbfa62`,
+  situational); scrolls are not upgrade options yet.
 - [ ] Mining skill, HOTM/Peak perks and allocated powder, collections, essence shops,
   accessory contributions, permanent consumables and attributes.
-  *Partial:* every mining stat from skill, HOTM perks (with Blue Cheese), collections, Eager Miner, Rhinestone
-  Infusion, accessories and six attributes. Powder buffs, Peak of the Mountain and consumables not yet.
+  *Partial:* every mining stat from skill, HOTM perks (with Blue Cheese), collections, essence perks, accessories, attributes,
+  powder buffs, Core of the Mountain (notes) and Reaper Pepper. Not encoded: Echo of Wisdom/Echoes, keys never observed
+  (Frozen Skin, Wumpa, Atomized Glacite, Mineshaft Mayhem, Reaper Pepper are assumed).
 - [ ] Pet rarity/level/abilities/items and method/location-dependent bonuses.
   *Partial:* level from XP; Bal/Scatha/Mithril Golem/Silverfish stats and Quick Claw.
 - [ ] Model gem/ore/block/dwarven Fortune, Speed, both Spreads, Pristine and Cold
   Resistance with conditions; keep uncheckable sources explicit.
-  *Partial (`d567858`):* all of these except Cold Resistance (manual).
+  *Partial (`d567858`, `2fbfa62`):* all of these, Cold Resistance included; Cold is not applied to Glacite rates (unknown Cold build-up).
 - [ ] Full current/max breakdown with compatible, attainable targets; do not sum
   mutually exclusive maxima or call a base-item bar a maxed account.
+  *Partial (`3544f5c`):* per-source and per-stat attainable with this loadout; gear stat-line maxima (reforge, gems,
+  enchantments) and other-loadout maxima (best tool/pet/armor/tree) are not modelled, so they show as unknown.
 
 ### 2. Method-specific yield and rate engine
 
@@ -321,8 +344,8 @@ Recent milestones:
   Cobblestone: correct blocks, gear constraints, bonuses and default efficiency (same status; guide gaps documented).
 - [ ] Speed breakpoints/instant mining, abilities/cooldown uptime, spread availability,
   heat/cold, drops and Pristine effects. Document simplified route assumptions.
-  *Partial:* tick thresholds, instamine, airborne share, Mining Speed Boost uptime, Spread and Pristine are modelled;
-  heat/cold, Maniac Miner and secondary drops (Hard Stone, other grotto gems, mineshaft loot) are not.
+  *Partial:* tick thresholds, instamine, airborne share, Mining Speed Boost uptime (cooldown ledger since `8014139`), Spread and
+  Pristine are modelled; heat/cold (Cold rule stated, not applied), Maniac Miner and secondary drops (Hard Stone, other grotto gems, mineshaft loot) are not.
 - [x] Automatically sourced coins/hour; correct units, price source/time and explicit rate assumptions; manual scenario
   kept (`c4a67e6`, `4cf9fb0`; in-game test pending). Coleweight coefficients could not be verified: documented as unknown.
 - [x] Show equal gear deltas producing different value in different methods (Upgrades cross-method line, Compare
@@ -401,6 +424,14 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-27 (rest of the stat model): `Stat` gains MINING_WISDOM, BREAKING_POWER, PICKAXE_ABILITY_COOLDOWN, HEAT_RESISTANCE and
+four powder stats (appended, so Type Stats keeps its first ten); `Stat.percent`. `StatBreakdown.SUPPORTED` = all stats,
+`RATE_STATS` (comparison, Start with), `GROUPS`, new perks/attributes/essence/pet rows, `toolExtras`, `consumables`, `ability`,
+mapped `temporary`, `mayor`/`MayorPerk`, `effectiveAbility` (rates), `partMaximum`. `Breakdown.total` multiplies cooldown
+reductions; `attainable`/`attainableKnown`/`unknownMaxima`. Companion: cached election fetch, `StatsReport.of(..., perks)`.
+`ProfileUpgrades` skips essence/attributes without a cost table (ledger only). UI: Stats picker, percent units, attainable meter,
+check marks. Open: assumed API keys (listed in API-FIELDS.md), Echo of Wisdom, gear maxima, Cold build-up for Glacite rates.
 
 2026-10-27 (Start with): new `StartWith` (Report/Piece/Scenario/Swap, `of`, `where`, `petItem`), `Loadout.copy`, companion
 `/start` (same parameters as `/stats` minus `gear`), `ClientData` start request (cancelled with the others, stale responses

@@ -189,7 +189,7 @@ Added 2026-10-26. The same ledger, states, loadouts and `/stats` report now cove
 Metal and Block Fortune, Mining Spread, Gemstone Spread and Pristine (`StatBreakdown.SUPPORTED`). The
 Breakdown tab shows the method's stats (`MiningMethod.relevantStats`: Mining Fortune, Mining Speed, the
 method's fortune type, its spread, and Pristine for gems) plus the focused stat. All automatic totals feed
-Upgrades and Rates; a value typed in Type Stats overrides that stat. Cold Resistance stays manual.
+Upgrades and Rates; a value typed in Type Stats overrides that stat. Cold Resistance became automatic on 2026-10-27 (next section).
 
 Context: the Magma Fields are a zone of their own (inside the Crystal Hollows, so "in the Crystal Hollows"
 bonuses also apply there) and the default for MF Gems/Ruby/Topaz. Block Fortune methods use the new
@@ -241,6 +241,85 @@ before Bal's Furnace (the menu was not taken in the Magma Fields; with it 16.31)
 195, Ore Fortune 100 vs 110, Block Fortune 115 vs 125: the gaps are unexplained. The flat +10 Ore and +10
 Block fit consumed Dwarven O's cereals (untrackable); the +15 Gemstone Fortune matches the unexplained +15
 Mining Fortune and may be one temporary source. Not tuned.
+
+## Stat breakdown: other stats, powder buffs, temporary buffs, attainable maximum
+
+Added 2026-10-27. The ledger, states and `/stats` now cover every `Stat`: Mining Wisdom, Breaking Power, Pickaxe Ability
+Cooldown, Heat and Cold Resistance (no longer manual) and the powder buffs All / Mithril / Gemstone / Glacite Powder (percent
+stats). The Breakdown tab has a **Stats** picker: Method (the method's stats plus the focused one, as before), the groups
+General, Gemstone, Blocks & Ores, Dwarven Metal, Resistance, Powder (`StatBreakdown.GROUPS`, SkyCompass's groups as a feature
+spec), or All. The comparison and Start with tabs compute only the rate stats (`StatBreakdown.RATE_STATS`).
+
+Sources (wiki pages fetched 2026-10-27 through the wiki API; <https://hypixelskyblock.minecraft.wiki/w/...>):
+- Gear: stat lines `Mining Wisdom: +9`, `Heat Resistance: +10`, `Cold Resistance: +5` count once as for Fortune; tools show
+  `Breaking Power 9` without a colon (`GearReader`). Lore paragraphs "+N% ... Mithril Powder" count as the percentage itself.
+- Pickaxe Ability Cooldown (wiki Heart of the Mountain, "Cooldown Reductions": reductions stack **multiplicatively**, so the
+  total is 1 - product(1 - r)): fuel tank by `drill_part_fuel_tank` (wiki Drill Parts 2/4/6/10%, checked against the tank
+  paragraph `-4% Pickaxe Ability Cooldown`), Pickaxe Cooldown attribute (Abyssal Miner Shard, Epic, 1% per level), Sky Mall
+  -20% (situational, or temporary on its day), Mineshaft Mayhem -25% (situational; key `mineshaft_mayhem` assumed). Fixture:
+  Titanium-Infused tank 4% and attribute 10 -> 13.6% (SkyCompass shows the plain sum, 14%).
+- Mining Wisdom (wiki Mining Wisdom): Seasoned Mineman 5 + 0.1/level (Tier 4 template, max 100); Cavern Wisdom (Cavernshade,
+  Epic, 0.5/level); Dwarven Training (Gold Essence, `dwarven_training`, 3 / 5 / 10 on Mining Islands, wiki Essence
+  Shops/Gold); Silverfish Experienced Burrower 0.2 / 0.25 / 0.3 per level (Rare / Epic / Legendary); God Potion Mining XP
+  Boost III +20 (assumed with the God Potion toggle); Booster Cookie +25 when `profile.cookie_buff_active` (owner decision:
+  the cookie is read from the API, so it counts). Fixture: 9 drill + 15 + 5 + 10 = 39 (= SkyCompass) + God Potion 20 + Cookie
+  25 = 84. Not encoded: Echo of Wisdom / Echo of Echoes (keys unobserved), Magic 8 Ball, Glacial talismans on Jerry's Workshop.
+- Breaking Power (wiki Breaking Power): the tool's line; Maniac Miner +1 while active when it is the selected ability
+  (`skill_tree.selected_ability.mining`, situational). The Breakdown tab says whether the method's requirement is met.
+- Heat Resistance (wiki Heat Resistance): gear lines (Divan +10 each, Blazing reforge +2), Keep It Cool 0.4/level (Tier 6,
+  max 50), Bal 1.5 per level (also NEU petnums), Yog Membrane (Yog Shard, Common, 1/level). Fixture 204.5 (= SkyCompass).
+  Lanterns are untrackable.
+- Cold Resistance (wiki Cold Resistance): gear lines (Dwarven Handwarmers +5), Warm Heart 0.4/level (Tier 8, max 50), Glacite
+  Golem 0.1/level, Cold Resistance attribute (Wumpa Shard, Legendary, 0.5/level; key `cold_resistance` assumed), Frozen Skin
+  (Ice Essence, 1/level up to 5; key `frozen_skin` assumed), Reaper Pepper (+1 each up to 5; `player_data.reaper_peppers_eaten`
+  assumed, absent on the fixture), Mineshaft Mayhem +10 (situational). Fixture 5.4 (= SkyCompass). Lanterns, potions, Cut
+  Loose stacks and the Corpse-Flavored Century Cake are untrackable.
+- Powder buffs (wiki Powder Sources tables, Tier 7 template): Powder Buff 1%/level (All Powder, max 50); Atomized Mithril
+  (Star Sentry, Rare), Atomized Crystals (Thyst, Rare), Atomized Glacite (Stalagmight, Rare; key `atomized_glacite` assumed)
+  at 1%/level, with the sources each one boosts in the note; Mithril Golem The Smell Of Powder 0.2%/level (Legendary+), Scatha
+  Bejeweled Eyes 0.2%/level (Legendary+), Glacite Golem Powder-powered 0.1 / 0.15 / 0.2 %/level (NEU petnums and item lore);
+  Sky Mall +15% Powder (`current_daily_effect` `powder_bonus`, mapped by name, temporary). Fixture 25 / 10 / 10 / 0
+  (= SkyCompass). Core of the Mountain's base powder per block (level 4 / 6 / 8, Tier 5 template) is a note, not a percentage.
+- Peak of the Mountain: Core of the Mountain levels (`core_of_the_mountain` in each tree, `mining_2..5` included) give no
+  stat (wiki Tier 5 template): level 2 adds a pickaxe ability level, levels 1/5/7/10 add tokens (already used by the HOTM
+  unlock options), levels 4/6/8 add base powder. Shown as notes on the cooldown and All Powder ledgers.
+- Scrolls (wiki Power Scrolls): only the Amber Power Scroll touches mining (+30 Mining Speed for 5 s after the RIGHT CLICK
+  ability, not boosted by Mining Speed Boost); read from the tool's `power_ability_scroll`, situational, never counted.
+- Permanent consumables the API exposes: Reaper Pepper only (above). Dwarven O's cereals stay untrackable.
+
+Temporary buffs (owner decision 2026-10-26: listed, never counted):
+- Mayor and minister perks from the official election resource (`v2/resources/skyblock/election`, no key; companion cache
+  20 minutes, retried after 5 minutes on failure). Each perk description is parsed for "+N [%] <stat>"; percentages of
+  Fortune are additive % lines. Since 2026-08-25 the Mining Fiesta lasts the whole mayorship (wiki Cole, Mining Fiesta), so
+  Cole's perk means the Fiesta is on: +25% Mining Fortune and +25 Mining Wisdom (live check 2026-10-27, Cole is mayor). It
+  replaces the untrackable Mining Fiesta line, and Fiesta Fortune (Packrat Shard, Uncommon, 5 Gemstone Fortune/level, wiki)
+  turns from situational into temporary.
+- `active_effects` / `paused_effects` / `temp_stat_buffs`: known potion keys `haste` (50/level), `spelunker` (5/level),
+  `cold_resistance` (2.5/level), `mining_xp_boost` (5 / 10 / 20) map to their stat (key names assumed from the potion
+  names; the observed profile reported none). A `temp_stat_buffs` entry naming a stat with an amount uses that amount;
+  anything else stays temporary with an unknown value. The God Potion and anything the API never reports stay "Not in the API".
+
+Rates: Mining Speed Boost uptime now uses the cooldown ledger, 120 s (wiki, every level) x product(1 - counted reductions),
+via `StatBreakdown.effectiveAbility` (Breakdown, Compare, Start with, Upgrades). The DR-X655 and a Golden Pickaxe without a
+tank both show `Cooldown: 108s` (= 120 x 0.9, the attribute), so the lore leaves out the fuel tank; the ledger gives 103.68 s.
+Fixture effect: MF Gems 12.04 -> 12.14 Flawless/h, Grotto 6.72 -> 6.80, Tungsten +1%, Coal +0.1%. Glacite methods (Umber,
+Tungsten, Shafting) state the Cold rule (Mining Speed loss (Cold - Cold Resistance) / 2 % above Cold Resistance, wiki Cold
+Resistance) but apply no loss: how much Cold builds up during a session is unknown. Wisdom, Heat Resistance, Breaking Power
+(beyond the existing tool requirement) and powder have no rate use yet and are only shown.
+
+Attainable maximum (`Breakdown.attainable`, `StatsReport.Ledger.attainable/attainableKnown/unknownMaxima`):
+- Each row shows current / its source's own maximum, or "maxed" with a check mark. The maximum keeps the source: the same
+  pet at level 100, the same HOTM perk at its maximum level (+1 only when the Blue Cheese omelette is fitted, since it shares
+  the module slot with Sunny Side), the drill's engine or module slot at the best part for that stat (wiki Drill Parts),
+  attributes at level 10, essence perks, collections and skill at their maxima, the fuel tank slot at -10%.
+- The stat's attainable total keeps this loadout (one tool, one pet, one armor and equipment set, one HOTM tree): counted
+  sources at their maxima plus missing attributes, essence perks (only where their zone applies), collections, skill,
+  consumables, Booster Cookie and an empty fuel tank slot. Missing HOTM perks (tokens limit one tree), set bonuses (other
+  armor), other pets/tools, situational, temporary and untrackable sources are not added, so it is never a maxed account.
+- Gear stat lines have no maximum from a primary source (it depends on reforge, gems, enchantments and recombobulation), so
+  any stat with a counted gear line shows "Attainable: unknown, at least X" with X = the total with those lines as they are.
+  Fixture: Fortune unknown (at least 1,842.7), Cold unknown (at least 40), cooldown 19% (tank 10% and attribute 10%), All
+  Powder 50%, Mithril / Gemstone / Glacite Powder 10%.
 
 ## Upgrade ranking by rate
 
@@ -474,7 +553,7 @@ only for Obsidian, Shafting/metals and Coal).
   assumed to apply to all counted Mining Speed. Reference values (wiki Mining Speed Boost,
   <https://hypixelskyblock.minecraft.wiki/w/Mining_Speed_Boost>): level 1/2/3 = +200/250/300% for 10/15/20 s,
   120 s cooldown, reductions multiply. The fixture's lore shows 108 s = 120 x 0.9 (Pickaxe Cooldown 10);
-  whether the lore also includes the fuel tank's -4% is not verified (it would give 103.7 s). Maniac Miner is
+  since 2026-10-27 the rates use the cooldown ledger instead (103.68 s with the tank; see "Stat breakdown: other stats"). Maniac Miner is
   not modelled (no speed boost).
 - Blocks / hour = 3600 x efficiency x 20 x (uptime / boosted ticks + (1 - uptime) / ticks) x (1 + Gemstone
   Spread / 100). Every spread block is assumed to be another gemstone; travel time is part of the efficiency.

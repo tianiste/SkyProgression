@@ -130,3 +130,12 @@ Using wiki values: Mist +50 Fortune / +250 Speed, God Potion Spelunker V +25 For
   The best candidate is Doug's Fortunate Festivity at level 3 (+5 per level, Mining Fiesta only),
   which is temporary anyway. Unconfirmed.
 - Multiplier: in-game 1.26 - Mining Fiesta 0.25 = 1.01 (Auspicious), as encoded.
+
+## Comparison of the other stats (2026-10-27)
+
+Our ledger on the private snapshot (equipped, DR-X655, MF Gems context) against the SkyCompass capture above:
+Breaking Power 9 = 9; Heat Resistance 204.5 = 204.5 (Divan 40, Blazing equipment 8, Bal 145.5, Keep It Cool 10, Yog
+Membrane 1); Cold Resistance 5.4 = 5.4; All / Gemstone / Mithril / Glacite Powder 25 / 10 / 10 / 0 = theirs.
+Mining Wisdom: 39 from gear, HOTM, attribute and essence (= theirs), plus the God Potion (+20, assumed) and the active
+Booster Cookie (+25, read from the API) that we count by owner decision: 84. Pickaxe Ability Cooldown: theirs 14% is the
+plain sum; the wiki says reductions multiply, so ours is 13.6%. Their maxima were not used.
