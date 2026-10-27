@@ -21,9 +21,12 @@ with a fixed IP works the same way.
 2. Open TCP 80 and 443: in the VM subnet's security list add ingress rules from `0.0.0.0/0`, and on the VM itself
    (Oracle's Ubuntu images also filter with iptables):
    ```bash
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+   # Insert above Oracle's REJECT rule (its line number differs between images).
+   R=$(sudo iptables -L INPUT -n --line-numbers | awk '/REJECT/ {print $1; exit}')
+   sudo iptables -I INPUT $R -m state --state NEW -p tcp --dport 443 -j ACCEPT
+   sudo iptables -I INPUT $R -m state --state NEW -p tcp --dport 80 -j ACCEPT
    sudo netfilter-persistent save
+   sudo iptables -L INPUT -n --line-numbers   # 80 and 443 must be listed above REJECT
    ```
    Port 18475 stays closed: the companion only listens on 127.0.0.1.
 3. In Cloudflare DNS for `skyprogression.dev`, add an `A` record `relay` -> the reserved IP with **Proxy status: DNS
