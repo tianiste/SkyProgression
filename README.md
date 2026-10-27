@@ -1,8 +1,9 @@
 <p align="center">
-  <img src="docs/logo.png" alt="SkyProgression logo" width="160">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/lockup-stacked-dark-bg.png">
+    <img src="docs/brand/lockup-stacked-light-bg.png" alt="SkyProgression" width="420">
+  </picture>
 </p>
-
-<h1 align="center">SkyProgression</h1>
 
 <p align="center">
   Hypixel SkyBlock mining progression, inside Minecraft.<br>
