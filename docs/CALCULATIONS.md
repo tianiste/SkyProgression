@@ -165,7 +165,9 @@ Rules:
   Glacite Mineshafts, Sky Mall +50 Fortune / +100 Speed on the matching random day. The day's buff
   is `mining_core.current_daily_effect`: `dig_speed` counts +100 Speed on Mining Islands (matched
   in game 2026-10-26); the Fortune code is not yet observed, so that buff stays situational.
-  Front Loaded, Mineshaft Mayhem and Eager Adventurer are not encoded: their API keys are unobserved.
+  Eager Adventurer +4 Mining Speed/level and Steady Hand +0.1 Gemstone Spread/level (max 100 each) in Glacite
+  Mineshafts (wiki `Template:Heart_of_the_Mountain/List/Tier_9`, `/Tier_8`; NEU `hotmlayout.json`). Front Loaded
+  (+150 Gemstone Fortune, +250 Mining Speed, first 2,500 Gemstones a day, `/Tier_4`) and Mineshaft Mayhem are situational.
   A drill holding the Blue Cheese Goblin Omelette (`drill_part_upgrade_module` = `goblin_omelette_blue_cheese`) adds
   +1 level to every unlocked perk above, past the level cap (wiki <https://hypixelskyblock.minecraft.wiki/w/Blue_Cheese_Goblin_Omelette>:
   "adds +1 level to all unlocked Heart of the Mountain perks; it's able to bypass the level cap"); the maximum shown
@@ -243,11 +245,21 @@ Rules (fetched 2026-10-26):
   the Earth (Worm/Scatha chance) give none of these stats.
 - God Potion and Booster Cookie lines appear on Fortune/Speed only.
 - Not in the API (untrackable, listed with ranges): Dwarven O's cereals (Gemstone Grahams, Ore Oats, Block
-  Bran, Metallic Minis; +2 per bowl), Dwarven Expertise (Researcher Beryl shop perk, key not identified),
-  Chilled Pristine Potato, Will-o'-wisp Gemstone Spread, Sheer Force (ability uptime, not a stat).
-- Not encoded yet (unknown key or rule): Gold Box / Royal Riches attributes (keys unobserved), Goblin and
-  Snail pet perks, Glacite Golem corpses, Fungus/Harena Fortuna, Lapidary outside the lore line, Front Loaded's
-  day count.
+  Bran, Metallic Minis; +2 per bowl), Chilled Pristine Potato, Will-o'-wisp Gemstone Spread, Sheer Force (ability uptime, not a stat).
+- Added 2026-10-27 (wiki shard, pet and essence pages; API keys taken from the names and not yet observed, so a
+  wrong key shows the source as missing): attributes Ultimate DNA +1/level Mining Fortune, Sleepy Spread +1/level
+  Spread, Gold Box +5/level Ore Fortune, Royal Riches +5 Speed / +2.5 Ore Fortune per level (Mines of Divan,
+  situational), Greedy Goblin +1/level Ore Fortune with a Goblin pet, Freezing Spread +0.5 Gemstone Spread per
+  (30 - level) Cold Resistance in Mineshafts; Echo of Boxes / Wisdom / Atomized +2%/level of their family, times
+  (1 + 5%/level Echo of Echoes). Essence: Dwarven Expertise +2/level Dwarven Metal Fortune (Mining Islands), Cut
+  Loose +0.5 Cold Resistance per kill per level up to 10 kills, Fungus/Harena Fortuna +2/level Mining Fortune on
+  Mycelium/Red Sand (situational: the block is not a context target). Pets: Goblin (Ore Fortune 1/level, Grunt Work
+  2.5 Speed/level on Ores, Fetid Thief 1 Spread/level in the Mines of Divan), Snail (Slimy Reach 4 Spread/level on
+  blocks; Slow and Steady Block Fortune per Speed above 100 is unknown, Speed is not in the API), Kuudra (1 Fortune/level
+  on the Crimson Isle), Mammoth / Baby Yeti / Penguin Cold Resistance, Mammoth and Glacite Golem per-corpse perks and
+  Penguin per-player Cold Resistance (situational, one shown). Hephaestus Relic: +50% of the pet's base stats.
+- Not encoded yet: Lapidary outside the lore line, Front Loaded's day count. Crow: the wiki gives it only weapon
+  ability cooldown, so the community claim that it beats Bal for pickaxe cooldown is not encoded.
 
 Fixture check (equipped, DR-X655, MF Gems context) against the owner's in-game menu of 2026-10-26:
 Mining Spread 300 = 300, Gemstone Spread 2.5 = 2.5, Dwarven Metal Fortune 5 = 5, Pristine 13.4 = 13.4
