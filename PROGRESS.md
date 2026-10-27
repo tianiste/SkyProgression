@@ -20,9 +20,9 @@ locally: with secret 200, without 404, unknown name 404, `/prices` still 404). W
 being skipped and the Worker's own key is rejected, it asks the relay at once (success clears the skip); both rejected
 -> 503 `bad_key` "Both of the server's Hypixel API keys were rejected"; relay down + own key rejected -> 503 naming
 both. `/uuid` asks the relay when Mojang refuses the Worker (older relay's "Unknown endpoint" -> 502, not "not found").
-Deployed 2026-10-27: `/health` ok (relay true, 334 prices), `/profile` 200 (206 KB, 0.25 s); `/uuid` 502 "Mojang is
-unavailable" because the VM still runs the old relay (no `/uuid`). **Owner next:** update the VM relay per
-deploy/relay/README.md "Updating the relay", then check `https://api.skyprogression.dev/uuid?name=Debotes`; test 0.4.0
+Deployed 2026-10-27: `/health` ok (relay true, 334 prices), `/profile` 200 (206 KB, 0.25 s); VM relay updated to the
+0.4.0 companion the same day (deploy/relay/README.md "Updating the relay"; SSH key `~/.ssh/ssh-key-2026-10-27.key`):
+`/uuid` via the API now resolves names (Debotes, Technoblade; unknown name -> 404 `not_found`). **Owner next:** test 0.4.0
 in game (Load with the default config, the update notice once a newer release exists).
 
 **Deployed (2026-10-27):** the owner deployed the Worker at <https://skyprogression-api.tian-istenic34.workers.dev>;
