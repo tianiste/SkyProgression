@@ -121,7 +121,7 @@ public final class StartWith {
     static Scenario scenario(JsonObject member, Loadout l, StatContext context, MiningMethod m) {
         Scenario s = new Scenario();
         List<Stat> relevant = m.relevantStats();
-        for (Stat stat : StatBreakdown.SUPPORTED) {
+        for (Stat stat : StatBreakdown.RATE_STATS) {
             Breakdown b = StatBreakdown.compute(member, l, context, stat);
             s.stats.put(stat, b.total());
             if (relevant.contains(stat) && !b.complete()) s.complete = false;

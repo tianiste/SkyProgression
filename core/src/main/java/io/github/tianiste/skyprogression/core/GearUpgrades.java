@@ -40,7 +40,7 @@ public final class GearUpgrades {
         ENGINES.put("amber_polished_drill_engine",new double[]{600,100});
         MODULES.put("goblin_omelette_sunny_side",new double[]{0,50});MODULES.put("starfall_seasoning",new double[]{25,10});
     }
-    private static final Map<String,String> PART_NAMES=Map.ofEntries(
+    static final Map<String,String> PART_NAMES=Map.ofEntries(
             Map.entry("mithril_fuel_tank","Mithril-Infused Fuel Tank"),Map.entry("titanium_fuel_tank","Titanium-Infused Fuel Tank"),
             Map.entry("gemstone_fuel_tank","Gemstone Fuel Tank"),Map.entry("perfectly_cut_fuel_tank","Perfectly-Cut Fuel Tank"),
             Map.entry("mithril_drill_engine","Mithril-Plated Drill Engine"),Map.entry("titanium_drill_engine","Titanium-Plated Drill Engine"),

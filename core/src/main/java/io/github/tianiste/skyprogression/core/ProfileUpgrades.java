@@ -129,6 +129,7 @@ public final class ProfileUpgrades {
         Condition islands = Condition.zones(StatContext.MINING_ISLANDS, "On Mining Islands");
         for (StatBreakdown.Essence e : StatBreakdown.ESSENCE) {
             String type = ESSENCE_TYPE.get(e.id()), resource = "ESSENCE_" + type;
+            if (type == null) continue; // shown in the ledger only (no rate use)
             available.put(resource, number(at(member, "currencies", "essence", type, "current"), 0));
             int level = (int)number(at(perks, e.id()), 0);
             String chain = "essence:" + e.id();
@@ -147,6 +148,7 @@ public final class ProfileUpgrades {
         if (!stacks.isJsonObject()) return;
         for (StatBreakdown.Attribute a : StatBreakdown.ATTRIBUTES) {
             String shard = SHARDS.get(a.id());
+            if (shard == null) continue; // shown in the ledger only (no rate use)
             int[] cumulative = StatBreakdown.ATTRIBUTE_SHARDS.get(a.rarity());
             int have = (int)number(at(stacks, a.id()), 0), level = 0;
             for (int needed : cumulative) if (have >= needed) level++;

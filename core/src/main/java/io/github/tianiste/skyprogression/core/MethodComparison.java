@@ -181,7 +181,7 @@ public final class MethodComparison {
             e.zone = context.zone() == null ? "" : context.zone().label;
             e.ability = MethodRates.ability(best.tool);
             List<Stat> relevant = m.relevantStats();
-            for (Stat s : StatBreakdown.SUPPORTED) {
+            for (Stat s : StatBreakdown.RATE_STATS) {
                 Breakdown b = StatBreakdown.compute(member, best, context, s);
                 e.stats.put(s, b.total());
                 if (relevant.contains(s) && !b.complete()) e.complete = false;

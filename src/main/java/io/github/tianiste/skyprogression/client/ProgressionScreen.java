@@ -18,6 +18,8 @@ public final class ProgressionScreen extends Screen {
     private final ClientData data=ClientData.INSTANCE;
     private MiningMethod method=MiningMethod.MF_GEMS;
     private Stat stat=Stat.MINING_FORTUNE;
+    /** Breakdown tab stat group: "Method" (the method's stats plus the focused one), "All", or a StatBreakdown.GROUPS key. */
+    private String statGroup="Method";
     private boolean autoLoadTried;
     private int lastRevision, tab, left, top, span, bottom, bodyTop, bodyBottom, scroll, contentHeight, analysisGeneration;
     private boolean wide, calculating;
@@ -99,13 +101,19 @@ public final class ProgressionScreen extends Screen {
     private void typeStats(){minecraft.setScreen(new InputsScreen(this,data.inputs(method),method));}
     private void breakdownControls(int y){
         Profile p=data.profile();var i=data.inputs(method);boolean live=p!=null&&!data.demo;
-        int w=(span-18-16)/5,x=left+9;
-        button("Gear: "+(i.equippedGear?"Equipped":"Best owned"),x,y,w,!i.equippedGear,()->{i.equippedGear=!i.equippedGear;persist();refresh();}).active=live;
-        button("Tool: "+toolName(i.tool)+" v",x+w+4,y,w,false,this::selectTool).active=live;
+        int w=(span-18-20)/6,x=left+9;
+        button("Stats: "+statGroup+" v",x,y,w,false,this::selectGroup).active=live;
+        button("Gear: "+(i.equippedGear?"Equipped":"Best owned"),x+w+4,y,w,!i.equippedGear,()->{i.equippedGear=!i.equippedGear;persist();refresh();}).active=live;
+        button("Tool: "+toolName(i.tool)+" v",x+2*(w+4),y,w,false,this::selectTool).active=live;
         StatContext.Zone z=data.zone(method);
-        button("Zone: "+(z==null?"Not chosen":z.label)+" v",x+2*(w+4),y,w,false,this::selectZone).active=live;
-        button("God Potion: "+(i.godPotion?"On":"Off"),x+3*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
-        button(data.statsLoading(method)?"Loading...":"Refresh",x+4*(w+4),y,span-18-4*(w+4),false,()->{data.refreshStats();refresh();}).active=live&&!data.statsLoading(method);
+        button("Zone: "+(z==null?"Not chosen":z.label)+" v",x+3*(w+4),y,w,false,this::selectZone).active=live;
+        button("God Potion: "+(i.godPotion?"On":"Off"),x+4*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
+        button(data.statsLoading(method)?"Loading...":"Refresh",x+5*(w+4),y,span-18-5*(w+4),false,()->{data.refreshStats();refresh();}).active=live&&!data.statsLoading(method);
+    }
+    private void selectGroup(){
+        List<String> groups=new ArrayList<>();groups.add("Method");groups.addAll(StatBreakdown.GROUPS.keySet());groups.add("All");
+        List<String> labels=groups.stream().map(g->g.equals("Method")?"Method: stats that change "+method.label+" rates":g.equals("All")?"All stats":g+": "+String.join(", ",StatBreakdown.GROUPS.get(g).stream().map(s->s.label).toList())).toList();
+        minecraft.setScreen(new ChoiceScreen(this,"Stat group",labels,n->{statGroup=groups.get(n);scroll=0;}));
     }
     private void compareControls(int y){
         boolean live=data.profile()!=null&&!data.demo;int w=(span-18-12)/4,x=left+9;
@@ -437,25 +445,30 @@ public final class ProgressionScreen extends Screen {
         used.line(r.accessories+" accessories from the accessory bag, one per family.",MUTED);
         if(r.hotmTrees>1)used.line(StatBreakdown.treeLabel(r.hotmTree)+" of "+r.hotmTrees+": best for "+method.label+" (the API does not show which tree is active).",CYAN);
         if(r.bestGear)used.line("Picked from all readable storage; equip these pieces to reach this total. Gear: Equipped shows what you wear now.",MUTED);
-        // Only the method's stats (plus the focused one); the rest still feed Upgrades and Rates.
-        var shown=method.relevantStats();
-        var ledgers=new ArrayList<>(r.stats.stream().filter(l->shown.contains(l.stat)||l.stat==stat).toList());ledgers.sort(Comparator.comparing(l->l.stat!=stat));
+        // Method: only the method's stats (plus the focused one); the rest still feed Upgrades and Rates.
+        List<Stat> shown=statGroup.equals("All")?Arrays.asList(Stat.values()):StatBreakdown.GROUPS.getOrDefault(statGroup,method.relevantStats());
+        boolean byMethod=statGroup.equals("Method");
+        var ledgers=new ArrayList<>(r.stats.stream().filter(l->shown.contains(l.stat)||byMethod&&l.stat==stat).toList());
+        ledgers.sort(Comparator.comparing(l->byMethod&&l.stat!=stat));
+        if(ledgers.isEmpty())card("No stats in this group",MUTED,0).line("Restart the companion: an older companion does not send the new stats.",TEXT);
         int column=0;
         for(var l:ledgers){
             int col=column++%2;
-            Card head=card(l.stat.label+" | "+(l.complete?"":"at least ")+fmt(l.total),col==0?GOLD:CYAN,col);
-            head.line("Flat "+fmt(l.flat)+(l.multiplier!=1?" x "+fmt(l.multiplier)+" from additive % buffs":""),TEXT);
+            Card head=card(l.stat.label+" | "+(l.complete?"":"at least ")+amount(l.stat,l.total),col==0?GOLD:CYAN,col);
+            if(l.stat==Stat.PICKAXE_ABILITY_COOLDOWN)head.line("Reductions multiply: 1 - product of (1 - each). Sum of the parts: "+amount(l.stat,l.flat),TEXT);
+            else head.line("Flat "+amount(l.stat,l.flat)+(l.multiplier!=1?" x "+fmt(l.multiplier)+" from additive % buffs":""),TEXT);
+            if(l.stat==Stat.BREAKING_POWER&&method.breakingPower()!=null)head.line(method.label+" needs Breaking Power "+method.breakingPower()+(l.total>=method.breakingPower()?": met.":": not met with this tool."),l.total>=method.breakingPower()?GREEN:RED);
             if(r.tool.isEmpty())head.line("No readable mining tool is owned, so tool stats are missing.",RED);
             if(!l.complete)head.line("Some counted sources have unknown values, so this is a lower bound.",RED);
-            if(r.bestGear&&l.equipped!=null)head.meter("Wearing now: "+fmt(l.equipped),l.equipped,Math.max(l.equipped,l.total));
-            if(!r.bestGear&&l.bestOwned!=null)head.meter("Best owned gear: "+fmt(l.bestOwned),l.total,Math.max(l.total,l.bestOwned));
+            if(r.bestGear&&l.equipped!=null)head.meter("Wearing now: "+amount(l.stat,l.equipped),l.equipped,Math.max(l.equipped,l.total));
+            if(!r.bestGear&&l.bestOwned!=null)head.meter("Best owned gear: "+amount(l.stat,l.bestOwned),l.total,Math.max(l.total,l.bestOwned));
             Double override=manual.get(l.stat);if(override!=null)head.line("Manual value in use instead: "+fmt(override)+" (clear it in Type Stats)",GOLD);
             for(Breakdown.State state:Breakdown.State.values()){
                 var list=l.contributions.stream().filter(c->c.state()==state).toList();if(list.isEmpty())continue;
                 int color=switch(state){case COUNTED->GREEN;case SITUATIONAL->GOLD;case MISSING->RED;case TEMPORARY->CYAN;case UNTRACKABLE->MUTED;};
                 Card c=card(stateTitle(state)+" | "+l.stat.label,color,col);
                 for(var x:list){
-                    String value=x.value()==null?"?":(x.category().equals(Breakdown.ADDITIVE_PERCENT)?"+"+fmt(x.value())+"%":(x.value()>=0?"+":"")+fmt(x.value()));
+                    String value=x.value()==null?"?":(x.category().equals(Breakdown.ADDITIVE_PERCENT)?"+"+fmt(x.value())+"%":signed(l.stat,x.value()));
                     String text=value+"  "+x.source()+" ("+x.category()+")"+(x.confidence()==Breakdown.Confidence.MANUAL&&x.value()!=null?" - assumed":"");
                     if(state==Breakdown.State.COUNTED&&x.value()!=null&&x.maximum()!=null&&x.maximum()>x.value())c.meter(text+" / "+fmt(x.maximum()),x.value(),x.maximum());
                     else c.line(text,x.value()==null&&state==Breakdown.State.COUNTED?RED:TEXT);
@@ -556,6 +569,9 @@ public final class ProgressionScreen extends Screen {
         c.line("At the "+mode.label+" price, each method in its usual zone with its Type Stats values and efficiency. Full ranking on the Compare tab.",MUTED);
         if(data.comparison()!=null&&data.comparison().godPotion!=r.godPotion)c.line("God Potion is "+(r.godPotion?"on":"off")+" here but "+(data.comparison().godPotion?"on":"off")+" on Compare.",GOLD);
     }
+    /** A stat amount with its unit: "13.6%" for percentage stats (the cooldown shown as a reduction), plain otherwise. */
+    static String amount(Stat s,double v){return s==Stat.PICKAXE_ABILITY_COOLDOWN?"-"+fmt(v)+"%":s.percent?fmt(v)+"%":fmt(v);}
+    static String signed(Stat s,double v){return s==Stat.PICKAXE_ABILITY_COOLDOWN?"-"+fmt(v)+"%":(v>=0?"+":"")+fmt(v)+(s.percent?"%":"");}
     private static String stateTitle(Breakdown.State state){
         return switch(state){case COUNTED->"Counted";case SITUATIONAL->"Situational, not counted";case MISSING->"Missing";
             case TEMPORARY->"Temporary, not counted";case UNTRACKABLE->"Not in the API";};

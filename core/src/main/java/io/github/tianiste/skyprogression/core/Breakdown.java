@@ -55,7 +55,20 @@ public final class Breakdown {
     public double multiplier() {
         return 1 + contributions.stream().filter(c -> c.counts() && c.category.equals(ADDITIVE_PERCENT)).mapToDouble(Contribution::value).sum() / 100;
     }
-    public double total() { return flat() * multiplier(); }
+    /**
+     * Pickaxe ability cooldown reductions multiply (wiki Heart of the Mountain, "Cooldown Reductions"), so the
+     * total is 1 - product(1 - r); every other stat is flat x multiplier.
+     */
+    public double total() {
+        if (stat == Stat.PICKAXE_ABILITY_COOLDOWN) return combined(contributions.stream().filter(Contribution::counts).mapToDouble(Contribution::value).toArray());
+        return flat() * multiplier();
+    }
+    /** Combined reduction in percent of several multiplicative percentage reductions. */
+    public static double combined(double... percents) {
+        double left = 1;
+        for (double p : percents) left *= 1 - p / 100;
+        return (1 - left) * 100;
+    }
     /** Sources that would count in this context but whose value is unknown: the total is a lower bound. */
     public List<Contribution> unresolved() {
         return contributions.stream().filter(c -> c.state == State.COUNTED && c.value == null).toList();

@@ -8,6 +8,7 @@ import static io.github.tianiste.skyprogression.core.ProfileParser.*;
 
 /** Keeps each physical copy separate and reads its displayed stat totals once, without adding modifiers twice. */
 public final class GearReader {
+    private static final Pattern BREAKING_POWER=Pattern.compile("^Breaking Power ([0-9]+)$");
     public static String clean(String text) { return text.replaceAll("(?i)§[0-9A-FK-ORX]", "").strip(); }
     public static Item read(JsonElement nbt, Item definition, String location, int slot) {
         Item gear = Catalog.GSON.fromJson(Catalog.GSON.toJson(definition), Item.class);
@@ -29,6 +30,9 @@ public final class GearReader {
         if(lore.isJsonArray()) for(JsonElement line:lore.getAsJsonArray()) {
             String text=clean(string(line,""));
             gear.lore.add(text);
+            // Tools show "Breaking Power 9" without a colon.
+            Matcher power=BREAKING_POWER.matcher(text);
+            if(power.matches())gear.stats.put(Stat.BREAKING_POWER,Double.parseDouble(power.group(1)));
             for(Stat stat:Stat.values()) {
                 Matcher match=Pattern.compile("^"+Pattern.quote(stat.label)+":\\s*([+-]?[0-9,]+(?:\\.[0-9]+)?)(?![0-9.%])").matcher(text);
                 if(match.find()) {
