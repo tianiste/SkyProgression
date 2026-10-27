@@ -20,6 +20,24 @@ final class Theme {
         g.fill(x,y,x+w,y+5,BACK);int filled=(int)(Math.clamp(progress,0,1)*w);
         if(filled>0){g.fill(x,y,x+filled,y+5,color);g.fill(x,y,x+filled,y+1,0x50FFFFFF);}
     }
+    private static final java.util.regex.Pattern SLOT_KEY=java.util.regex.Pattern.compile("\\s*\\[[A-Z]+_(\\d+)\\]");
+    private static final java.util.regex.Pattern CAPS=java.util.regex.Pattern.compile("\\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*\\b");
+    private static final java.util.Set<String> KEEP=java.util.Set.of("HOTM","DEMO");
+    /**
+     * Display form of engine text: "Socket FLAWLESS JADE [JADE_0]" -> "Socket Flawless Jade (slot 1)". All-caps IDs of four or
+     * more letters become Title Case; short acronyms (MF, NPC, BIN), HOTM and Roman numerals stay. Call on content changes only.
+     */
+    static String pretty(String value) {
+        if(value==null||value.isEmpty())return value;
+        var slot=SLOT_KEY.matcher(value);
+        String out=slot.replaceAll(m->" (slot "+(Integer.parseInt(m.group(1))+1)+")");
+        var caps=CAPS.matcher(out);
+        return caps.replaceAll(m->{String w=m.group();
+            if(!w.contains("_")&&(w.length()<4||KEEP.contains(w)||w.matches("[IVXL]+")))return java.util.regex.Matcher.quoteReplacement(w);
+            StringBuilder b=new StringBuilder();
+            for(String part:w.split("_"))if(!part.isEmpty()){if(b.length()>0)b.append(' ');b.append(part.charAt(0)).append(part.substring(1).toLowerCase(java.util.Locale.ROOT));}
+            return java.util.regex.Matcher.quoteReplacement(b.toString());});
+    }
     static String fit(Font font,String value,int width) {
         if(width<=0)return "";
         return font.width(value)<=width?value:font.plainSubstrByWidth(value,Math.max(0,width-font.width("...")))+"...";

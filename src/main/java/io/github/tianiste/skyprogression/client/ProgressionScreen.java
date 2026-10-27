@@ -795,7 +795,7 @@ public final class ProgressionScreen extends Screen {
     private List<FormattedCharSequence> wrapTip(String tip){
         if(tip==null||tip.isEmpty())return null;
         List<FormattedCharSequence> out=new ArrayList<>();int w=Math.max(160,Math.min(300,width/2));
-        for(String part:tip.split("\n"))out.addAll(font.split(Component.literal(part),w));
+        for(String part:pretty(tip).split("\n"))out.addAll(font.split(Component.literal(part),w));
         return out;
     }
     /** Word wrap of one text, run on content changes only. */
@@ -809,15 +809,15 @@ public final class ProgressionScreen extends Screen {
     private Laid lay(Row row,int dy,int rw){
         var tip=wrapTip(row.tip());
         return switch(row){
-            case Text t->{var lines=wrap(t.text(),rw);yield new Laid(row,dy,lines.size()*11+1,lines,tip,null);}
-            case Meter m->new Laid(row,dy,21,List.of(fit(font,m.label(),rw-font.width(m.value())-6)),tip,null);
+            case Text t->{var lines=wrap(pretty(t.text()),rw);yield new Laid(row,dy,lines.size()*11+1,lines,tip,null);}
+            case Meter m->new Laid(row,dy,21,List.of(fit(font,pretty(m.label()),rw-font.width(m.value())-6)),tip,null);
             case Split s->new Laid(row,dy,10,List.of(),tip,null);
             case Legend l->{int[] pos=new int[l.segs().size()*2];int x=0,y=0;
                 for(int k=0;k<l.segs().size();k++){int w=10+font.width(l.segs().get(k).label());if(x>0&&x+w>rw){x=0;y+=11;}pos[2*k]=x;pos[2*k+1]=y;x+=w+8;}
                 yield new Laid(row,dy,y+13,List.of(),tip,pos);}
-            case Pair p->new Laid(row,dy,11,List.of(fit(font,p.left(),rw-font.width(p.right())-6)),tip,null);
+            case Pair p->new Laid(row,dy,11,List.of(fit(font,pretty(p.left()),rw-font.width(p.right())-6)),tip,null);
             case Entry e->{int rightW=Math.max(font.width(e.right()),font.width(e.right2()));
-                yield new Laid(row,dy,26,List.of(fit(font,e.title(),rw-22-rightW-6),fit(font,e.sub(),rw-22-rightW-6)),tip,null);}
+                yield new Laid(row,dy,26,List.of(fit(font,pretty(e.title()),rw-22-rightW-6),fit(font,pretty(e.sub()),rw-22-rightW-6)),tip,null);}
             case Slots s->{int per=Math.max(1,(rw+4)/26);int[] pos=new int[s.slots().size()*2];
                 for(int k=0;k<s.slots().size();k++){pos[2*k]=(k%per)*26;pos[2*k+1]=(k/per)*26;}
                 yield new Laid(row,dy,((s.slots().size()+per-1)/per)*26+2,List.of(),tip,pos);}
@@ -838,9 +838,9 @@ public final class ProgressionScreen extends Screen {
             for(Row row:c.rows){Laid l=lay(row,dy,rw);rows.add(l);dy+=l.h()+2;}
             int h=dy+3;
             int inset=c.icon.isEmpty()?9:29,rightW=c.right.isEmpty()?0:font.width(c.right)+9;
-            String title=fit(font,c.title,cw-inset-9-rightW);
+            String shown=pretty(c.title),title=fit(font,shown,cw-inset-9-rightW);
             int y=isFull?Math.max(ys[0],ys[1]):ys[col];
-            placed.add(new Placed(c,left+10+col*(w+gap),y,cw,h,title,left+10+col*(w+gap)+cw-rightW,wrapTip(c.tip!=null?c.tip:title.equals(c.title)?null:c.title),rows));
+            placed.add(new Placed(c,left+10+col*(w+gap),y,cw,h,title,left+10+col*(w+gap)+cw-rightW,wrapTip(c.tip!=null?c.tip:title.equals(shown)?null:shown),rows));
             if(isFull){ys[0]=ys[1]=y+h+gap;}else ys[col]=y+h+gap;
         }
         contentHeight=Math.max(ys[0],ys[1]);scroll=Math.clamp(scroll,0,maxScroll());
