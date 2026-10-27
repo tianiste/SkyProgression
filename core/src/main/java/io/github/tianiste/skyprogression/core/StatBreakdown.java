@@ -18,7 +18,8 @@ public final class StatBreakdown {
     public static final Set<Stat> SUPPORTED = EnumSet.allOf(Stat.class);
     /** Stats the rate models and upgrade ranking read; the comparison and Start with tabs compute only these. */
     public static final Set<Stat> RATE_STATS = EnumSet.of(Stat.MINING_FORTUNE, Stat.MINING_SPEED, Stat.GEMSTONE_FORTUNE,
-            Stat.ORE_FORTUNE, Stat.DWARVEN_METAL_FORTUNE, Stat.BLOCK_FORTUNE, Stat.MINING_SPREAD, Stat.GEMSTONE_SPREAD, Stat.PRISTINE);
+            Stat.ORE_FORTUNE, Stat.DWARVEN_METAL_FORTUNE, Stat.BLOCK_FORTUNE, Stat.MINING_SPREAD, Stat.GEMSTONE_SPREAD, Stat.PRISTINE,
+            Stat.HEAT_RESISTANCE, Stat.COLD_RESISTANCE);
     /** Display groups (SkyCompass stat groups as a feature spec, docs/references/SKYCOMPASS.md). */
     public static final Map<String, List<Stat>> GROUPS = new LinkedHashMap<>();
     static {
@@ -697,10 +698,17 @@ public final class StatBreakdown {
      */
     public static MethodRates.Ability effectiveAbility(JsonObject member, Loadout l, StatContext context) {
         MethodRates.Ability lore = MethodRates.ability(l.tool);
-        if (lore == null || !lore.speedBoost()) return lore;
+        if (lore == null || !lore.speedBoost() && !lore.name().equals(MethodRates.MANIAC)) return lore;
         Breakdown cooldown = compute(member, l, context, Stat.PICKAXE_ABILITY_COOLDOWN);
-        if (!cooldown.complete()) return lore;
-        return new MethodRates.Ability(lore.name(), lore.boostPercent(), lore.duration(), MSB_COOLDOWN * (1 - cooldown.total() / 100));
+        Double ledger = cooldown.complete() ? MSB_COOLDOWN * (1 - cooldown.total() / 100) : null;
+        if (lore.speedBoost()) return ledger == null ? lore : lore.withCooldown(ledger);
+        // Maniac Miner (wiki): level 1, +1 at Core of the Mountain 2 and +1 with a Blue Cheese omelette, up to 3; 120 s cooldown like every ability.
+        if (lore.maniac()) return ledger == null ? lore : lore.withCooldown(ledger);
+        JsonElement nodes = at(member, "skill_tree", "nodes", l.hotmTree == null ? "mining" : l.hotmTree);
+        if (!nodes.isJsonObject()) nodes = at(member, "mining_core", "nodes");
+        int level = Math.min(3, 1 + (number(at(nodes, "core_of_the_mountain"), 0) >= 2 ? 1 : 0) + (blueCheese(l.tool) ? 1 : 0));
+        double c = ledger != null ? ledger : lore.cooldown() != null ? lore.cooldown() : MSB_COOLDOWN;
+        return MethodRates.maniacMiner(level, c);
     }
 
     /** Potion effects per level by `active_effects` key (wiki Haste, Spelunker, Cold Resistance and Mining XP Boost potions). */

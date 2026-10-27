@@ -40,11 +40,17 @@ public final class MethodComparison {
     /**
      * One method's row: items per hour of the priced product, coins per hour (null = price unknown), the efficiency and
      * model used, how the value window was normalized to one hour, and notes on the drops. error is set when the rate
-     * itself cannot be computed (then itemsPerHour is NaN).
+     * itself cannot be computed (then itemsPerHour is NaN). secondary holds the valued secondary drops; totalCoinsPerHour adds
+     * their known coins to coinsPerHour (null when the main product's coins are unknown).
      */
     public record Row(MiningMethod method, String item, String priceId, double itemsPerHour, Double coinsPerItem, Double coinsPerHour,
                       String priceNote, double efficiency, String model, String window, String drops, boolean lowerBound,
-                      boolean statsComplete, String tool, String error) {}
+                      boolean statsComplete, String tool, String error, List<DropValue> secondary, Double totalCoinsPerHour) {}
+    /**
+     * A valued secondary drop: coins per unit and per hour in the price mode (null = unknown), atLeast when some contents had no
+     * price and were left out (named in note).
+     */
+    public record DropValue(MethodRates.Drop drop, Double coinsPerUnit, Double coinsPerHour, boolean atLeast, String note) {}
 
     /** Bazaar item that the method's rate counts: the Flawless gem for gem methods, else the block product. */
     public static String priceId(MiningMethod m) {
@@ -61,12 +67,14 @@ public final class MethodComparison {
     }
     /** Short label of the rate model, as on the Rates tab. */
     public static String model(MiningMethod m) {
-        if (MethodRates.gem(m) != null) return "gem tick model + Mining Speed Boost";
+        if (MethodRates.gem(m) != null) return "gem tick model + pickaxe ability" + (heat(m) ? " + Heat" : "");
         var b = MethodRates.block(m);
         if (b == null) return "no rate model";
         if (b.strength() <= 0) return "instamined block (no wiki strength)";
-        return "block tick model" + (b.airShare() > 0 ? " + airborne share" : "") + " + Mining Speed Boost";
+        return "block tick model" + (b.airShare() > 0 ? " + airborne share" : "") + " + pickaxe ability" + (heat(m) ? " + Heat" : cold(m) ? " + Cold" : "");
     }
+    private static boolean heat(MiningMethod m) { return m.defaultZone() == StatContext.Zone.MAGMA_FIELDS; }
+    private static boolean cold(MiningMethod m) { return m.defaultZone() == StatContext.Zone.GLACITE_TUNNELS || m.defaultZone() == StatContext.Zone.GLACITE_MINESHAFTS; }
     /** How the method's value window becomes one hour (the Mining Cat developer's windows; MININGCAT.md). */
     public static String window(MiningMethod m, MethodRates.Ability ability) {
         var b = MethodRates.block(m);
@@ -81,10 +89,10 @@ public final class MethodComparison {
     public static String drops(MiningMethod m) {
         return switch (m) {
             case MF_GEMS, MF_RUBY, MF_TOPAZ -> "Rough gems from Fortune and Pristine, counted as Flawless (512,000 Rough)";
-            case GROTTO -> "Jasper only; the route's other gems (guide: 3.1-4.6 Flawless / hour) are not counted";
-            case COAL -> "Coal only; Hard Stone (guide: 3-6M / hour) is not counted";
-            case TUNGSTEN, UMBER -> "at least: shown per 1 base drop, while vein blocks drop 1-3 (wiki; mix unknown)";
-            case SHAFTING -> "Glacite only, base drop assumed 1 (not on the wiki); mineshaft loot not counted";
+            case GROTTO -> "Jasper, plus the route's other Breaking Power 7 Flawless gems at the guide's ratio (secondary)";
+            case COAL -> "Coal, plus Hard Stone at the Coal guide's ratio (secondary)";
+            case TUNGSTEN, UMBER -> "at least: shown per 1 base drop, while vein blocks drop 1-3 (wiki; mix unknown); Hard Stone amount unknown";
+            case SHAFTING -> "Glacite, base drop assumed 1 (not on the wiki), plus Frozen Corpse loot from the mineshafts it spawns (secondary)";
             case GOLD -> "Gold at the average base drop of 6 (5-7, wiki Mines of Divan)";
             default -> "the mined block only (base drop 1)";
         };
@@ -113,6 +121,7 @@ public final class MethodComparison {
     public static Set<String> npcIds() {
         Set<String> ids = new LinkedHashSet<>();
         for (MiningMethod m : MiningMethod.values()) if (MethodRates.supported(m)) ids.add(MethodRates.gem(m) != null ? m.product : priceId(m));
+        for (String id : MethodRates.DROP_IDS) ids.add(id.startsWith("FLAWLESS_") ? "ROUGH_" + id.substring(9) : id);
         return ids;
     }
     /** Where the mode's figure comes from, for labels. */
@@ -122,6 +131,61 @@ public final class MethodComparison {
         if (p == null) return "";
         if (mode != PriceMode.NPC_SELL) return p.source + ", " + p.updatedAt + "; before Bazaar tax";
         return "Hypixel items resource, fetched " + p.npcUpdatedAt + (gem ? "; Rough NPC price x 512,000 per Flawless" : "");
+    }
+
+    /**
+     * Coins for one item in the mode. Flawless gems have no NPC price, so at NPC sell they count as the Rough gem's price x
+     * 512,000 (Rough, Flawed and Fine pay the same per Rough).
+     */
+    static Double coinsFor(Map<String, Price> prices, String id, PriceMode mode) {
+        if (mode == PriceMode.NPC_SELL && id.startsWith("FLAWLESS_")) {
+            Double rough = coinsPerItem(prices.get("ROUGH_" + id.substring(9)), mode);
+            return rough == null ? null : rough * MethodRates.ROUGH_PER_FLAWLESS;
+        }
+        return coinsPerItem(prices.get(id), mode);
+    }
+    /**
+     * Values a secondary drop in the mode. Costs (negative counts, such as corpse keys) are paid at the Coflnet buy quote whatever
+     * the mode; an unknown cost leaves the value unknown. Unpriced contents are left out and mark the value "at least".
+     */
+    public static DropValue value(MethodRates.Drop d, Map<String, Price> prices, PriceMode mode) {
+        Double unit = null; boolean atLeast = false; List<String> missing = new ArrayList<>();
+        if (d.lowestOf()) {
+            for (String id : d.contents().keySet()) {
+                Double c = coinsFor(prices, id, mode);
+                if (c == null) { missing.add(id); continue; }
+                unit = unit == null ? c : Math.min(unit, c);
+            }
+            if (!missing.isEmpty()) unit = null; // an unpriced gem might be the cheapest
+        } else {
+            double sum = 0; boolean any = false, costUnknown = false;
+            for (var e : d.contents().entrySet()) {
+                if (e.getValue() < 0) {
+                    Price p = prices.get(e.getKey());
+                    if (p == null || !(p.buy > 0) || !p.available) { costUnknown = true; missing.add(e.getKey() + " (cost)"); }
+                    else sum += e.getValue() * p.buy;
+                    continue;
+                }
+                Double c = coinsFor(prices, e.getKey(), mode);
+                if (c == null) { missing.add(e.getKey()); atLeast = true; }
+                else { sum += e.getValue() * c; any = true; }
+            }
+            unit = costUnknown || !any ? null : sum;
+            if (unit == null) atLeast = false;
+        }
+        // A corpse whose loot is worth less than its key is left unopened: 0, not a loss (only when every content is priced).
+        boolean skipped = unit != null && unit < 0 && !atLeast;
+        if (skipped) unit = 0.0;
+        Double hourly = unit == null || !Double.isFinite(d.perHour()) ? null : unit * d.perHour();
+        String names = String.join(", ", missing.subList(0, Math.min(4, missing.size()))) + (missing.size() > 4 ? ", ..." : "");
+        boolean signUnknown = unit != null && unit < 0; // a loss with unpriced loot left out: whether it beats the key is not known
+        if (signUnknown) { hourly = null; unit = null; atLeast = false; }
+        String note = skipped ? "skipped: the expected loot is worth less than the key at these prices, so it counts 0"
+                : signUnknown ? "coins unknown: the priced loot is worth less than the key; the unpriced " + names + " decide whether opening it pays"
+                : !Double.isFinite(d.perHour()) ? "amount unknown"
+                : unit == null ? (missing.isEmpty() ? "coins unknown" : "coins unknown: no price for " + names)
+                : atLeast ? "at least: " + missing.size() + " unpriced item" + (missing.size() == 1 ? "" : "s") + " left out (" + names + ")" : "";
+        return new DropValue(d, unit, hourly, atLeast, note);
     }
 
     public static Row row(MiningMethod m, Map<Stat, Double> stats, boolean complete, double efficiency, MethodRates.Ability ability,
@@ -138,14 +202,18 @@ public final class MethodComparison {
                 : p == null ? "No Coflnet quote for " + id + "; coins unknown"
                 : "Coflnet has no " + mode.label + " figure for " + id + "; coins unknown";
         if (each != null && mode != PriceMode.NPC_SELL && p.sell > 0 && p.buy > 2 * p.sell) note += "; buy and sell quotes differ more than 2x (thin market), so sell offers may not fill";
-        return new Row(m, itemName(m), id, items, each, coins, note, efficiency, model(m), window(m, ability), drops(m), lowerBound(m), complete, tool, error);
+        List<DropValue> secondary = new ArrayList<>();
+        if (error.isEmpty()) for (var d : MethodRates.secondary(m, stats, efficiency, ability, m.defaultZone())) secondary.add(value(d, prices, mode));
+        Double total = coins == null ? null : coins + secondary.stream().filter(v -> v.coinsPerHour() != null).mapToDouble(DropValue::coinsPerHour).sum();
+        return new Row(m, itemName(m), id, items, each, coins, note, efficiency, model(m), window(m, ability), drops(m), lowerBound(m), complete, tool, error,
+                secondary, total);
     }
     /** Highest coins per hour first; unknown coins after every known value, then by item rate errors last. */
     public static List<Row> rank(Collection<Row> rows) {
         List<Row> out = new ArrayList<>(rows);
         out.sort(Comparator.comparing((Row r) -> r.error().isEmpty() ? 0 : 1)
-                .thenComparing(r -> r.coinsPerHour() == null ? 1 : 0)
-                .thenComparing(r -> r.coinsPerHour() == null ? 0 : -r.coinsPerHour()));
+                .thenComparing(r -> r.totalCoinsPerHour() == null ? 1 : 0)
+                .thenComparing(r -> r.totalCoinsPerHour() == null ? 0 : -r.totalCoinsPerHour()));
         return out;
     }
 
@@ -159,7 +227,7 @@ public final class MethodComparison {
             Map<Stat, Double> after = new EnumMap<>(Stat.class);
             for (Stat s : Stat.values()) after.put(s, stat(stats, s) + stat(delta, s));
             var a = ability;
-            if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * cooldownFactor);
+            if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = a.withCooldown(a.cooldown() * cooldownFactor);
             double now = MethodRates.perHour(m, after, efficiency, a);
             return before > 0 ? now / before - 1 : null;
         } catch (IllegalArgumentException e) { return null; }

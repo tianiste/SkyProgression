@@ -151,7 +151,7 @@ public final class ProgressionEngine {
             stats = plus(stats, u.delta());
             if (u.cooldownFactor() != 1 && current != null && current.ability() != null && current.ability().cooldown() != null) {
                 var a = current.ability();
-                current = current.with(new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * u.cooldownFactor()));
+                current = current.with(a.withCooldown(a.cooldown() * u.cooldownFactor()));
             }
             total += u.cost();
             if (!u.resaleNote().isEmpty()) { if (u.resale() != null) resale += u.resale(); else unpriced++; }
@@ -403,7 +403,7 @@ public final class ProgressionEngine {
     }
     private static Double perHour(MiningMethod m, Map<Stat, Double> stats, RateBasis basis, double cooldownFactor) {
         var a = basis.ability();
-        if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = new MethodRates.Ability(a.name(), a.boostPercent(), a.duration(), a.cooldown() * cooldownFactor);
+        if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = a.withCooldown(a.cooldown() * cooldownFactor);
         try { return MethodRates.perHour(m, stats, basis.efficiency(), a); }
         catch (IllegalArgumentException e) { return null; }
     }

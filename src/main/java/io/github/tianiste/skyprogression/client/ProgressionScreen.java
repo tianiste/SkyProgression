@@ -200,7 +200,7 @@ public final class ProgressionScreen extends Screen {
     }
     private void pickRanked(){
         var rows=data.comparisonRows();int n=0;List<String> labels=new ArrayList<>();
-        for(var r:rows)labels.add((++n)+". "+r.method().label+" - "+(r.coinsPerHour()==null?"coins unknown":compact(r.coinsPerHour())+" coins / hour"));
+        for(var r:rows)labels.add((++n)+". "+r.method().label+" - "+(r.totalCoinsPerHour()==null?"coins unknown":compact(r.totalCoinsPerHour())+" coins / hour"));
         minecraft.setScreen(new ChoiceScreen(this,"Methods by coins / hour",labels,i->{method=rows.get(i).method();scroll=0;}));
     }
     /** Tool list of the last ledger for this profile; it does not change with the selections. */
@@ -239,7 +239,7 @@ public final class ProgressionScreen extends Screen {
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
         boolean ranks=selectedTab==UPGRADES&&!others,plans=selectedTab==HOME||ranks&&!focused;
         var rows=ranks&&!focused?data.comparisonRows():List.<MethodComparison.Row>of();
-        var best=rows.isEmpty()||rows.getFirst().coinsPerHour()==null?null:rows.getFirst();
+        var best=rows.isEmpty()||rows.getFirst().totalCoinsPerHour()==null?null:rows.getFirst();
         var bestStats=best==null?null:data.comparisonStats(best.method());
         var bestEntry=best==null?null:data.comparison().entry(best.method());
         double bestEfficiency=best==null?0:data.inputs(best.method()).efficiency;
@@ -344,7 +344,7 @@ public final class ProgressionScreen extends Screen {
     /** The method's hourly rate from the effective stats, or null when it cannot be computed yet. */
     private Double perHour(){
         var e=data.effective(method);if(e.isEmpty()||!MethodRates.supported(method))return null;
-        try{double v=MethodRates.perHour(method,e,data.inputs(method).efficiency,ability());return Double.isFinite(v)?v:null;}catch(IllegalArgumentException ex){return null;}
+        try{double v=MethodRates.perHour(method,e,data.inputs(method).efficiency,ability(),data.zone(method));return Double.isFinite(v)?v:null;}catch(IllegalArgumentException ex){return null;}
     }
     private void rateTile(){
         Card c=card("Rate now",CYAN,1);c.icon=productIcon(method);
@@ -380,16 +380,16 @@ public final class ProgressionScreen extends Screen {
         if(r==null||rows.isEmpty()){String error=data.compareError();
             if(!error.isEmpty())c.line(error,RED,"Refresh on the Methods tab retries.");else c.line("Comparing methods in the companion...",MUTED);return;}
         c.tip+="\nProfile data from "+r.fetchedAt+(r.godPotion?", God Potion assumed.":", no God Potion.");
-        double top=rows.stream().filter(x->x.coinsPerHour()!=null).mapToDouble(MethodComparison.Row::coinsPerHour).max().orElse(1);
-        var best=rows.stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
+        double top=rows.stream().filter(x->x.totalCoinsPerHour()!=null).mapToDouble(MethodComparison.Row::totalCoinsPerHour).max().orElse(1);
+        var best=rows.stream().filter(x->x.totalCoinsPerHour()!=null).findFirst().orElse(null);
         for(var row:rows){
             boolean selected=row.method()==method,isBest=row==best;var e=r.entry(row.method());
             String tip=row.method().label+(isBest?" (best)":"")+"\n"+(row.error().isEmpty()?(row.lowerBound()?"At least ":"")+fmt(row.itemsPerHour())+" "+row.item()+" / hour":"Rate unavailable: "+row.error())
-                    +(row.coinsPerHour()==null?"\nCoins unknown":"\n"+coins(row.coinsPerHour())+" / hour")+"\n"+row.priceNote()+"\nEfficiency "+fmt(row.efficiency())+"% | "+row.model()
+                    +(row.coinsPerHour()==null?"\nCoins unknown":"\n"+coins(row.coinsPerHour())+" / hour")+"\n"+row.priceNote()+secondaryText(row)+"\nEfficiency "+fmt(row.efficiency())+"% | "+row.model()
                     +"\nTool: "+(row.tool().isEmpty()?"none readable":row.tool())+(e==null||e.zone.isEmpty()?"":" | "+e.zone)+(row.statsComplete()?"":"\nSome stat sources are unknown: a lower bound.");
             MiningMethod m=row.method();
-            c.add(new Bar(productIcon(m),(selected?"» ":"")+m.label,selected?GOLD:TEXT,row.coinsPerHour()==null?"?":compact(row.coinsPerHour()),
-                    row.coinsPerHour()==null?0:row.coinsPerHour()/Math.max(1,top),isBest?CYAN:selected?GOLD:DIM,tip,()->{method=m;slot="";refresh();}));
+            c.add(new Bar(productIcon(m),(selected?"» ":"")+m.label,selected?GOLD:TEXT,row.totalCoinsPerHour()==null?"?":compact(row.totalCoinsPerHour()),
+                    row.totalCoinsPerHour()==null?0:row.totalCoinsPerHour()/Math.max(1,top),isBest?CYAN:selected?GOLD:DIM,tip,()->{method=m;slot="";refresh();}));
         }
     }
 
@@ -499,13 +499,13 @@ public final class ProgressionScreen extends Screen {
         var mode=data.priceMode;List<MethodComparison.Row> worn=new ArrayList<>();
         for(var e:r.worn){if(e==null||e.method==null||e.stats==null)continue;var in=data.inputs(e.method);Map<Stat,Double> stats=new EnumMap<>(Stat.class);stats.putAll(e.stats);stats.putAll(in.stats);
             worn.add(MethodComparison.row(e.method,stats,e.complete,in.efficiency,e.ability,data.prices,mode,e.tool));}
-        var wornTop=MethodComparison.rank(worn).stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
-        var bestTop=data.comparisonRows().stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
+        var wornTop=MethodComparison.rank(worn).stream().filter(x->x.totalCoinsPerHour()!=null).findFirst().orElse(null);
+        var bestTop=data.comparisonRows().stream().filter(x->x.totalCoinsPerHour()!=null).findFirst().orElse(null);
         String tip="At the "+mode.label+" price, each method in its usual zone with its Type Stats values and efficiency. Full ranking on Methods."
                 +(data.comparison()!=null&&data.comparison().godPotion!=r.godPotion?"\nGod Potion is "+(r.godPotion?"on":"off")+" here but "+(data.comparison().godPotion?"on":"off")+" on Methods.":"");
-        c.line(wornTop==null?"Gear worn now: no method has a known price.":"Gear worn now: best at "+wornTop.method().label+", "+compact(wornTop.coinsPerHour())+" / h",wornTop!=null&&wornTop.method()==method?GREEN:TEXT,tip);
+        c.line(wornTop==null?"Gear worn now: no method has a known price.":"Gear worn now: best at "+wornTop.method().label+", "+compact(wornTop.totalCoinsPerHour())+" / h",wornTop!=null&&wornTop.method()==method?GREEN:TEXT,tip);
         if(data.comparison()==null)c.line(data.compareError().isEmpty()?"Best owned gear: comparing methods...":"Best owned gear: "+data.compareError(),MUTED);
-        else c.line(bestTop==null?"Best owned gear: no method has a known price.":"Best owned gear: best at "+bestTop.method().label+", "+compact(bestTop.coinsPerHour())+" / h",bestTop!=null&&bestTop.method()==method?GREEN:TEXT,tip);
+        else c.line(bestTop==null?"Best owned gear: no method has a known price.":"Best owned gear: best at "+bestTop.method().label+", "+compact(bestTop.totalCoinsPerHour())+" / h",bestTop!=null&&bestTop.method()==method?GREEN:TEXT,tip);
     }
     private void statCards(){
         StatsReport r=data.stats(method);
@@ -754,7 +754,7 @@ public final class ProgressionScreen extends Screen {
         try{
             var gem=MethodRates.gem(method);var b=MethodRates.block(method);
             if(b==null){
-                var rate=MethodRates.gems(method,data.effective(method),i.efficiency,r==null?null:r.ability);
+                var rate=MethodRates.gems(method,data.effective(method),i.efficiency,r==null?null:r.ability,zone);
                 c.tip=gem.name()+" (block strength "+fmt(gem.strength())+")\nGuide reference ("+gem.guideNote()+", "+fmt(gem.guideEfficiency())+"% efficiency): "+fmt(gem.guideFlawlessPerHour())+" Flawless / hour";
                 c.add(new Big(fmt(rate.flawlessPerHour()),"Flawless "+gem.name().split(" ")[0]+" / hour",CYAN,null,null));
                 coinPairs(c,rate.flawlessPerHour());
@@ -763,9 +763,11 @@ public final class ProgressionScreen extends Screen {
                 double next=MethodRates.nextTickSpeed(rate.speed(),gem.strength());
                 if(Double.isFinite(next))c.add(new Pair("Next tick",MUTED,fmt(next)+" Mining Speed",GOLD,MethodRates.ticks(next,gem.strength())+" ticks there; speed between thresholds adds nothing.",null));
                 c.pair("Tool | zone",tool+" | "+(zone==null?"none":zone.label),TEXT);
+                if(rate.kept()<1)c.pair("Heat / Cold",fmt(Math.round(rate.kept()*1000)/10.0)+"% of the rate kept",MUTED);
+                secondaryPairs(c,rate.flawlessPerHour(),zone);
                 assumptions(c,rate.assumptions());
             }else{
-                var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability);
+                var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability,zone);
                 String window=rate.windowHours()==1?"hour":b.abilityCycle()?"ability cycle ("+fmt(rate.windowHours()*3600)+"s)":b.window();
                 c.tip=(b.strength()>0?b.name()+" (block strength "+fmt(b.strength())+"; instamine above "+fmt(b.instamineFactor()*b.strength())+" Mining Speed, "+fmt(5*b.instamineFactor()*b.strength())+" airborne)"
                         :b.name()+" (block strength not listed on the wiki; assumed instamined)")+"\nGuide reference ("+b.guideNote()+")"
@@ -780,13 +782,35 @@ public final class ProgressionScreen extends Screen {
                 if(Double.isFinite(nextGround))c.add(new Pair("Next threshold",MUTED,fmt(nextGround)+" on the ground",GOLD,"Speed between thresholds adds nothing.",null));
                 else if(rate.airTicks()>1&&b.strength()>0)c.add(new Pair("Next threshold",MUTED,fmt(5*MethodRates.nextTickSpeed(rate.speed()/5,b.strength(),b.instamineFactor())-4)+" airborne",GOLD,"Speed between thresholds adds nothing.",null));
                 var ab=ability();
-                if(rate.uptime()>0&&rate.boostedGroundTicks()>1&&b.strength()>0)c.pair("Instamine in ability",fmt(Math.floor(b.instamineFactor()*b.strength()/(1+ab.boostPercent()/100))+1)+" Mining Speed",MUTED);
+                if(ab!=null&&ab.speedBoost()&&rate.boostedGroundTicks()>1&&b.strength()>0)c.pair("Instamine in ability",fmt(Math.floor(b.instamineFactor()*b.strength()/(1+ab.boostPercent()/100))+1)+" Mining Speed",MUTED);
                 c.pair("Tool | zone",tool+" | "+(zone==null?"none":zone.label),TEXT);
+                if(rate.kept()<1)c.pair("Heat / Cold",fmt(Math.round(rate.kept()*1000)/10.0)+"% of the rate kept",MUTED);
+                secondaryPairs(c,rate.perHour(),zone);
                 assumptions(c,rate.assumptions());
             }
         }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
         var row=data.comparisonRows().stream().filter(x->x.method()==method).findFirst().orElse(null);
         if(row!=null)c.line("Drops: "+row.drops(),MUTED,"Window: "+row.window()+"\n"+row.priceNote()+(row.statsComplete()?"":"\nSome counted stat sources are unknown, so the rate is a lower bound."));
+    }
+    /** Secondary drops of the selected method: amount / hour and coins at the chosen price; source and assumptions in the tooltip. */
+    private void secondaryPairs(Card c,double mainPerHour,StatContext.Zone zone){
+        var i=data.inputs(method);StatsReport r=data.stats(method);double sum=0;boolean any=false;
+        for(var d:MethodRates.secondary(method,data.effective(method),i.efficiency,r==null?null:r.ability,zone)){
+            var v=MethodComparison.value(d,data.prices,data.priceMode);
+            String amount=Double.isFinite(d.perHour())?fmt(Math.round(d.perHour()*10)/10.0)+" "+d.unit()+" / h":"amount unknown";
+            String value=v.coinsPerHour()==null?(Double.isFinite(d.perHour())?"coins unknown":"not counted"):(v.atLeast()?"at least ":"")+coins(v.coinsPerHour())+" / h";
+            if(v.coinsPerHour()!=null){sum+=v.coinsPerHour();any=true;}
+            c.add(new Pair("+ "+d.name(),MUTED,amount+" | "+value,v.coinsPerHour()==null?MUTED:TEXT,d.source()+(v.note().isEmpty()?"":"\n"+v.note())
+                    +(v.coinsPerUnit()==null?"":"\n"+fmt(Math.round(v.coinsPerUnit()))+" coins per "+d.unit()+", "+data.priceMode.label),null));
+        }
+        Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
+        if(any&&each!=null)c.pair("Total coins / hour, "+data.priceMode.label,coins(mainPerHour*each+sum),GOLD);
+    }
+    private static String secondaryText(MethodComparison.Row row){
+        StringBuilder b=new StringBuilder();
+        for(var v:row.secondary())b.append("\n+ ").append(v.drop().name()).append(": ").append(v.coinsPerHour()==null?(Double.isFinite(v.drop().perHour())?"coins unknown":"amount unknown"):(v.atLeast()?"at least ":"")+coins(v.coinsPerHour())+" / hour");
+        if(!row.secondary().isEmpty()&&row.totalCoinsPerHour()!=null)b.append("\nTotal ").append(coins(row.totalCoinsPerHour())).append(" / hour");
+        return b.toString();
     }
     private static String ticksText(int t){return t==1?"instamine":t+" ticks";}
     private void sameChangeCard(){
