@@ -1,9 +1,28 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (hosted backend: calculations moved into the mod). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (release 0.4.0). Current release: **0.4.0** (tag `v0.4.0`). Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
+
+**Release 0.4.0 (2026-10-27).** Version pin `mod_version` in `gradle.properties` now also versions `core` and `service`
+(`service-0.4.0.zip`). `CHANGELOG.md` (player-facing; one `## <version> - <date>` section per release). README and
+docs/SETUP.md rewritten for players: install only the mod, `/sp`, hosted API default. Mod default backend is now
+`https://api.skyprogression.dev` (`ClientData.HOSTED_BACKEND`; the workers.dev URL still works). `.github/workflows/release.yml`:
+on a `v*` tag, checks the tag equals `mod_version`, builds, and creates a GitHub Release with
+`build/libs/skyprogression-<v>.jar` and `service/build/distributions/service-<v>.zip`, notes = that CHANGELOG section.
+Update notice: once per launch, off the game thread (5 s timeout, 256 KB cap), `releases/latest` of this repo; a newer
+tag shows "SkyProgression X is available" on Home (also before Load); no download. Not run in game.
+**Release steps:** bump `mod_version`, add the CHANGELOG section, push, `git tag vX.Y.Z && git push origin vX.Y.Z`,
+`gh release view vX.Y.Z`.
+**Hosting fixes (2026-10-27):** companion relay mode also answers `/uuid` (secret required, names cached a day; checked
+locally: with secret 200, without 404, unknown name 404, `/prices` still 404). Worker (API `ef54bb1`): when the relay is
+being skipped and the Worker's own key is rejected, it asks the relay at once (success clears the skip); both rejected
+-> 503 `bad_key` "Both of the server's Hypixel API keys were rejected"; relay down + own key rejected -> 503 naming
+both. `/uuid` asks the relay when Mojang refuses the Worker (older relay's "Unknown endpoint" -> 502, not "not found").
+Type-checked; **not deployed** (deploy from this session was refused by the permission check). **Owner next:** in
+SkyProgression-API run `npx wrangler deploy`, then check `/health`, `/profile?uuid=...` and `/uuid?name=...`; update the
+VM relay per deploy/relay/README.md "Updating the relay" (until then `/uuid` via the relay answers 502 as before).
 
 **Deployed (2026-10-27):** the owner deployed the Worker at <https://skyprogression-api.tian-istenic34.workers.dev>;
 it is now the mod's default (`HOSTED_BACKEND`). Live check: `/health` ok, cron filled the bundle (334 prices,
