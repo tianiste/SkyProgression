@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (release 0.4.0). Current release: **0.4.0** (tag `v0.4.0`). Status: functional preview;
+Last updated: 2026-10-27 (release 0.4.0). Current release: **0.4.0** (tag `v0.4.0` not pushed yet: the owner pushes it, see Release steps). Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
