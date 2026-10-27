@@ -99,7 +99,7 @@ final class WebViews {
         out.put("stats", shown);
         out.put("rate", rate(m, stats, r.ability, prices, q.mode()));
         out.put("tool", toolName(r));
-        out.put("loadout", r.loadout);
+        out.put("loadout", loadout(r));
         var basis = basis(m, r);
         var plan = p.inventoryEnabled ? engine.plan(p, m, stats, prices, basis, 1) : List.<ProgressionEngine.Step>of();
         out.put("next", plan.isEmpty() ? null : step(plan.getFirst(), prices));
@@ -112,7 +112,7 @@ final class WebViews {
         StatsReport r = d.stats(q.profileId(), m, "", q.bestGear(), context(q), mayor);
         out.put("bestGear", r.bestGear);
         out.put("tool", toolName(r));
-        out.put("loadout", r.loadout);
+        out.put("loadout", loadout(r));
         out.put("accessories", r.accessories);
         out.put("hotmTree", StatBreakdown.treeLabel(r.hotmTree));
         out.put("hotmTrees", r.hotmTrees);
@@ -369,6 +369,10 @@ final class WebViews {
     }
     private static ProgressionEngine.RateBasis basis(MiningMethod m, StatsReport r) {
         return new ProgressionEngine.RateBasis(m.defaultEfficiency(), r.ability, r.petStats, r.petOptions, r.profileUpgrades, r.resale);
+    }
+    /** The evaluated pieces with readable storage ("worn", "wardrobe slot 3") instead of the API's container keys. */
+    private static List<StatsReport.Tool> loadout(StatsReport r) {
+        return r.loadout.stream().map(t -> new StatsReport.Tool(t.key(), t.name(), StartWith.where(t.location()), t.id())).toList();
     }
     private static String toolName(StatsReport r) {
         return r.loadout.stream().filter(t -> t.key().equals(r.tool)).map(StatsReport.Tool::name).findFirst().orElse("");

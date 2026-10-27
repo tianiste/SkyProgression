@@ -38,7 +38,8 @@ public final class StatsReport {
     /** True when some sale quotes were still loading; asking again shortly returns them from the companion's cache. */
     public boolean resalePending;
 
-    public record Tool(String key, String name, String location) {}
+    /** id: the item ID (the pet type for the pet), for icons. */
+    public record Tool(String key, String name, String location, String id) {}
     /** The evaluated pet now and at level 100: XP held and needed (pet level table), and its counted stats there. */
     public record PetLevel(String label, int level, double exp, double expAtMax, Map<Stat, Double> statsAtMax) {}
     public static final class Ledger {
@@ -68,7 +69,7 @@ public final class StatsReport {
     public static StatsReport of(JsonObject member, Loadout.Owned owned, MiningMethod method, String tool, boolean bestGear, StatContext context,
                                  List<StatBreakdown.MayorPerk> perks) {
         StatsReport r = new StatsReport();
-        for (Item item : owned.tools()) r.tools.add(new Tool(key(item), item.name, item.location));
+        for (Item item : owned.tools()) r.tools.add(new Tool(key(item), item.name, item.location, item.id));
         r.tools.sort(Comparator.comparing(Tool::name).thenComparing(Tool::location));
         r.toolAuto = tool == null || tool.isBlank();
         String chosen = r.toolAuto ? Loadout.bestTool(owned, method) : tool;
@@ -84,8 +85,8 @@ public final class StatsReport {
         r.godPotion = context.godPotion();
         List<Item> pieces = new ArrayList<>(main.armor); pieces.addAll(main.equipment);
         if (main.tool != null) pieces.add(main.tool);
-        for (Item item : pieces) r.loadout.add(new Tool(key(item), item.name, item.location));
-        if (main.pet != null) r.loadout.add(new Tool("pet", main.pet.label(), main.pet.active() ? "active pet" : "pets menu"));
+        for (Item item : pieces) r.loadout.add(new Tool(key(item), item.name, item.location, item.id));
+        if (main.pet != null) r.loadout.add(new Tool("pet", main.pet.label(), main.pet.active() ? "active pet" : "pets menu", main.pet.type()));
         r.accessories = main.accessories.size();
         List<Item> sellable = new ArrayList<>(pieces); sellable.addAll(main.accessories);
         for (Item item : sellable) if (!item.instance.isBlank()) r.resaleQueries.put(item.instance, Resale.of(item));
