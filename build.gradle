@@ -1,7 +1,8 @@
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
 }
-version = project.mod_version
+// Fabric convention: mod version plus the Minecraft version it targets, e.g. 0.4.1+26.1.2.
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 base { archivesName = 'skyprogression' }
 repositories { mavenCentral() }

@@ -63,4 +63,17 @@ The hosted API (a Cloudflare Worker) lives in [SkyProgression-API](https://githu
 Regenerating bundled data (reforges, recipes, the item catalog) uses the Gradle tasks in `core/build.gradle`
 (`extractNeu`, `extractRecipes`, `extractCatalog`); see the comments in the generated files.
 
+## Releases
+
+Releases are published automatically when `mod_version` in `gradle.properties` changes on `main`:
+
+1. In your pull request, raise `mod_version` (for example `0.4.0` to `0.4.1`) and add a `## 0.4.1 - <date>` section to
+   [CHANGELOG.md](CHANGELOG.md). That section becomes the release notes; without it the release fails.
+2. When the pull request is merged, the Release workflow builds the jar, tags `v0.4.1` and publishes a GitHub Release
+   (and the Modrinth version, once that is configured).
+
+Merges that leave `mod_version` unchanged only build. The jar is named after the mod version and the Minecraft version
+it targets (`minecraft_version` in `gradle.properties`), e.g. `skyprogression-0.4.1+26.1.2.jar`. Do not push `v*` tags
+by hand.
+
 By contributing you agree that your contribution is licensed under the [MIT License](LICENSE).
