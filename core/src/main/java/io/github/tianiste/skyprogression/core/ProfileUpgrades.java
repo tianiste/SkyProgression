@@ -92,10 +92,11 @@ public final class ProfileUpgrades {
         }
     }
 
-    private static final Map<String, String> ESSENCE_TYPE = Map.of("eager_miner", "GOLD", "rhinestone_infusion", "DIAMOND");
+    private static final Map<String, String> ESSENCE_TYPE = Map.of("eager_miner", "GOLD", "rhinestone_infusion", "DIAMOND", "dwarven_expertise", "FOSSIL");
     private static final int[] ESSENCE_COSTS = {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
     private static final Map<String, String> SHARDS = Map.of("fortunate_miner", "SHARD_FLITTER", "rotten_pickaxe", "SHARD_MINER_ZOMBIE",
-            "quartz_speed", "SHARD_QUARTZFANG", "mossy_box", "SHARD_HIDEONLEAF", "devouring_spread", "SHARD_GEMZIE", "deep_technique", "SHARD_BAL");
+            "quartz_speed", "SHARD_QUARTZFANG", "mossy_box", "SHARD_HIDEONLEAF", "devouring_spread", "SHARD_GEMZIE", "deep_technique", "SHARD_BAL",
+            "ultimate_dna", "SHARD_GALAXY_FISH", "sleepy_spread", "SHARD_SNOOZLE", "gold_box", "SHARD_HIDEONSUN");
     /** HOTM perk powder and cost exponent (hotmlayout.json); Mining Master uses offset 8, others 2. */
     private record PerkCost(String powder, double offset, double exponent) {}
     private static final Map<String, PerkCost> PERK_COSTS = Map.ofEntries(
@@ -105,7 +106,8 @@ public final class ProfileUpgrades {
             Map.entry("rags_to_riches", new PerkCost("GLACITE", 2, 3.05)), Map.entry("gem_lover", new PerkCost("GEMSTONE", 2, 4)),
             Map.entry("old_school", new PerkCost("GEMSTONE", 2, 4)), Map.entry("blockhead", new PerkCost("GEMSTONE", 2, 4)),
             Map.entry("metal_head", new PerkCost("GLACITE", 2, 4)), Map.entry("efficient_miner", new PerkCost("MITHRIL", 2, 2.6)),
-            Map.entry("mole", new PerkCost("GEMSTONE", 2, 2.2)), Map.entry("mining_master", new PerkCost("GLACITE", 8, 5)));
+            Map.entry("mole", new PerkCost("GEMSTONE", 2, 2.2)), Map.entry("mining_master", new PerkCost("GLACITE", 8, 5)),
+            Map.entry("eager_adventurer", new PerkCost("GLACITE", 2, 2.3)), Map.entry("steady_hand", new PerkCost("GLACITE", 2, 2.6)));
 
     /** omelette: the evaluated drill holds a Blue Cheese Goblin Omelette, so HOTM perks count one level higher. */
     public static State state(JsonObject member, String tree, StatContext context, boolean omelette) {
@@ -126,19 +128,18 @@ public final class ProfileUpgrades {
     private static void essence(JsonObject member, StatContext context, Map<String, Map<Stat, Double>> chains, Map<String, Double> available, List<Option> out) {
         JsonElement perks = at(member, "player_data", "perks");
         if (!perks.isJsonObject()) return;
-        Condition islands = Condition.zones(StatContext.MINING_ISLANDS, "On Mining Islands");
         for (StatBreakdown.Essence e : StatBreakdown.ESSENCE) {
             String type = ESSENCE_TYPE.get(e.id()), resource = "ESSENCE_" + type;
             if (type == null) continue; // shown in the ledger only (no rate use)
             available.put(resource, number(at(member, "currencies", "essence", type, "current"), 0));
             int level = (int)number(at(perks, e.id()), 0);
             String chain = "essence:" + e.id();
-            chains.put(chain, one(e.stat(), counted(e.perLevel() * level, islands, context)));
+            chains.put(chain, one(e.stat(), counted(e.at(level), e.where(), context)));
             double amount = 0;
             for (int target = level + 1; target <= e.maxLevel(); target++) {
                 amount += ESSENCE_COSTS[target - 1];
                 out.add(new Option(chain, target, e.name().replaceFirst(" \\(", " " + target + " ("), "Essence",
-                        one(e.stat(), counted(e.perLevel() * target, islands, context)), resource, amount, resource,
+                        one(e.stat(), counted(e.at(target), e.where(), context)), resource, amount, resource,
                         "Essence shop perk; your essence balance is used first."));
             }
         }
@@ -153,9 +154,10 @@ public final class ProfileUpgrades {
             int have = (int)number(at(stacks, a.id()), 0), level = 0;
             for (int needed : cumulative) if (have >= needed) level++;
             String chain = "attribute:" + a.id();
-            chains.put(chain, one(a.stat(), counted(a.perLevel() * level, a.condition(), context)));
+            double echo = 1 + StatBreakdown.echoBonus(stacks, a.id());
+            chains.put(chain, one(a.stat(), counted(a.perLevel() * echo * level, a.condition(), context)));
             for (int target = level + 1; target <= cumulative.length; target++)
-                out.add(new Option(chain, target, a.name() + " " + target, "Attribute", one(a.stat(), counted(a.perLevel() * target, a.condition(), context)),
+                out.add(new Option(chain, target, a.name() + " " + target, "Attribute", one(a.stat(), counted(a.perLevel() * echo * target, a.condition(), context)),
                         shard, cumulative[target - 1] - have, shard, "Syphon " + (cumulative[target - 1] - have) + " shards (bazaar)."));
         }
     }
@@ -320,7 +322,7 @@ public final class ProfileUpgrades {
         return out;
     }
     public static Set<String> priceIds() {
-        Set<String> ids = new LinkedHashSet<>(List.of("ESSENCE_GOLD", "ESSENCE_DIAMOND"));
+        Set<String> ids = new LinkedHashSet<>(List.of("ESSENCE_GOLD", "ESSENCE_DIAMOND", "ESSENCE_FOSSIL"));
         ids.addAll(SHARDS.values());
         return ids;
     }

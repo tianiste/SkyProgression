@@ -37,34 +37,26 @@ public final class OtherUpgrades {
                     "+2 Block Fortune per bowl, first 5 bowls: +10", "Bazaar, or Scatha kills (10%).", ""),
             new Bonus("DWARVEN_OS_METALLIC_MINIS", "Dwarven O's Metallic Minis x5", "DWARVEN_OS_METALLIC_MINIS", 5, Map.of(Stat.DWARVEN_METAL_FORTUNE, 10.0),
                     "+2 Dwarven Metal Fortune per bowl, first 5 bowls: +10", "Bazaar, or Umber/Tungsten (0.31%) and Vanguard (3.41%) corpses.", ""));
-    /** Common attribute shards for level 10 (StatBreakdown.ATTRIBUTE_SHARDS), Epic for level 10. */
-    private static final int COMMON_MAX = 96, EPIC_MAX = 32;
+    /** Epic attribute shards for level 10 (StatBreakdown.ATTRIBUTE_SHARDS). */
+    private static final int EPIC_MAX = 32;
 
     public static Set<String> priceIds() {
         Set<String> ids = new LinkedHashSet<>();
         CEREALS.forEach(c -> ids.add(c.priceId()));
-        ids.addAll(List.of("SHARD_HIDEONSUN", "SHARD_NILBOG", "ESSENCE_FOSSIL", "ENCHANTMENT_COMPACT_1"));
+        ids.addAll(List.of("SHARD_NILBOG", "ENCHANTMENT_COMPACT_1"));
         return ids;
     }
 
-    /** Bonuses for the method's zone: cereals, Gold Box, Royal Riches (Mines of Divan only), Dwarven Expertise (Mining Islands). */
+    /** Bonuses for the method's zone: cereals and Royal Riches (Mines of Divan only). Gold Box and Dwarven Expertise are read from the profile (ProfileUpgrades). */
     private static List<Bonus> bonuses(MiningMethod m) {
         List<Bonus> out = new ArrayList<>(CEREALS);
         String attribute = " Attributes are in the API (attributes.stacks), but this one's key has never been observed, so a missing key is not proof you lack it.";
-        // Wiki Hideonsun Shard: Gold Box (Common) +5 to +50 Ore Fortune.
-        out.add(new Bonus("SHARD_HIDEONSUN", "Gold Box X (Hideonsun Shard)", "SHARD_HIDEONSUN", COMMON_MAX, Map.of(Stat.ORE_FORTUNE, 50.0),
-                "+5 Ore Fortune per level, level 10: +50", "Syphon 96 Hideonsun Shards (Bazaar, or hunting Hideonsun on Galatea).", attribute.strip()));
         // Wiki Nilbog Shard: Royal Riches (Epic) +5 to +50 Mining Speed and +2.5 to +25 Ore Fortune in the Mines of Divan.
         if (m.defaultZone() == StatContext.Zone.CRYSTAL_HOLLOWS)
             out.add(new Bonus("SHARD_NILBOG", "Royal Riches X (Nilbog Shard)", "SHARD_NILBOG", EPIC_MAX, Map.of(Stat.MINING_SPEED, 50.0, Stat.ORE_FORTUNE, 25.0),
                     "+5 Mining Speed and +2.5 Ore Fortune per level in the Mines of Divan, level 10: +50 / +25",
                     "Syphon 32 Nilbog Shards (Bazaar); needs Hunting 15.",
                     "Counts only in the Mines of Divan; the gain assumes you mine there." + attribute));
-        // Wiki Essence Shops/Fossil: Dwarven Expertise +2 Dwarven Metal Fortune per level on Mining Islands, 5,500 essence in total.
-        if (m.defaultZone() != StatContext.Zone.OTHER)
-            out.add(new Bonus("ESSENCE_FOSSIL", "Dwarven Expertise 10 (Fossil Essence shop)", "ESSENCE_FOSSIL", 5_500, Map.of(Stat.DWARVEN_METAL_FORTUNE, 20.0),
-                    "+2 Dwarven Metal Fortune per level on Mining Islands, level 10: +20", "Fossil Essence shop, 5,500 Fossil Essence from level 0.",
-                    "The perk's API key has not been identified, so your level is not read; the price assumes level 0 and no essence held."));
         return out;
     }
 

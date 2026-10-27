@@ -43,6 +43,9 @@ public final class StatBreakdown {
             new Perk("mining_fortune", "Mining Fortune", Stat.MINING_FORTUNE, 0, 2, 50, Condition.NONE),
             new Perk("fortunate_mineman", "Fortunate Mineman", Stat.MINING_FORTUNE, 0, 3, 50, Condition.NONE),
             new Perk("rags_to_riches", "Rags to Riches", Stat.MINING_FORTUNE, 0, 4, 50, Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In Glacite Mineshafts")),
+            // Tier 9 / Tier 8 templates and NEU hotmlayout.json: 4 Mining Speed and 0.1 Gemstone Spread per level, max 100, in Glacite Mineshafts.
+            new Perk("eager_adventurer", "Eager Adventurer", Stat.MINING_SPEED, 0, 4, 100, Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In Glacite Mineshafts")),
+            new Perk("steady_hand", "Steady Hand", Stat.GEMSTONE_SPREAD, 0, .1, 100, Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In Glacite Mineshafts")),
             new Perk("gem_lover", "Gem Lover", Stat.GEMSTONE_FORTUNE, 20, 4, 20, Condition.NONE),
             new Perk("old_school", "Old-School", Stat.ORE_FORTUNE, 0, 5, 20, Condition.NONE),
             new Perk("blockhead", "Blockhead", Stat.BLOCK_FORTUNE, 0, 5, 20, Condition.NONE),
@@ -75,6 +78,7 @@ public final class StatBreakdown {
     static final Map<Stat, String> SKY_MALL_CODES = Map.of(Stat.MINING_SPEED, "dig_speed", Stat.ALL_POWDER, "powder_bonus");
 
     static final String FIESTA = "While Cole's Mining Fiesta is active";
+    static final String MINES_OF_DIVAN = "In the Mines of Divan (Crystal Hollows)";
     /** Attribute: rarity (shard cost table) and linear effect per level up to 10 (wiki shard pages). */
     record Attribute(String id, String name, String rarity, Stat stat, double perLevel, Condition condition) {}
     static final List<Attribute> ATTRIBUTES = List.of(
@@ -94,29 +98,72 @@ public final class StatBreakdown {
             new Attribute("atomized_crystals", "Atomized Crystals (Thyst Shard)", "RARE", Stat.GEMSTONE_POWDER, 1, Condition.NONE),
             new Attribute("atomized_glacite", "Atomized Glacite (Stalagmight Shard)", "RARE", Stat.GLACITE_POWDER, 1, Condition.NONE),
             // Packrat Shard (wiki): only while Cole's Mining Fiesta perk is active, a temporary buff.
-            new Attribute("fiesta_fortune", "Fiesta Fortune (Packrat Shard)", "UNCOMMON", Stat.GEMSTONE_FORTUNE, 5, Condition.unchecked(FIESTA)));
+            new Attribute("fiesta_fortune", "Fiesta Fortune (Packrat Shard)", "UNCOMMON", Stat.GEMSTONE_FORTUNE, 5, Condition.unchecked(FIESTA)),
+            // Wiki Attributes / shard pages: Galaxy Fish +1-10 Mining Fortune, Snoozle +1-10 Mining Spread, Hideonsun +5-50 Ore
+            // Fortune, Nilbog +5-50 Mining Speed and +2.5-25 Ore Fortune in the Mines of Divan, Gimmiegold +1-10 Ore Fortune on a
+            // Goblin pet, Littlefoot +0.5 Gemstone Spread per (30 - level) Cold Resistance in the Glacite Mineshafts (see attributes()).
+            new Attribute("ultimate_dna", "Ultimate DNA (Galaxy Fish Shard)", "LEGENDARY", Stat.MINING_FORTUNE, 1, Condition.NONE),
+            new Attribute("sleepy_spread", "Sleepy Spread (Snoozle Shard)", "RARE", Stat.MINING_SPREAD, 1, Condition.NONE),
+            new Attribute("gold_box", "Gold Box (Hideonsun Shard)", "COMMON", Stat.ORE_FORTUNE, 5, Condition.NONE),
+            new Attribute("royal_riches", "Royal Riches (Nilbog Shard)", "EPIC", Stat.MINING_SPEED, 5, Condition.unchecked(MINES_OF_DIVAN)),
+            new Attribute("royal_riches", "Royal Riches (Nilbog Shard)", "EPIC", Stat.ORE_FORTUNE, 2.5, Condition.unchecked(MINES_OF_DIVAN)),
+            new Attribute("greedy_goblin", "Greedy Goblin (Gimmiegold Shard)", "RARE", Stat.ORE_FORTUNE, 1, Condition.unchecked("With a Goblin pet active")),
+            new Attribute("freezing_spread", "Freezing Spread (Littlefoot Shard)", "EPIC", Stat.GEMSTONE_SPREAD, 0,
+                    Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In Glacite Mineshafts")));
     /** Attribute keys taken from the attribute's name (as every observed key is) but not yet seen in an API response. */
-    static final Set<String> ASSUMED_ATTRIBUTE_KEYS = Set.of("cold_resistance", "atomized_glacite");
+    static final Set<String> ASSUMED_ATTRIBUTE_KEYS = Set.of("cold_resistance", "atomized_glacite", "ultimate_dna", "sleepy_spread", "gold_box",
+            "royal_riches", "greedy_goblin", "freezing_spread", "echo_of_boxes", "echo_of_wisdom", "echo_of_atomized", "echo_of_echoes");
+    /**
+     * Echo attributes (wiki Cuboa, Wyvern, Iguana and Tiamat shards): Echo of Boxes / Wisdom / Atomized make their family
+     * +2% per level stronger (rarity, family); Echo of Echoes makes those echoes +5% per level stronger. Matches the
+     * community guide totals: Mossy Box 50 x (1 + 0.2 x 1.5) = 65, Cavern Wisdom 6.5, Atomized 13%.
+     */
+    record Echo(String id, String name, String rarity, Set<String> family) {}
+    static final List<Echo> ECHOES = List.of(
+            new Echo("echo_of_boxes", "Echo of Boxes (Cuboa Shard)", "UNCOMMON", Set.of("mossy_box", "gold_box")),
+            new Echo("echo_of_wisdom", "Echo of Wisdom (Wyvern Shard)", "LEGENDARY", Set.of("cavern_wisdom")),
+            new Echo("echo_of_atomized", "Echo of Atomized (Iguana Shard)", "EPIC", Set.of("atomized_mithril", "atomized_crystals", "atomized_glacite")));
+    static final String ECHO_OF_ECHOES = "echo_of_echoes";
+    static int attributeLevel(JsonElement stacks, String id, String rarity) {
+        int shards = (int)number(at(stacks, id), 0), level = 0;
+        for (int needed : ATTRIBUTE_SHARDS.get(rarity)) if (shards >= needed) level++;
+        return level;
+    }
+    /** The echo that boosts an attribute (null if none). */
+    static Echo echoFor(String attribute) { return ECHOES.stream().filter(e -> e.family.contains(attribute)).findFirst().orElse(null); }
+    /** Extra share the echoes add to an attribute's value: echo x (1 + Echo of Echoes); 0 when not boosted. */
+    static double echoBonus(JsonElement stacks, String attribute) {
+        Echo echo = echoFor(attribute);
+        if (echo == null || !stacks.isJsonObject()) return 0;
+        return .02 * attributeLevel(stacks, echo.id, echo.rarity) * (1 + .05 * attributeLevel(stacks, ECHO_OF_ECHOES, "LEGENDARY"));
+    }
     /** Which powder sources the attribute boosts (wiki Powder Sources tables). */
     static final Map<String, String> ATTRIBUTE_SCOPE = Map.of("atomized_mithril", "Boosts Mithril Powder from mining Mithril only.",
             "atomized_crystals", "Boosts Gemstone Powder from Gemstones, Treasure Chests and the Crystal Nucleus.",
             "atomized_glacite", "Boosts Glacite Powder; which sources is not confirmed on the wiki.");
 
     /**
-     * Essence shop perks (`player_data.perks`, wiki Essence Shops/Gold, /Diamond, /Ice): linear per level unless {@code values}
-     * lists each level's total; {@code islands}: only on Mining Islands.
+     * Essence shop perks (`player_data.perks`, wiki Essence Shops/Gold, /Diamond, /Ice, Fossil Essence, Crimson Essence): linear
+     * per level unless {@code values} lists each level's total; {@code where}: the perk's condition (most: on Mining Islands).
      */
-    record Essence(String id, String name, Stat stat, double perLevel, int maxLevel, double[] values, boolean islands) {
-        Essence(String id, String name, Stat stat, double perLevel, int maxLevel) { this(id, name, stat, perLevel, maxLevel, null, true); }
+    record Essence(String id, String name, Stat stat, double perLevel, int maxLevel, double[] values, Condition where) {
+        Essence(String id, String name, Stat stat, double perLevel, int maxLevel) { this(id, name, stat, perLevel, maxLevel, null, ISLANDS); }
         double at(int level) { return level <= 0 ? 0 : values != null ? values[Math.min(level, values.length) - 1] : perLevel * level; }
     }
+    static final Condition ISLANDS = Condition.zones(StatContext.MINING_ISLANDS, "On Mining Islands");
     static final List<Essence> ESSENCE = List.of(
             new Essence("eager_miner", "Eager Miner (Gold Essence)", Stat.MINING_SPEED, 10, 10),
             new Essence("rhinestone_infusion", "Rhinestone Infusion (Diamond Essence)", Stat.GEMSTONE_FORTUNE, 2, 10),
-            new Essence("dwarven_training", "Dwarven Training (Gold Essence)", Stat.MINING_WISDOM, 0, 3, new double[]{3, 5, 10}, true),
-            new Essence("frozen_skin", "Frozen Skin (Ice Essence)", Stat.COLD_RESISTANCE, 1, 5, null, false));
+            new Essence("dwarven_training", "Dwarven Training (Gold Essence)", Stat.MINING_WISDOM, 0, 3, new double[]{3, 5, 10}, ISLANDS),
+            new Essence("frozen_skin", "Frozen Skin (Ice Essence)", Stat.COLD_RESISTANCE, 1, 5, null, Condition.NONE),
+            new Essence("dwarven_expertise", "Dwarven Expertise (Fossil Essence)", Stat.DWARVEN_METAL_FORTUNE, 2, 10),
+            // Stacks per Glacial mob killed, up to 10, until you leave the Mineshaft: +0.5 per kill per level (2.5 at level 5).
+            new Essence("cut_loose", "Cut Loose (Fossil Essence)", Stat.COLD_RESISTANCE, 5, 5, null,
+                    Condition.unchecked("Per Glacial mob killed in the current Glacite Mineshaft, shown at the 10-kill cap")),
+            new Essence("fungus_fortuna", "Fungus Fortuna (Crimson Essence)", Stat.MINING_FORTUNE, 2, 10, null, Condition.unchecked("While mining Mycelium")),
+            new Essence("harena_fortuna", "Harena Fortuna (Crimson Essence)", Stat.MINING_FORTUNE, 2, 10, null, Condition.unchecked("While mining Red Sand")));
     /** Essence perk keys not yet seen in an API response (taken from the perk name like the observed ones). */
-    static final Set<String> ASSUMED_ESSENCE_KEYS = Set.of("frozen_skin");
+    static final Set<String> ASSUMED_ESSENCE_KEYS = Set.of("frozen_skin", "dwarven_expertise", "cut_loose", "fungus_fortuna", "harena_fortuna");
     /** Cumulative shards for levels 1..10 per rarity (wiki Attributes leveling table). */
     static final Map<String, int[]> ATTRIBUTE_SHARDS = Map.of(
             "COMMON", new int[]{1, 4, 9, 15, 22, 30, 40, 54, 72, 96},
@@ -165,7 +212,26 @@ public final class StatBreakdown {
             new PetStat("SCATHA", "LEGENDARY", "MYTHIC", Stat.GEMSTONE_POWDER, .2, "Bejeweled Eyes", false, Condition.NONE),
             new PetStat("GLACITE_GOLEM", "COMMON", "COMMON", Stat.GLACITE_POWDER, .1, "Powder-powered", false, Condition.NONE),
             new PetStat("GLACITE_GOLEM", "UNCOMMON", "RARE", Stat.GLACITE_POWDER, .15, "Powder-powered", false, Condition.NONE),
-            new PetStat("GLACITE_GOLEM", "EPIC", "LEGENDARY", Stat.GLACITE_POWDER, .2, "Powder-powered", false, Condition.NONE));
+            new PetStat("GLACITE_GOLEM", "EPIC", "LEGENDARY", Stat.GLACITE_POWDER, .2, "Powder-powered", false, Condition.NONE),
+            // Wiki pet pages (level 1 and 100 linear). Per-corpse, per-player and Crimson Isle perks need state the API lacks.
+            new PetStat("GLACITE_GOLEM", "LEGENDARY", "LEGENDARY", Stat.PRISTINE, .01, "Frozen Perfection", false,
+                    Condition.unchecked("Per Frozen Corpse looted in the current Glacite Mineshaft (one corpse shown)")),
+            new PetStat("GOBLIN", "LEGENDARY", Stat.ORE_FORTUNE, 1),
+            new PetStat("GOBLIN", "LEGENDARY", "MYTHIC", Stat.MINING_SPEED, 2.5, "Grunt Work", false, Condition.target(Target.ORE, "While mining Ores")),
+            new PetStat("GOBLIN", "LEGENDARY", "MYTHIC", Stat.MINING_SPREAD, 1, "Fetid Thief", false, Condition.unchecked(MINES_OF_DIVAN)),
+            new PetStat("SNAIL", "LEGENDARY", "MYTHIC", Stat.MINING_SPREAD, 4, "Slimy Reach", false, Condition.target(Target.BLOCK, "While mining blocks")),
+            new PetStat("KUUDRA", "EPIC", "MYTHIC", Stat.MINING_FORTUNE, 1, "Kuudra Fortune", false, Condition.unchecked("On the Crimson Isle")),
+            new PetStat("MAMMOTH", "LEGENDARY", Stat.COLD_RESISTANCE, .1),
+            new PetStat("MAMMOTH", "LEGENDARY", "MYTHIC", Stat.MINING_FORTUNE, .3, "Corpse Crusher", false,
+                    Condition.unchecked("Per Frozen Corpse looted in the current Glacite Mineshaft (one corpse shown)")),
+            new PetStat("BABY_YETI", "MYTHIC", Stat.COLD_RESISTANCE, .1),
+            new PetStat("PENGUIN", "LEGENDARY", Stat.COLD_RESISTANCE, .15),
+            new PetStat("PENGUIN", "LEGENDARY", "MYTHIC", Stat.COLD_RESISTANCE, .01, "Chilly Reception", false,
+                    Condition.unchecked("Per player within 30 blocks, up to 10 (one player shown)")));
+    /** Wiki Hephaestus Relic (Legendary pet item): +50% to the pet's stats; counted on base stats (the community guide totals match). */
+    static final String HEPHAESTUS = "HEPHAESTUS_RELIC";
+    /** Wiki Snail Pet, Slow and Steady (Rare+): +1 Block Fortune per N Speed above 100; N at level 100 by rarity, -0.03 per level. */
+    static final Map<String, Double> SNAIL_SPEED_PER_FORTUNE = Map.of("RARE", 3.0, "EPIC", 3.0, "LEGENDARY", 2.0, "MYTHIC", 2.0);
     private static final List<String> TIERS = List.of("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC");
 
     private static final Pattern BRACKET = Pattern.compile("^(.+?):\\s*[+-]?[0-9,.]+\\s*\\[\\+([0-9,.]+)\\]");
@@ -185,7 +251,7 @@ public final class StatBreakdown {
         hotm(b, member, loadout.hotmTree, blueCheese(loadout.tool));
         if (stat == Stat.MINING_FORTUNE) skill(b, member);
         collections(b, member);
-        attributes(b, member);
+        attributes(b, member, loadout);
         essence(b, member);
         consumables(b, member);
         ability(b, member, loadout);
@@ -456,8 +522,15 @@ public final class StatBreakdown {
             if (s.drill && !drill) b.contributions.add(new Contribution("Pet", source, b.stat, value, s.perLevel * 100, "With a Drill",
                     State.SITUATIONAL, Confidence.KNOWN, "Applies only while mining with a Drill."));
             else add(b, "Pet", source, value, s.perLevel * 100, s.condition, Confidence.KNOWN, s.perLevel + " per pet level.");
+            if (s.perk.isEmpty() && pet.heldItem().equals(HEPHAESTUS))
+                add(b, "Pet", "Hephaestus Relic (pet item)", value * .5, s.perLevel * 50, s.condition, Confidence.KNOWN, "+50% of the pet's base stat.");
         }
+        if (b.stat == Stat.BLOCK_FORTUNE && pet.type().equals("SNAIL") && SNAIL_SPEED_PER_FORTUNE.containsKey(pet.tier()))
+            b.contributions.add(new Contribution("Pet", pet.label() + ": Slow and Steady", b.stat, null, null,
+                    "+1 per " + fmt(SNAIL_SPEED_PER_FORTUNE.get(pet.tier()) + .03 * (100 - pet.level())) + " Speed above 100",
+                    State.SITUATIONAL, Confidence.UNKNOWN, "Your Speed stat is not in the API."));
         String held = pet.heldItem();
+        if (held.equals(HEPHAESTUS)) return;
         if (held.equals("PET_ITEM_QUICK_CLAW")) {
             if (b.stat == Stat.MINING_FORTUNE || b.stat == Stat.MINING_SPEED) b.contributions.add(new Contribution("Pet", "Quick Claw (pet item)", b.stat, (double)(pet.level() / 2), 50.0, "",
                     State.COUNTED, Confidence.KNOWN, "+1 per 2 pet levels."));
@@ -616,32 +689,57 @@ public final class StatBreakdown {
         }
     }
 
-    private static void attributes(Breakdown b, JsonObject member) {
+    private static void attributes(Breakdown b, JsonObject member, Loadout l) {
         JsonElement stacks = at(member, "attributes", "stacks");
         for (Attribute a : ATTRIBUTES) {
             if (a.stat != b.stat) continue;
+            boolean freezing = a.id.equals("freezing_spread");
+            Double maximum = freezing ? null : a.perLevel * 10;
             if (!stacks.isJsonObject()) {
-                b.contributions.add(new Contribution("Attribute", a.name, b.stat, null, a.perLevel * 10, a.condition.text(),
+                b.contributions.add(new Contribution("Attribute", a.name, b.stat, null, maximum, a.condition.text(),
                         State.COUNTED, Confidence.UNKNOWN, "Attribute data missing from the API response."));
                 continue;
             }
-            int shards = (int)number(at(stacks, a.id), 0), level = 0;
-            for (int needed : ATTRIBUTE_SHARDS.get(a.rarity)) if (shards >= needed) level++;
+            int shards = (int)number(at(stacks, a.id), 0), level = attributeLevel(stacks, a.id, a.rarity);
             String scope = ATTRIBUTE_SCOPE.containsKey(a.id) ? " " + ATTRIBUTE_SCOPE.get(a.id) : "";
-            if (level == 0) b.contributions.add(new Contribution("Attribute", a.name, b.stat, 0.0, a.perLevel * 10, a.condition.text(),
-                    State.MISSING, Confidence.KNOWN, (ASSUMED_ATTRIBUTE_KEYS.contains(a.id) ? "No shards found (API key " + a.id + " assumed, not yet observed)." : "No shards syphoned.") + scope));
-            else add(b, "Attribute", a.name + " " + level, a.perLevel * level, a.perLevel * 10, a.condition, Confidence.KNOWN,
-                    shards + " shards syphoned." + scope);
+            String assumed = ASSUMED_ATTRIBUTE_KEYS.contains(a.id) ? " (API key " + a.id + " assumed, not yet observed)" : "";
+            if (level == 0) {
+                b.contributions.add(new Contribution("Attribute", a.name, b.stat, 0.0, maximum, a.condition.text(),
+                        State.MISSING, Confidence.KNOWN, (assumed.isEmpty() ? "No shards syphoned." : "No shards found" + assumed + ".") + scope));
+                continue;
+            }
+            Condition condition = a.condition;
+            if (a.id.equals("greedy_goblin") && l.pet != null)
+                condition = l.pet.type().equals("GOBLIN") ? Condition.NONE : Condition.unchecked("With a Goblin pet active (not this loadout's pet)");
+            if (freezing) {
+                // +0.5 Gemstone Spread per (30 - level) Cold Resistance: every 29 at level 1, every 20 at level 10.
+                int per = 30 - level;
+                Breakdown cold = compute(member, l, b.context, Stat.COLD_RESISTANCE);
+                Double value = cold.complete() ? .5 * Math.floor(cold.total() / per) : null;
+                add(b, "Attribute", a.name + " " + level, value, null, condition, value == null ? Confidence.UNKNOWN : Confidence.KNOWN,
+                        "+0.5 per " + per + " Cold Resistance" + (value == null ? "; Cold Resistance is incomplete." : " (" + fmt(cold.total()) + " counted here).") + assumed);
+                continue;
+            }
+            add(b, "Attribute", a.name + " " + level, a.perLevel * level, maximum, condition, Confidence.KNOWN,
+                    shards + " shards syphoned." + assumed + scope);
+            Echo echo = echoFor(a.id);
+            if (echo == null) continue;
+            double bonus = echoBonus(stacks, a.id);
+            String text = echo.name + " on " + a.name.replaceFirst(" \\(.*", "");
+            if (bonus <= 0) b.contributions.add(new Contribution("Attribute", text, b.stat, 0.0, a.perLevel * level * .3, condition.text(),
+                    State.MISSING, Confidence.KNOWN, "Makes the attribute up to 20% stronger (30% with Echo of Echoes X)."
+                    + (ASSUMED_ATTRIBUTE_KEYS.contains(echo.id) ? " API key " + echo.id + " assumed, not yet observed." : "")));
+            else add(b, "Attribute", text, a.perLevel * level * bonus, a.perLevel * level * .3, condition, Confidence.KNOWN,
+                    String.format(Locale.ROOT, "+%.1f%% from the echoes (Echo of Echoes included).", bonus * 100));
         }
     }
 
     private static void essence(Breakdown b, JsonObject member) {
         JsonElement perks = at(member, "player_data", "perks");
-        Condition islands = Condition.zones(StatContext.MINING_ISLANDS, "On Mining Islands");
         for (Essence e : ESSENCE) {
             if (e.stat != b.stat) continue;
             double maximum = e.at(e.maxLevel);
-            Condition where = e.islands ? islands : Condition.NONE;
+            Condition where = e.where;
             if (!perks.isJsonObject()) {
                 b.contributions.add(new Contribution("Essence", e.name, b.stat, null, maximum, where.text(),
                         State.COUNTED, Confidence.UNKNOWN, "Essence perks missing from the API response."));
