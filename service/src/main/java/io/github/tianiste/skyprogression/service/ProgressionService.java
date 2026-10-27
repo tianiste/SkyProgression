@@ -17,7 +17,8 @@ import static io.github.tianiste.skyprogression.core.ProfileParser.*;
  * Local data backend for the mod, with the same endpoints as the hosted SkyProgression API: raw profiles, a price
  * bundle and resale quotes. All calculations run in the mod. The Hypixel key never goes into the mod or a response.
  * With SKYPROGRESSION_RELAY_SECRET set it runs as the hosted API's profile relay on a fixed-IP server (behind an HTTPS
- * reverse proxy): only /health and /profile, and /profile only for requests carrying that secret.
+ * reverse proxy): only /health, /profile and /uuid (Mojang refuses Cloudflare's addresses), the latter two only for
+ * requests carrying that secret.
  */
 public final class ProgressionService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
@@ -81,7 +82,7 @@ public final class ProgressionService {
             String path = x.getRequestURI().getPath();
             if (RELAY_SECRET != null && !path.equals("/health")) {
                 String given = Objects.toString(x.getRequestHeaders().getFirst("X-Relay-Secret"), "");
-                if (!path.equals("/profile") || !java.security.MessageDigest.isEqual(RELAY_SECRET, given.getBytes(StandardCharsets.UTF_8))) {
+                if (!(path.equals("/profile") || path.equals("/uuid")) || !java.security.MessageDigest.isEqual(RELAY_SECRET, given.getBytes(StandardCharsets.UTF_8))) {
                     send(x, 404, Map.of("error", "Unknown endpoint")); return;
                 }
             }

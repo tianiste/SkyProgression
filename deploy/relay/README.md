@@ -2,14 +2,15 @@
 
 Hypixel application keys can be locked to an IP allowlist. A Cloudflare Worker has no fixed outbound IP, so the hosted
 API forwards `/profile` to this relay: the companion running in relay mode on a small server with a reserved public IP,
-behind Caddy for HTTPS. Prices, resale and names stay on the Worker.
+behind Caddy for HTTPS. Prices and resale stay on the Worker. Names also go through the relay when the Worker's own
+Mojang lookup fails (Mojang answers 403 to Cloudflare's addresses).
 
 ```
 mod -> https://api.skyprogression.dev (Worker) -> https://relay.skyprogression.dev (Caddy -> companion) -> Hypixel
 ```
 
-In relay mode (`SKYPROGRESSION_RELAY_SECRET` set) the companion answers only `/health` and `/profile`, and `/profile` only
-when the request carries the secret in `X-Relay-Secret`. Everything else answers 404. It fetches no prices.
+In relay mode (`SKYPROGRESSION_RELAY_SECRET` set) the companion answers only `/health`, `/profile` and `/uuid` (names
+cached for a day), the last two only when the request carries the secret in `X-Relay-Secret`. Everything else answers 404. It fetches no prices.
 
 Tested target: Oracle Cloud Always Free `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB) with Ubuntu 24.04. Any small Linux VM
 with a fixed IP works the same way.
@@ -69,7 +70,21 @@ curl -s https://relay.skyprogression.dev/health        # {"ok":true,"ready":true
 ```
 
 Logs: `journalctl -u skyprogression-relay -e` (they never contain the key or the secret).
-Update: copy a new build to `/tmp/service`, repeat the `rm`/`mv` line and `sudo systemctl restart skyprogression-relay`.
+### Updating the relay
+
+On your PC, build it (`./gradlew :service:installDist`) and copy it:
+
+```bash
+scp -r service/build/install/service ubuntu@<reserved IP>:/tmp/
+```
+
+On the server:
+
+```bash
+sudo rm -rf /opt/skyprogression/service && sudo mv /tmp/service /opt/skyprogression/service
+sudo systemctl restart skyprogression-relay
+curl -s https://relay.skyprogression.dev/health        # {"ok":true,"ready":...}
+```
 
 ## 4. Worker
 
