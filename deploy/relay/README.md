@@ -14,7 +14,11 @@ cached for a day) and `POST /checklist` (the website's guide checklist), all but
 the secret in `X-Relay-Secret`. For `/checklist` the Worker sends the player's profiles response it already has (its
 cache, the relay's `/profile`, or its own key as a fallback) together with the guide's requirements; the relay only runs
 the engine on that body and never calls Hypixel for a checklist (bodies up to 16.25 MB; a request without the profile is
-refused with 400). Everything else answers 404. It fetches no prices.
+refused with 400). `POST /web` (the website's player pages: overview, gear, upgrades, methods, start, hotm) works the
+same way: the Worker sends the profile and its price bundle, the relay decodes the profile once per player and fetch time
+(the last four are kept in memory) and answers the page's JSON; without both it answers 400 (bodies up to 18 MB). For
+the 3D model it asks Mojang's session server for the player's skin (cached an hour). Everything else answers 404. It
+fetches no prices.
 
 Tested target: Oracle Cloud Always Free `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB) with Ubuntu 24.04. Any small Linux VM
 with a fixed IP works the same way.
