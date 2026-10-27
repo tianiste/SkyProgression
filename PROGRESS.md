@@ -632,3 +632,5 @@ apart) and swap in the completed report. `SKYPROGRESSION_PORT` (default 18475) l
 development only. Measured on a temporary copy (port 18476): cold start `/report` 3.2 s, first `/stats` 1.1 s during
 the price warm-up (was 13.9 s), next `/stats` 0.1-0.2 s, `/compare` 0.4 s, `/prices` 0.05 s. Build passed. Not yet checked
 in game; restart the companion to pick it up.
+
+2026-10-27: owner tested the Heat/Cold, Maniac Miner and secondary-drop rate changes (`8c80f41`) in game: looks good.
