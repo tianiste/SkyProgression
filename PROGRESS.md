@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (release 0.4.0). Current release: **0.4.0** (tag `v0.4.0` not pushed yet: the owner pushes it, see Release steps). Status: functional preview;
+Last updated: 2026-10-27 (release 0.4.0). Current release: **0.4.0** (<https://github.com/tianiste/SkyProgression/releases/tag/v0.4.0>, jar + service zip, published by CI). Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -20,9 +20,10 @@ locally: with secret 200, without 404, unknown name 404, `/prices` still 404). W
 being skipped and the Worker's own key is rejected, it asks the relay at once (success clears the skip); both rejected
 -> 503 `bad_key` "Both of the server's Hypixel API keys were rejected"; relay down + own key rejected -> 503 naming
 both. `/uuid` asks the relay when Mojang refuses the Worker (older relay's "Unknown endpoint" -> 502, not "not found").
-Type-checked; **not deployed** (deploy from this session was refused by the permission check). **Owner next:** in
-SkyProgression-API run `npx wrangler deploy`, then check `/health`, `/profile?uuid=...` and `/uuid?name=...`; update the
-VM relay per deploy/relay/README.md "Updating the relay" (until then `/uuid` via the relay answers 502 as before).
+Deployed 2026-10-27: `/health` ok (relay true, 334 prices), `/profile` 200 (206 KB, 0.25 s); `/uuid` 502 "Mojang is
+unavailable" because the VM still runs the old relay (no `/uuid`). **Owner next:** update the VM relay per
+deploy/relay/README.md "Updating the relay", then check `https://api.skyprogression.dev/uuid?name=Debotes`; test 0.4.0
+in game (Load with the default config, the update notice once a newer release exists).
 
 **Deployed (2026-10-27):** the owner deployed the Worker at <https://skyprogression-api.tian-istenic34.workers.dev>;
 it is now the mod's default (`HOSTED_BACKEND`). Live check: `/health` ok, cron filled the bundle (334 prices,
