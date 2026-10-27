@@ -5,11 +5,14 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 
 /** Stitch palette, drawn natively: no web renderer, remote fonts, or background blur. */
 final class Theme {
     static final int BACK=0xFF0D0D13, PANEL=0xFF1B1B22, RAISED=0xFF26262F, EDGE=0xFF393943;
     static final int TEXT=0xFFDEDEE6, MUTED=0xFFACA59A, GOLD=0xFFFFC665, CYAN=0xFF49F6F6, GREEN=0xFF40ED45, RED=0xFFFFABA2;
+    /** Pet sources in stacked stat bars, and the muted bar of methods that are neither best nor selected. */
+    static final int PURPLE=0xFFC08CFF, DIM=0xFF5C5966;
     static void panel(GuiGraphicsExtractor g,int x,int y,int w,int h,int color) {
         g.fill(x,y,x+w,y+h,color);g.outline(x,y,w,h,EDGE);
     }
@@ -34,6 +37,23 @@ final class Theme {
             if(isFocused())g.outline(getX(),getY(),width,height,CYAN);
             String label=fit(font,getMessage().getString(),width-8);
             g.text(font,label,getX()+(width-font.width(label))/2,getY()+(height-8)/2,!active?0xFF686872:selected||isHoveredOrFocused()?accent:TEXT,false);
+        }
+    }
+    /** Top-bar tab: item icon, the label when there is room, a gold underline when selected. */
+    static final class IconTab extends Button {
+        private final ItemStack icon;
+        private final boolean selected, label;
+        IconTab(String name,ItemStack icon,int x,int y,int w,int h,boolean selected,Runnable action) {
+            super(x,y,w,h,Component.literal(name),b->action.run(),DEFAULT_NARRATION);this.icon=icon;this.selected=selected;label=w>=48;
+            setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(name)));
+        }
+        @Override protected void extractContents(GuiGraphicsExtractor g,int mx,int my,float delta) {
+            var font=Minecraft.getInstance().font;
+            panel(g,getX(),getY(),width,height,selected?RAISED:isHoveredOrFocused()?RAISED:PANEL);
+            if(selected)g.fill(getX()+1,getBottom()-2,getRight()-1,getBottom(),GOLD);
+            if(isFocused())g.outline(getX(),getY(),width,height,CYAN);
+            int x=label?getX()+4:getX()+(width-16)/2;g.fakeItem(icon,x,getY()+(height-16)/2);
+            if(label)g.text(font,fit(font,getMessage().getString(),width-26),getX()+23,getY()+(height-8)/2,selected?GOLD:isHoveredOrFocused()?CYAN:TEXT,false);
         }
     }
 }

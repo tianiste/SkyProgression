@@ -7,6 +7,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import java.util.*;
@@ -14,19 +15,28 @@ import java.util.concurrent.Future;
 import static io.github.tianiste.skyprogression.core.Model.*;
 import static io.github.tianiste.skyprogression.client.Theme.*;
 
+/**
+ * Four icon tabs (Home, Gear, Upgrades, Methods) plus a More page behind the settings button. Cards hold typed rows
+ * (text, stat meters, stacked source bars, item entries, a slot grid, a big number, bar-chart rows); details sit in
+ * hover tooltips or expandable lines. Wrapping, fitting and tooltip splitting happen when content changes, never per frame.
+ */
 public final class ProgressionScreen extends Screen {
     private final ClientData data=ClientData.INSTANCE;
     private MiningMethod method=MiningMethod.MF_GEMS;
     private Stat stat=Stat.MINING_FORTUNE;
-    /** Breakdown tab stat group: "Method" (the method's stats plus the focused one), "All", or a StatBreakdown.GROUPS key. */
+    /** Gear tab stat group: "Method" (the method's stats plus the focused one), "All", or a StatBreakdown.GROUPS key. */
     private String statGroup="Method";
+    /** Upgrades tab: false ranks by rate gain with the step-by-step plan; true ranks the focused stat's cheapest points. */
+    private boolean byStat;
+    /** Gear tab: key of the clicked loadout slot (empty = none); keys of expanded lines. */
+    private String slot="";
+    private final Set<String> expanded=new HashSet<>();
     private boolean autoLoadTried;
     private int lastRevision, tab, left, top, span, bottom, bodyTop, bodyBottom, scroll, contentHeight, analysisGeneration;
     private boolean wide, calculating;
     private EditBox username;
     private Future<?> analysis;
     private List<Overview> overview=List.of();
-    private List<Item> gear=List.of();
     private List<Upgrade> upgrades=List.of();
     private List<ProgressionEngine.Step> plan=List.of();
     /** Best method by coins/hour and each upgrade's rate gain there (same stat change on that method's stats); empty before the comparison loads. */
@@ -34,64 +44,106 @@ public final class ProgressionScreen extends Screen {
     private Map<Upgrade,Double> bestGains=new IdentityHashMap<>();
     private final List<Card> cards=new ArrayList<>();
     private final List<Placed> placed=new ArrayList<>();
-    private static final String[] TABS={"Overview","Upgrades","Stats","Breakdown","Start with","Rates","Compare","Other"};
-    private static final int BREAKDOWN=3,START=4,RATES=5,COMPARE=6,OTHER=7;
-    private record Line(String text,int color,double progress) {}
+    private String footerState="", footerMessage="", footerKeys="";
+    private int footerStateColor=MUTED, footerMessageX, footerKeysX;
+    private static final int HOME=0,GEAR=1,UPGRADES=2,METHODS=3,MORE=4,FULL=2,AUTO=3;
+    private static final String[] TABS={"Home","Gear","Upgrades","Methods"};
+
+    /** One card row. Rows that show a tooltip or react to a click expose tip() / click(). */
+    private interface Row { default String tip(){return null;} default Runnable click(){return null;} }
+    private record Text(String text,int color,String tip,Runnable click) implements Row {}
+    private record Meter(String label,String value,int valueColor,double progress,int color,String tip,Runnable click) implements Row {}
+    private record Seg(String label,double amount,int color) {}
+    /** Stacked bar: segments by source category over a bar worth {@code scale}. */
+    private record Split(List<Seg> segs,double scale) implements Row {}
+    private record Legend(List<Seg> segs) implements Row {}
+    private record Pair(String left,int leftColor,String right,int rightColor,String tip,Runnable click) implements Row {}
+    private record Entry(ItemStack icon,String title,int titleColor,String sub,int subColor,String right,int rightColor,String right2,int right2Color,String tip,Runnable click) implements Row {}
+    private record Slot(ItemStack icon,int outline,boolean selected,String tip,Runnable click) {}
+    private record Slots(List<Slot> slots) implements Row {}
+    private record Big(String value,String unit,int color,String tip,Runnable click) implements Row {}
+    private record Bar(ItemStack icon,String label,int labelColor,String value,double fraction,int color,String tip,Runnable click) implements Row {}
     private static final class Card {
         ItemStack icon=ItemStack.EMPTY;
-        /** Method selected when the card is clicked (Compare tab), else null. */
-        MiningMethod pick;
-        final String title;final int accent,column;final List<Line> lines=new ArrayList<>();
+        final String title;final int accent,column;
+        String right="",tip;int rightColor=MUTED;
+        /** Dropped on short screens. */
+        boolean optional;
+        final List<Row> rows=new ArrayList<>();
         Card(String title,int accent,int column){this.title=title;this.accent=accent;this.column=column;}
-        Card line(String value,int color){lines.add(new Line(value,color,-1));return this;}
-        Card meter(String value,double current,double maximum){lines.add(new Line(value,current>=maximum?GREEN:CYAN,maximum>0?current/maximum:0));return this;}
+        Card add(Row row){rows.add(row);return this;}
+        Card line(String value,int color){return add(new Text(value,color,null,null));}
+        Card line(String value,int color,String tip){return add(new Text(value,color,tip,null));}
+        Card pair(String left,String right,int color){return add(new Pair(left,MUTED,right,color,null,null));}
     }
-    private record Placed(Card card,int x,int y,int width,int height,List<Line> lines) {}
+    /** A row after layout: offset in the card, height, fitted/wrapped text, split tooltip and item positions. */
+    private record Laid(Row row,int dy,int h,List<String> text,List<FormattedCharSequence> tip,int[] pos) {}
+    private record Placed(Card card,int x,int y,int width,int height,String title,int rightX,List<FormattedCharSequence> tip,List<Laid> rows) {}
+
     public ProgressionScreen(){super(Component.literal("SkyProgression"));}
     private Theme.Action button(String label,int x,int y,int w,boolean selected,Runnable action){
         var b=new Theme.Action(label,x,y,w,20,selected,GOLD,action);addRenderableWidget(b);return b;
     }
+    private record Control(String label,boolean selected,boolean active,Runnable action) {}
+    /** Lays the controls evenly in as many rows of at least 104 px buttons as needed; returns the y below them. */
+    private int controls(int y,List<Control> list){
+        if(list.isEmpty())return y;
+        int perRow=Math.max(1,Math.min(list.size(),(span-18+4)/108)),rows=(list.size()+perRow-1)/perRow;
+        for(int r=0;r<rows;r++){int from=r*perRow,to=Math.min(list.size(),from+perRow),n=to-from,w=(span-18-4*(n-1))/n;
+            for(int k=0;k<n;k++){var c=list.get(from+k);button(c.label,left+9+k*(w+4),y,k==n-1?span-18-(n-1)*(w+4):w,c.selected,c.action).active=c.active;}
+            y+=24;}
+        return y;
+    }
     @Override protected void init(){
         String typed=username!=null?username.getValue():data.player.isEmpty()?minecraft.getUser().getName():data.player;
-        clearWidgets();span=Math.min(960,width-16);left=(width-span)/2;top=Math.max(6,(height-620)/2);bottom=height-top;
+        clearWidgets();span=Math.min(960,width-16);left=(width-span)/2;top=Math.max(4,(height-620)/2);bottom=height-top;
         wide=span>=600;
-        button("X",left+span-28,top+7,20,false,this::onClose);
-        button("Demo",left+span-82,top+7,50,data.demo,()->{data.demo();scroll=0;refresh();}).active=data.ready;
-        int y=top+34;
-        int nameWidth=wide?125:Math.max(60,span-131);
-        username=new EditBox(font,left+9,y,nameWidth,20,Component.literal("Minecraft username"));
-        username.setMaxLength(16);username.setValue(typed);username.setTextColor(CYAN);addRenderableWidget(username);
-        button(data.loading?"Cancel":"Load",left+13+nameWidth,y,54,false,()->{if(data.loading){data.cancel();refresh();}else data.load(username.getValue(),minecraft::execute,this::refresh);}).active=data.ready;
+        int y=top+6;boolean labels=span>=460,oneRow=span>=860;
+        int tabW=labels?74:26,tabX=left+(span>=520?104:9);
+        ItemStack[] icons={new ItemStack(Items.COMPASS),new ItemStack(Items.DIAMOND_CHESTPLATE),new ItemStack(Items.EXPERIENCE_BOTTLE),new ItemStack(Items.DIAMOND_PICKAXE)};
+        for(int i=0;i<TABS.length;i++){int t=i;addRenderableWidget(new Theme.IconTab(TABS[i],icons[i],tabX+i*(tabW+3),y,tabW,22,tab==i,()->switchTab(t)));}
+        button("X",left+span-28,y+1,20,false,this::onClose);
+        addRenderableWidget(new Theme.IconTab("More: Type Stats, stat focus, profile, Demo and help (F1)",new ItemStack(Items.COMPARATOR),left+span-54,y,23,22,tab==MORE,()->switchTab(MORE)));
         Profile p=data.profile();
         String profile=p==null?"Profile":p.name+" ["+p.mode+"]";
-        if(wide){
-            int x=left+nameWidth+73,available=span-nameWidth-91,w=(available-8)/3;
-            button(profile+" v",x,y,w,false,this::selectProfile).active=p!=null;
-            button(method.label+" v",x+w+4,y,w,false,this::selectMethod);
-            button(stat.label+" v",x+2*(w+4),y,w,false,this::selectStat);
+        int rowY=oneRow?y+1:y+27,nameWidth,nameX;
+        if(oneRow){
+            int methodX=left+span-58-112,profileX=methodX-4-122;
+            button(profile+" v",profileX,rowY,122,false,this::selectProfile).active=p!=null;
+            button(method.label+" v",methodX,rowY,112,false,this::selectMethod);
+            nameWidth=92;nameX=profileX-4-44-4-nameWidth;
         }else{
-            y+=24;int w=(span-26)/2;
-            button(profile+" v",left+9,y,w,false,this::selectProfile).active=p!=null;
-            button(method.label+" v",left+13+w,y,w,false,this::selectMethod);
+            nameWidth=Math.min(120,Math.max(60,(span-18)/3-24));nameX=left+9;
+            int rest=span-18-nameWidth-48,w=(rest-8)/2,x=nameX+nameWidth+52;
+            button(profile+" v",x,rowY,w,false,this::selectProfile).active=p!=null;
+            button(method.label+" v",x+w+4,rowY,rest-w-4,false,this::selectMethod);
         }
-        y+=25;int tw=(span-22-(TABS.length-1))/TABS.length;
-        for(int i=0;i<TABS.length;i++){int selected=i;button(TABS[i],left+9+i*(tw+1),y,tw,tab==i,()->{tab=selected;scroll=0;refresh();});}
-        y+=25;
-        if(!wide){button(stat.label+" v",left+9,y,span-124,false,this::selectStat);button("Type Stats",left+span-110,y,101,false,this::typeStats).active=data.ready;y+=24;}
-        if(tab==BREAKDOWN){breakdownControls(y+3);bodyTop=y+31;}
-        else if(tab==COMPARE){compareControls(y+3);bodyTop=y+31;}
-        else if(tab==START){startControls(y+3);bodyTop=y+31;}
-        else bodyTop=y+(!wide&&height<330?4:31);
-        bodyBottom=bottom-48;
-        button("<",left+9,bottom-30,24,false,()->scroll=Math.max(0,scroll-Math.max(30,bodyBottom-bodyTop-20)));
-        button(">",left+37,bottom-30,24,false,()->scroll=Math.min(maxScroll(),scroll+Math.max(30,bodyBottom-bodyTop-20)));
-        if(wide)button("Type Stats",left+span-111,bottom-30,102,false,this::typeStats).active=data.ready;
+        username=new EditBox(font,nameX,rowY,nameWidth,20,Component.literal("Minecraft username"));
+        username.setMaxLength(16);username.setValue(typed);username.setTextColor(CYAN);username.setTooltip(Tooltip.create(Component.literal("Minecraft username. Load (or R) reads it from the companion.")));addRenderableWidget(username);
+        button(data.loading?"Stop":"Load",nameX+nameWidth+4,rowY,44,false,()->{if(data.loading){data.cancel();refresh();}else data.load(username.getValue(),minecraft::execute,this::refresh);}).active=data.ready;
+        y=rowY+26;
+        y=controls(y,switch(tab){case GEAR->gearControls();case UPGRADES->upgradeControls();case METHODS->methodControls();case MORE->moreControls();default->List.of();});
+        bodyTop=y+2;bodyBottom=bottom-28;
+        button("<",left+9,bottom-24,20,false,()->scroll=Math.max(0,scroll-page()));
+        button(">",left+31,bottom-24,20,false,()->scroll=Math.min(maxScroll(),scroll+page()));
+        footer(p);
         data.initialize(minecraft::execute,this::refresh);
         data.ensureStats(method,minecraft::execute,this::refresh);
-        if(tab==COMPARE||tab==1||tab==START)data.ensureCompare(minecraft::execute,this::refresh);
-        if(tab==START)data.ensureStart(method,minecraft::execute,this::refresh);
+        if(tab!=MORE)data.ensureCompare(minecraft::execute,this::refresh);
+        if(tab==GEAR)data.ensureStart(method,minecraft::execute,this::refresh);
         lastRevision=data.revision;analyze();
     }
+    /** Footer text, fitted once per rebuild (the message only changes through a revision, which rebuilds). */
+    private void footer(Profile p){
+        footerState=data.loading?"LOADING":data.demo?"DEMO":p==null?"OFFLINE":"LOADED";
+        footerStateColor=data.demo?GOLD:data.loading?CYAN:p==null?MUTED:GREEN;
+        footerKeys=wide?"R Reload  |  F1 Help  |  ESC Close":"";
+        footerKeysX=left+span-10-font.width(footerKeys);
+        footerMessageX=left+58+font.width(footerState)+8;
+        footerMessage=fit(font,data.message,(wide?footerKeysX-12:left+span-10)-footerMessageX);
+    }
+    private int page(){return Math.max(30,bodyBottom-bodyTop-20);}
+    private void switchTab(int t){tab=t;scroll=0;refresh();}
     @Override public void tick(){
         // Load the typed player once per opening, as soon as the catalog is ready; a kept profile or Demo is left as is.
         if(!autoLoadTried&&data.ready&&data.report==null&&!data.loading&&!data.demo&&username!=null){autoLoadTried=true;data.load(username.getValue(),minecraft::execute,this::refresh);}
@@ -99,44 +151,47 @@ public final class ProgressionScreen extends Screen {
     }
     void refresh(){if(minecraft.screen==this)init();}
     private void typeStats(){minecraft.setScreen(new InputsScreen(this,data.inputs(method),method));}
-    private void breakdownControls(int y){
-        Profile p=data.profile();var i=data.inputs(method);boolean live=p!=null&&!data.demo;
-        int w=(span-18-20)/6,x=left+9;
-        button("Stats: "+statGroup+" v",x,y,w,false,this::selectGroup).active=live;
-        button("Gear: "+(i.equippedGear?"Equipped":"Best owned"),x+w+4,y,w,!i.equippedGear,()->{i.equippedGear=!i.equippedGear;persist();refresh();}).active=live;
-        button("Tool: "+toolName(i.tool)+" v",x+2*(w+4),y,w,false,this::selectTool).active=live;
-        StatContext.Zone z=data.zone(method);
-        button("Zone: "+(z==null?"Not chosen":z.label)+" v",x+3*(w+4),y,w,false,this::selectZone).active=live;
-        button("God Potion: "+(i.godPotion?"On":"Off"),x+4*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
-        button(data.statsLoading(method)?"Loading...":"Refresh",x+5*(w+4),y,span-18-5*(w+4),false,()->{data.refreshStats();refresh();}).active=live&&!data.statsLoading(method);
+    private void persist(){data.save(minecraft::execute,ignored->{});}
+    private boolean live(){return data.profile()!=null&&!data.demo;}
+    private void cyclePrice(){var modes=MethodComparison.PriceMode.values();data.priceMode=modes[(data.priceMode.ordinal()+1)%modes.length];refresh();}
+
+    // ---- Controls ----
+    /** Gear: the Breakdown and Start with selections; Refresh reloads both. */
+    private List<Control> gearControls(){
+        var i=data.inputs(method);boolean live=live();StatContext.Zone z=data.zone(method);
+        return List.of(new Control("Stats: "+statGroup+" v",false,live,this::selectGroup),
+                new Control("Gear: "+(i.equippedGear?"Equipped":"Best owned"),!i.equippedGear,live,()->{i.equippedGear=!i.equippedGear;persist();refresh();}),
+                new Control("Tool: "+toolName(i.tool)+" v",false,live,this::selectTool),
+                new Control("Zone: "+(z==null?"Not chosen":z.label)+" v",false,live,this::selectZone),
+                new Control("God Potion: "+(i.godPotion?"On":"Off"),i.godPotion,live,()->{i.godPotion=!i.godPotion;persist();refresh();}),
+                new Control("Price: "+data.priceMode.label,true,true,this::cyclePrice),
+                new Control(data.statsLoading(method)||data.startLoading(method)?"Loading...":"Refresh",false,live&&!data.statsLoading(method)&&!data.startLoading(method),
+                        ()->{data.refreshStats();data.refreshStart();data.loadPrices(minecraft::execute,this::refresh);refresh();}));
+    }
+    private List<Control> upgradeControls(){
+        List<Control> list=new ArrayList<>();
+        list.add(new Control(byStat?"Rank: "+stat.label+" points":"Rank: rate gain",byStat,true,()->{byStat=!byStat;scroll=0;refresh();}));
+        if(byStat)list.add(new Control("Stat: "+stat.label+" v",false,true,this::selectStat));
+        list.add(new Control("Price: "+data.priceMode.label,true,true,this::cyclePrice));
+        list.add(new Control("Type Stats",false,data.ready,this::typeStats));
+        return list;
+    }
+    private List<Control> methodControls(){
+        boolean live=live();
+        return List.of(new Control("Price: "+data.priceMode.label,true,true,this::cyclePrice),
+                new Control("God Potion: "+(data.compareGodPotion?"On":"Off"),data.compareGodPotion,live,()->{data.compareGodPotion=!data.compareGodPotion;scroll=0;refresh();}),
+                new Control("Pick method v",false,!data.comparisonRows().isEmpty(),this::pickRanked),
+                new Control(data.compareLoading()?"Loading...":"Refresh",false,live&&!data.compareLoading(),()->{data.refreshCompare();data.loadPrices(minecraft::execute,this::refresh);refresh();}));
+    }
+    private List<Control> moreControls(){
+        return List.of(new Control("Type Stats",false,data.ready,this::typeStats),
+                new Control("Stat focus: "+stat.label+" v",false,true,this::selectStat),
+                new Control("Demo",data.demo,data.ready,()->{data.demo();scroll=0;refresh();}));
     }
     private void selectGroup(){
         List<String> groups=new ArrayList<>();groups.add("Method");groups.addAll(StatBreakdown.GROUPS.keySet());groups.add("All");
         List<String> labels=groups.stream().map(g->g.equals("Method")?"Method: stats that change "+method.label+" rates":g.equals("All")?"All stats":g+": "+String.join(", ",StatBreakdown.GROUPS.get(g).stream().map(s->s.label).toList())).toList();
         minecraft.setScreen(new ChoiceScreen(this,"Stat group",labels,n->{statGroup=groups.get(n);scroll=0;}));
-    }
-    private void compareControls(int y){
-        boolean live=data.profile()!=null&&!data.demo;int w=(span-18-12)/4,x=left+9;
-        var modes=MethodComparison.PriceMode.values();
-        button("Price: "+data.priceMode.label,x,y,w,true,()->{data.priceMode=modes[(data.priceMode.ordinal()+1)%modes.length];refresh();});
-        button("God Potion: "+(data.compareGodPotion?"On":"Off"),x+w+4,y,w,data.compareGodPotion,()->{data.compareGodPotion=!data.compareGodPotion;scroll=0;refresh();}).active=live;
-        button("Pick method v",x+2*(w+4),y,w,false,this::pickRanked).active=!data.comparisonRows().isEmpty();
-        button(data.compareLoading()?"Loading...":"Refresh",x+3*(w+4),y,span-18-3*(w+4),false,()->{data.refreshCompare();data.loadPrices(minecraft::execute,this::refresh);refresh();}).active=live&&!data.compareLoading();
-    }
-    /** Start with uses the Breakdown tab's held tool, zone and God Potion; Price is shared with Compare. */
-    private void startControls(int y){
-        boolean live=data.profile()!=null&&!data.demo;var i=data.inputs(method);int w=(span-18-12)/4,x=left+9;
-        var modes=MethodComparison.PriceMode.values();
-        button("Price: "+data.priceMode.label,x,y,w,true,()->{data.priceMode=modes[(data.priceMode.ordinal()+1)%modes.length];refresh();});
-        button("Held tool: "+(i.tool==null||i.tool.isEmpty()?"Not chosen":toolName(i.tool))+" v",x+w+4,y,w,false,this::selectHeldTool).active=live;
-        button("God Potion: "+(i.godPotion?"On":"Off"),x+2*(w+4),y,w,i.godPotion,()->{i.godPotion=!i.godPotion;persist();refresh();}).active=live;
-        button(data.startLoading(method)?"Loading...":"Refresh",x+3*(w+4),y,span-18-3*(w+4),false,()->{data.refreshStart();data.loadPrices(minecraft::execute,this::refresh);refresh();}).active=live&&!data.startLoading(method);
-    }
-    private void selectHeldTool(){
-        var list=tools();List<String> labels=new ArrayList<>();labels.add("Not chosen (assume the best owned tool)");
-        for(var t:list)labels.add(t.name()+" ("+t.location()+")");
-        var i=data.inputs(method);
-        minecraft.setScreen(new ChoiceScreen(this,"Tool you hold now",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
     }
     private void pickRanked(){
         var rows=data.comparisonRows();int n=0;List<String> labels=new ArrayList<>();
@@ -150,12 +205,12 @@ public final class ProgressionScreen extends Screen {
             return r==null?"Auto":r.tool.isEmpty()?"None owned":"Auto, "+tools().stream().filter(t->t.key().equals(r.tool)).map(StatsReport.Tool::name).findFirst().orElse("best");}
         return tools().stream().filter(t->t.key().equals(key)).map(StatsReport.Tool::name).findFirst().orElse(tools().isEmpty()?"Selected":"Not found");
     }
-    private void persist(){data.save(minecraft::execute,ignored->{});}
+    /** The tool held now: the stat ledger evaluates it, and Start with compares the loadout worn with it. */
     private void selectTool(){
         var list=tools();List<String> labels=new ArrayList<>();labels.add("Best owned tool for "+method.label+" (automatic)");
         for(var t:list)labels.add(t.name()+" ("+t.location()+")");
         var i=data.inputs(method);
-        minecraft.setScreen(new ChoiceScreen(this,"Held tool",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
+        minecraft.setScreen(new ChoiceScreen(this,"Tool you hold",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
     }
     private void selectZone(){
         var zones=StatContext.Zone.values();List<String> labels=new ArrayList<>();labels.add("Usual for "+method.label+" ("+method.defaultZone().label+")");
@@ -163,329 +218,180 @@ public final class ProgressionScreen extends Screen {
         var i=data.inputs(method);
         minecraft.setScreen(new ChoiceScreen(this,"Mining zone",labels,n->{i.zone=n==0?"":n>zones.length?"-":zones[n-1].name();scroll=0;persist();}));
     }
-    private void selectMethod(){minecraft.setScreen(new ChoiceScreen(this,"Mining method",Arrays.stream(MiningMethod.values()).map(m->m.label).toList(),n->{method=MiningMethod.values()[n];scroll=0;}));}
+    private void selectMethod(){minecraft.setScreen(new ChoiceScreen(this,"Mining method",Arrays.stream(MiningMethod.values()).map(m->m.label).toList(),n->{method=MiningMethod.values()[n];scroll=0;slot="";}));}
     private void selectStat(){minecraft.setScreen(new ChoiceScreen(this,"Stat focus",Arrays.stream(Stat.values()).map(s->s.label).toList(),n->{stat=Stat.values()[n];scroll=0;}));}
-    private void selectProfile(){if(data.report!=null)minecraft.setScreen(new ChoiceScreen(this,"SkyBlock profile",data.report.profiles.stream().map(p->p.name+" ["+p.mode+"]"+(p.selected?" - active":"")).toList(),n->{data.profileIndex=n;scroll=0;}));}
+    private void selectProfile(){if(data.report!=null)minecraft.setScreen(new ChoiceScreen(this,"SkyBlock profile",data.report.profiles.stream().map(p->p.name+" ["+p.mode+"]"+(p.selected?" - active":"")).toList(),n->{data.profileIndex=n;scroll=0;slot="";}));}
+
+    // ---- Analysis (worker) ----
+    private static final int PLAN_STEPS=12;
     private void analyze(){
         int generation=++analysisGeneration;if(analysis!=null)analysis.cancel(true);
-        Profile p=data.profile();overview=List.of();gear=List.of();upgrades=List.of();plan=List.of();bestRow=null;bestGains=new IdentityHashMap<>();
-        if(p==null||!data.ready||!p.inventoryEnabled||tab>=BREAKDOWN){calculating=false;buildCards();return;}
+        Profile p=data.profile();overview=List.of();upgrades=List.of();plan=List.of();bestRow=null;bestGains=new IdentityHashMap<>();
+        boolean needed=tab==HOME||tab==UPGRADES||tab==MORE;
+        if(p==null||!data.ready||!p.inventoryEnabled||!needed){calculating=false;buildCards();return;}
         calculating=true;buildCards();
-        var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;
+        var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;boolean focused=byStat;
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
-        var rows=selectedTab==1?data.comparisonRows():List.<MethodComparison.Row>of();
+        boolean ranks=selectedTab==UPGRADES,plans=selectedTab==HOME||selectedTab==UPGRADES&&!focused;
+        var rows=ranks&&!focused?data.comparisonRows():List.<MethodComparison.Row>of();
         var best=rows.isEmpty()||rows.getFirst().coinsPerHour()==null?null:rows.getFirst();
         var bestStats=best==null?null:data.comparisonStats(best.method());
         var bestEntry=best==null?null:data.comparison().entry(best.method());
         double bestEfficiency=best==null?0:data.inputs(best.method()).efficiency;
         StatsReport report=data.stats(method);var basis=report==null?new ProgressionEngine.RateBasis(data.inputs(method).efficiency,null)
                 :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions,report.profileUpgrades,report.resale);
+        boolean statsReady=data.hasStats(method);
         analysis=ClientData.WORK.submit(()->{
             try {
-                var base=data.engine.overview(p,selectedMethod,selectedStat);
-                var selectedGear=new ArrayList<>(data.engine.bestOwned(p,selectedMethod,selectedStat).values());
-                var ranked=selectedTab==1||selectedTab==2?data.engine.upgrades(p,selectedMethod,selectedTab==2?selectedStat:null,effective,quotes,basis):List.<Upgrade>of();
-                var steps=selectedTab==1?data.engine.plan(p,selectedMethod,effective,quotes,basis,PLAN_STEPS):List.<ProgressionEngine.Step>of();
+                var base=selectedTab==MORE?data.engine.overview(p,selectedMethod,selectedStat):List.<Overview>of();
+                var ranked=ranks&&(focused||statsReady)?data.engine.upgrades(p,selectedMethod,focused?selectedStat:null,effective,quotes,basis):List.<Upgrade>of();
+                var steps=plans&&statsReady?data.engine.plan(p,selectedMethod,effective,quotes,basis,PLAN_STEPS):List.<ProgressionEngine.Step>of();
                 Map<Upgrade,Double> gains=new IdentityHashMap<>();
                 if(best!=null&&bestStats!=null&&best.method()!=selectedMethod)for(var u:ranked){Double g=MethodComparison.gain(best.method(),bestStats,bestEfficiency,bestEntry.ability,u.delta(),u.cooldownFactor());if(g!=null)gains.put(u,g);}
-                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;gear=selectedGear;upgrades=ranked;plan=steps;bestRow=best;bestGains=gains;calculating=false;buildCards();});
+                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;upgrades=ranked;plan=steps;bestRow=best;bestGains=gains;calculating=false;buildCards();});
             }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
         });
     }
+
+    // ---- Cards ----
     private Card card(String title,int accent,int column){Card c=new Card(title,accent,column);cards.add(c);return c;}
+    private void toggle(String key){if(!expanded.remove(key))expanded.add(key);buildCards();}
     private void buildCards(){
         cards.clear();Profile p=data.profile();
         if(!data.ready){card("Preparing SkyProgression",GOLD,0).line(data.message,MUTED);layoutCards();return;}
-        if(p==null){
-            card(data.loading?"Loading your profile...":"Your next mining upgrade",GOLD,0).line("Choose a method and see what to improve next.",TEXT).line("Load your username, or select Demo to explore offline.",CYAN);
-            card("Connect your profile",CYAN,1).line("Start the local companion, then press Load. Your application key stays in the companion.",MUTED).line("Enable Inventory API in SkyBlock Settings for gear recommendations.",TEXT);
-        }else if(!p.inventoryEnabled&&tab<BREAKDOWN){card("Inventory unavailable",RED,0).line("Gear recommendations are paused. Enable Inventory API in SkyBlock Settings, then reload after the profile cache expires.",TEXT);}
-        else if(calculating){card("Calculating upgrades...",CYAN,0).line("You can switch tabs or close this screen while calculations run.",MUTED);}
-        else switch(tab){case 0->overviewCards(p);case 1,2->upgradeCards();case BREAKDOWN->breakdownCards();case START->startCards();case RATES->rateCards();case COMPARE->compareCards();case OTHER->otherCards(p);}
+        if(p==null&&tab!=MORE){
+            Card c=card(data.loading?"Loading your profile...":"Your next mining upgrade",GOLD,0);
+            c.line("Choose a method and see what to improve next.",TEXT).line("Type your username at the top and press Load.",CYAN);
+            c.add(new Text("Or try the offline Demo (example data)",GOLD,"Example ownership and prices, not your real profile.",()->{data.demo();scroll=0;refresh();}));
+            card("Connect your profile",CYAN,1).line("Start the local companion, then press Load.",TEXT,"Your application key stays in the companion.")
+                    .line("Enable Inventory API in SkyBlock Settings for gear advice.",MUTED,"SkyBlock Menu > Settings > API Settings > Inventory API: ON.");
+        }else switch(tab){case HOME->homeCards(p);case GEAR->gearCards();case UPGRADES->upgradeCards(p);case METHODS->methodCards();default->moreCards(p);}
         layoutCards();
     }
     /** The SkyBlock item's own icon (texture packs can retexture it), else a generic one for the slot. */
     private ItemStack icon(String id,String group){
         ItemStack own=Icons.of(id);if(own!=null)return own;
-        return new ItemStack(switch(group){
-            case "Tool" -> Items.DIAMOND_PICKAXE;
+        return new ItemStack(switch(group==null?"":group){
+            case "Tool","Drill","Pickaxe","Gauntlet" -> Items.DIAMOND_PICKAXE;
             case "Helmet" -> Items.DIAMOND_HELMET;
             case "Chestplate" -> Items.DIAMOND_CHESTPLATE;
             case "Leggings" -> Items.DIAMOND_LEGGINGS;
             case "Boots" -> Items.DIAMOND_BOOTS;
             case "Lantern" -> Items.LANTERN;
             case "Pet" -> Items.BONE;
+            case "HOTM","HOTM tree" -> Items.EMERALD;
+            case "Necklace" -> Items.STRING;
+            case "Cloak" -> Items.LEATHER;
+            case "Belt" -> Items.LEAD;
+            case "Gloves","Bracelet" -> Items.RABBIT_HIDE;
             default -> Items.AMETHYST_SHARD;
         });
     }
-    private void overviewCards(Profile p){
-        Card basic=card("Heart of the Mountain & skills",GOLD,0);
-        if(p.milestones.isEmpty())basic.line("Skill progress is not available for this profile.",MUTED);
-        for(var m:p.milestones)basic.meter(m.name()+"  "+fmt(m.current())+" / "+fmt(m.maximum()),m.current(),m.maximum());
-        Card powder=card("Powder",CYAN,0);
-        boolean hasPowder=false;
-        for(var e:p.progress.entrySet())if(e.getKey().contains("powder")){powder.line(e.getKey(),MUTED).line(fmt(e.getValue()),CYAN);hasPowder=true;}
-        if(!hasPowder)powder.line("Powder data unavailable.",MUTED);
-        powder.line("Unspent powder, as shown in game. Targets depend on your HOTM build.",MUTED);
-        card("Progression scope",GOLD,0).line("Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones.",TEXT).line("Every method has a rate model (Rates tab); Compare ranks them by coins per hour. None is validated against a measured session yet.",MUTED);
-        for(var row:overview){
-            Card c=card(row.group()+" | "+(row.current()==null?"Missing":row.current().name),GOLD,1);
-            c.icon=icon(row.current()!=null?row.current().id:row.target().id,row.group());
-            c.meter(stat.label+" (base)  "+fmt(row.value())+" / "+fmt(row.maximum()),row.value(),row.maximum());
-            if(row.value()<row.maximum())c.line("Target: "+row.target().name,MUTED);
-            if(row.current()!=null){
-                Item current=row.current();
-                c.line("Item "+(current.observed?"lore":"base")+": "+fmt(Model.stat(current.stats,stat))+" "+stat.label,CYAN);
-                if(!current.location.isBlank())c.line("Found in "+current.location,MUTED);
-                for(var m:GearUpgrades.progress(current,method,stat))c.meter(m.name()+"  "+fmt(m.current())+" / "+fmt(m.maximum()),m.current(),m.maximum());
-            }
+    private ItemStack productIcon(MiningMethod m){ItemStack own=Icons.of(MethodComparison.priceId(m));return own!=null?own:new ItemStack(Items.COBBLESTONE);}
+
+    // Home
+    private void homeCards(Profile p){
+        statsCard();
+        rateTile();
+        nextUpgradeTile(p);
+        methodChart(true);
+    }
+    /** One bar per method stat: current vs attainable with this loadout; hover lists the top sources, click opens Gear. */
+    private void statsCard(){
+        Card c=card("Your stats for "+method.label,GOLD,0);
+        c.tip="Bars show the current total against the best attainable with this gear, tool, pet and HOTM tree.\n* = your Type Stats value is used instead.\nClick a bar for the full breakdown on Gear.";
+        StatsReport r=data.stats(method);var e=data.effective(method);var manual=data.inputs(method).stats;
+        if(r==null&&e.isEmpty()){
+            if(data.demo)c.line("Demo has no API data. Enter stats in Type Stats (More page) to try the rates.",TEXT);
+            else{String error=data.statsError(method);c.line(!error.isEmpty()?error:data.statsLoading(method)?"Loading automatic stats...":"Load your player to see your stats.",error.isEmpty()?MUTED:RED);}
+            return;
         }
-        if(overview.isEmpty())card("Gear audit",GOLD,1).line("No supported gear for this stat. Choose another stat focus.",MUTED);
-    }
-    private void upgradeCards(){
-        boolean focused=tab==2;
-        if(!focused&&!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Automatic method stats come from your loaded profile. Type Stats adds or overrides values.",TEXT).line("The Stats tab works without these inputs and ranks coins per stat point.",CYAN);return;}
-        boolean rated=!focused&&upgrades.stream().anyMatch(u->u.rateBefore()!=null);
-        Card head=card(focused?stat.label+" | cheapest points first":method.label+" | best value first",GOLD,0);
-        if(!focused)head.line(rated?"Model: rate gain (automatic "+method.label+" rate, "+MethodRates.unit(method,ability())+")":ProgressionEngine.rateModel(method)?"Model: drop multiplier (rate unavailable for these stats)":"Model: drop multiplier (no rate model for "+method.label+" yet)",CYAN)
-                .line(rated?"Mining Speed counts only when it changes ticks; ability cooldown counts through uptime.":"Fortune x Spread x Pristine; Mining Speed and ability cooldown are not valued.",MUTED);
-        head.line("Each recommendation compares to your current setup. Alternatives are not a combined shopping list.",MUTED);
-        if(rated&&bestRow!=null)head.line(bestRow.method()==method?method.label+" is your best method by coins / hour ("+compact(bestRow.coinsPerHour())+", "+data.priceMode.label+")."
-                :"Best method by coins / hour: "+bestRow.method().label+" ("+compact(bestRow.coinsPerHour())+", "+data.priceMode.label+"). Each card shows what the same stat change is worth there, on that method's own stats.",CYAN);
-        if(upgrades.isEmpty())card("No supported upgrades found",CYAN,0).line("This does not mean your account is fully maxed. Try another method or stat.",TEXT);
-        int rank=0;
-        for(var u:upgrades){
-            Card c=card("#"+(++rank)+"  "+u.item().name,u.blocked().isEmpty()?GOLD:RED,0);
-            c.icon=icon(u.item().modification&&u.current()!=null?u.current().id:u.item().id,u.current()!=null?u.current().group:u.item().group);
-            if(u.current()!=null)c.line((u.item().modification?"On: ":"Replaces: ")+u.current().name,MUTED);
-            StringJoiner changes=new StringJoiner(" / ");u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});
-            if(u.cooldownFactor()!=1)changes.add("ability cooldown x"+fmt(u.cooldownFactor()));
-            if(changes.length()>0)c.line(changes.toString(),CYAN);
-            c.line(u.cost()==null?("GRIND".equals(u.item().category)?"Grinding (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"),u.cost()==null?MUTED:GREEN);
-            if(!u.resaleNote().isEmpty()&&u.cost()!=null)c.line(u.net()!=null?"Net "+coins(u.net())+" after selling the replaced item for "+coins(u.resale())+" ("+u.resaleNote()+")"
-                    :u.resaleNote()+"; net cost unknown",u.net()!=null?CYAN:MUTED);
-            if(u.rateBefore()!=null)c.line("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" "+MethodRates.unit(method,ability()),GREEN);
-            else if(!focused)c.line("Estimated drops: +"+fmt(u.gain())+"%",GREEN);
-            if(u.rateBefore()!=null&&u.rateAfter()!=null)crossMethodLine(c,u);
-            if(u.owned())c.line("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned",GREEN);
-            if(!u.blocked().isEmpty())c.line(u.blocked(),RED);
-            var quote=data.prices.get(u.item().id);
-            if(quote!=null&&!u.item().modification)c.line(quote.source,MUTED);
-            if(quote==null||u.item().modification||u.item().source.matches("^(Cheaper|Buying|No buy|Price unknown).*"))c.line(u.item().source,MUTED);
+        for(Stat s:method.relevantStats()){
+            Double v=e.get(s);var l=r==null?null:r.ledger(s);
+            if(v==null){c.add(new Meter(s.label,"?",MUTED,0,MUTED,"Neither known nor entered.",null));continue;}
+            double max=l==null?v:l.attainable!=null?l.attainable:l.attainableKnown;
+            boolean maxed=l!=null&&l.attainable!=null&&v>=l.attainable-1e-9;
+            String value=(l!=null&&!l.complete&&!manual.containsKey(s)?"at least ":"")+amount(s,v)+(manual.containsKey(s)?" *":"");
+            c.add(new Meter(s.label,value+(l==null?"":"  / "+(l.attainable==null?"≥":"")+amount(s,max)),maxed?GREEN:TEXT,max>0?v/Math.max(v,max):0,maxed?GREEN:CYAN,
+                    l==null?"Manual value (Type Stats).":sourcesTip(l,5),()->switchTab(GEAR)));
         }
-        if(!focused)planCard(rated);
-        Card comparison=card("Cost efficiency",CYAN,1);
-        var known=upgrades.stream().filter(u->u.cost()!=null&&Double.isFinite(u.costPerUnit())&&u.blocked().isEmpty()).limit(4).toList();
-        double max=known.stream().mapToDouble(Upgrade::costPerUnit).max().orElse(1);
-        for(var u:known){comparison.line(u.item().name,TEXT);comparison.lines.add(new Line(coins(u.costPerUnit())+(focused?" / point":" / 1%"),CYAN,u.costPerUnit()/Math.max(1,max)));}
-        comparison.line("Shorter bars cost less per gain. These are separate alternatives.",MUTED);
-        card("Before you buy",GOLD,1).line("Owned materials are used first. Supported socket unlock and removal fees are included.",TEXT).line("Costs are cash outlay. Net cost subtracts the replaced item's sale quote when one exists; modifiers are not transferred.",MUTED).line(rated?"Rate gains use your efficiency and the tool's Mining Speed Boost; route and travel are part of the efficiency.":"Speed thresholds, abilities and routes are not part of the drop-gain estimate.",MUTED);
     }
-    /** The upgrade's coins/hour here, and its rate gain and coins/hour in the best method (Compare tab ranking). */
-    private void crossMethodLine(Card c,Upgrade u){
-        Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
-        double hours=MethodRates.windowHours(method,ability());
-        String here=each==null?"coins unknown":"+"+compact((u.rateAfter()-u.rateBefore())/hours*each)+" coins / hour";
-        if(bestRow==null||bestRow.method()==method){if(each!=null)c.line("Here: "+here+" ("+data.priceMode.label+")",CYAN);return;}
-        Double g=bestGains.get(u);
-        c.line("Here: +"+fmt(u.gain())+"%, "+here+" | In "+bestRow.method().label+": "+(g==null||g<=0?"no rate change":"+"+fmt(g*100)+"%, +"+compact(g*bestRow.coinsPerHour())+" coins / hour"),CYAN);
+    /** Top counted sources of a ledger, largest first, as tooltip lines. */
+    private String sourcesTip(StatsReport.Ledger l,int limit){
+        StringJoiner out=new StringJoiner("\n");
+        out.add(l.stat.label+": "+amount(l.stat,l.total)+(l.attainable!=null?" of "+amount(l.stat,l.attainable)+" attainable":" (attainable at least "+amount(l.stat,l.attainableKnown)+")"));
+        var counted=l.contributions.stream().filter(Breakdown.Contribution::counts).sorted(Comparator.comparingDouble((Breakdown.Contribution x)->-Math.abs(share(l,x)))).toList();
+        for(var x:counted.subList(0,Math.min(limit,counted.size())))out.add(sourceValue(l,x)+"  "+x.source());
+        if(counted.size()>limit)out.add("+ "+(counted.size()-limit)+" more on the Gear tab");
+        return out.toString();
     }
-    private static final int PLAN_STEPS=12;
-    /** Sequential plan: each step is the best value after the previous ones are applied, so gains build on each other. */
-    private void planCard(boolean rated){
-        Card c=card("Step-by-step plan",GOLD,1);
-        c.line("Take the best value, apply it, recompute everything, repeat. Unpriced and blocked upgrades are skipped.",MUTED);
-        if(plan.isEmpty()){c.line("No priced upgrade available to plan with.",TEXT);return;}
-        int n=0;
-        for(var step:plan){var u=step.upgrade();
-            c.line((++n)+". "+u.item().name+(u.current()!=null&&u.item().modification?" ("+u.current().name+")":""),TEXT);
-            c.line("   +"+fmt(u.gain())+"% | "+coins(u.cost())+" | total +"+fmt(step.totalGain())+"% for "+coins(step.totalCost())
-                    +(step.rate()!=null?" | "+fmt(step.rate())+" "+MethodRates.unit(method,ability()):""),u.cost()==0?GREEN:CYAN);
-        }
-        var last=plan.getLast();
-        c.line("After "+plan.size()+" steps: +"+fmt(last.totalGain())+"% "+(rated?"rate":"drops")+" for "+coins(last.totalCost())
-                +(plan.size()==PLAN_STEPS?" (first "+PLAN_STEPS+" steps)":""),GOLD);
-        if(last.totalResale()>0||last.unpricedResale()>0)c.line("Selling what the steps replace: "+coins(last.totalResale())+" back, net "+coins(last.totalCost()-last.totalResale())
-                +(last.unpricedResale()>0?" ("+last.unpricedResale()+" replaced item"+(last.unpricedResale()>1?"s":"")+" without a sale price)":""),CYAN);
+    /** What one counted source adds to the total: additive % sources add their share of the flat sum. */
+    private static double share(StatsReport.Ledger l,Breakdown.Contribution x){
+        if(x.value()==null)return 0;
+        return x.category().equals(Breakdown.ADDITIVE_PERCENT)?l.flat*x.value()/100:x.value();
     }
-    /** Automatic Magma Fields gem rate from the effective stats, the tool's ability and the player's efficiency. */
-    private void gemRateCard(){
-        var i=data.inputs(method);var gem=MethodRates.gem(method);StatsReport r=data.stats(method);
-        Card c=card(method.label+" | automatic rate",GOLD,0);
-        c.line(gem.name()+" (block strength "+fmt(gem.strength())+")",MUTED);
-        if(r==null&&!data.demo&&!data.inputs(method).stats.containsKey(Stat.MINING_SPEED)){c.line(data.statsLoading(method)?"Loading automatic stats...":"Load your profile (or enter stats in Type Stats) for the automatic rate.",TEXT);return;}
-        try{
-            var rate=MethodRates.gems(method,data.effective(method),i.efficiency,r==null?null:r.ability);
-            c.line(fmt(rate.flawlessPerHour())+" Flawless "+gem.name().split(" ")[0]+" / hour",CYAN);
-            coinLines(c,rate.flawlessPerHour());
-            c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.roughPerBlock())+" Rough / block",TEXT);
-            c.line("Mining Speed "+fmt(rate.speed())+": "+rate.ticks()+" ticks per block"+(rate.uptime()>0?", "+rate.boostedTicks()+" during the ability ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
-            double next=MethodRates.nextTickSpeed(rate.speed(),gem.strength());
-            if(Double.isFinite(next))c.line("Next tick: "+fmt(next)+" Mining Speed ("+MethodRates.ticks(next,gem.strength())+" ticks); speed between thresholds adds nothing",MUTED);
-            c.line("Guide reference ("+gem.guideNote()+", "+fmt(gem.guideEfficiency())+"% efficiency): "+fmt(gem.guideFlawlessPerHour())+" Flawless / hour",MUTED);
-            for(String a:rate.assumptions())c.line(a,MUTED);
-        }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
-    }
-    /** Automatic block rate (Coal and other non-gem models): ground and airborne ticks, value window, product price. */
-    private void blockRateCard(){
-        var i=data.inputs(method);var b=MethodRates.block(method);StatsReport r=data.stats(method);
-        Card c=card(method.label+" | automatic rate",GOLD,0);
-        c.line(b.strength()>0?b.name()+" (block strength "+fmt(b.strength())+"; instamine above "+fmt(b.instamineFactor()*b.strength())+" Mining Speed, "+fmt(5*b.instamineFactor()*b.strength())+" airborne)"
-                :b.name()+" (block strength not listed on the wiki; assumed instamined)",MUTED);
-        if(r==null&&!data.demo&&!data.inputs(method).stats.containsKey(Stat.MINING_SPEED)){c.line(data.statsLoading(method)?"Loading automatic stats...":"Load your profile (or enter stats in Type Stats) for the automatic rate.",TEXT);return;}
-        try{
-            var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability);
-            String window=rate.windowHours()==1?"hour":b.abilityCycle()?"ability cycle ("+fmt(rate.windowHours()*3600)+"s)":b.window();
-            c.line(fmt(rate.perWindow())+" "+b.unit()+" per "+window+(rate.windowHours()==1?"":" | "+fmt(rate.perHour())+" / hour"),CYAN);
-            coinLines(c,rate.perHour());
-            if(rate.windowHours()!=1)c.line("Window: "+MethodComparison.window(method,r==null?null:r.ability),MUTED);
-            c.line(fmt(i.efficiency)+"% efficiency | "+fmt(rate.blocksPerHour())+" blocks / hour | "+fmt(rate.dropsPerBlock())+" "+b.unit()+" / block",TEXT);
-            c.line("Mining Speed "+fmt(rate.speed())+": "+ticksText(rate.groundTicks())+" on the ground, "+ticksText(rate.airTicks())+" airborne"
-                    +(rate.uptime()>0?"; during the ability "+ticksText(rate.boostedGroundTicks())+" / "+ticksText(rate.boostedAirTicks())+" ("+fmt(rate.uptime()*100)+"% uptime)":""),TEXT);
-            double nextGround=b.strength()>0?MethodRates.nextTickSpeed(rate.speed(),b.strength(),b.instamineFactor()):Double.NaN;
-            if(Double.isFinite(nextGround))c.line("Next threshold: "+fmt(nextGround)+" Mining Speed on the ground; speed between thresholds adds nothing",MUTED);
-            else if(rate.airTicks()>1&&b.strength()>0)c.line("Next threshold: "+fmt(5*MethodRates.nextTickSpeed(rate.speed()/5,b.strength(),b.instamineFactor())-4)+" Mining Speed airborne; speed between thresholds adds nothing",MUTED);
-            var ab=ability();
-            if(rate.uptime()>0&&rate.boostedGroundTicks()>1&&b.strength()>0)c.line("Instamine during the ability above "+fmt(Math.floor(b.instamineFactor()*b.strength()/(1+ab.boostPercent()/100))+1)+" Mining Speed",MUTED);
-            c.line("Guide reference ("+b.guideNote()+")",MUTED);
-            for(String a:rate.assumptions())c.line(a,MUTED);
-        }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
-    }
-    /** Coins per hour at both Coflnet figures and the NPC sell price, labelled; an unknown figure stays unknown. */
-    private void coinLines(Card c,double perHour){
-        for(var mode:MethodComparison.PriceMode.values()){Double each=MethodComparison.coinsPerItem(data.prices,method,mode);
-            c.line(each==null?"Coins / hour, "+mode.label+": unknown"
-                    :coins(perHour*each)+" / hour, "+mode.label+" ("+fmt(each)+" each)",each==null?MUTED:mode==data.priceMode?GOLD:TEXT);
-            String source=MethodComparison.priceSource(data.prices,method,mode);if(each!=null&&!source.isEmpty())c.line("  "+source,MUTED);}
+    private static String sourceValue(StatsReport.Ledger l,Breakdown.Contribution x){
+        return x.value()==null?"?":x.category().equals(Breakdown.ADDITIVE_PERCENT)?"+"+fmt(x.value())+"%":signed(l.stat,x.value());
     }
     /** Pickaxe ability of the evaluated tool, or null before the stats load. */
     private MethodRates.Ability ability(){StatsReport r=data.stats(method);return r==null?null:r.ability;}
-    private static String ticksText(int t){return t==1?"instamine":t+" ticks";}
-    private void rateCards(){
-        if(MethodRates.block(method)!=null)blockRateCard();
-        else if(MethodRates.supported(method))gemRateCard();
-        var i=data.inputs(method);var stats=data.effective(method);Card c=card(method.label+" | "+(MethodRates.supported(method)?"manual ":"")+"rate scenario",GOLD,MethodRates.supported(method)?1:0);
-        if(i.blocksPerSecond<=0){c.line("Enter effective stats and measured active blocks/sec in Type Stats.",TEXT).line("Default mining efficiency: "+fmt(method.defaultEfficiency())+"%",CYAN);return;}
-        try{var r=ProgressionEngine.rate(method,stats,i.efficiency,i.blocksPerSecond,i.baseDrops,i.coinsPerItem,i.coleweightPerItem);
-            c.line(fmt(i.efficiency)+"% mining uptime",MUTED).line(fmt(r.itemsPerHour())+" items / hour",CYAN).line(i.coinsPerItem>0?coins(r.coinsPerHour())+" / hour":"Enter sale price for coins/hour",GOLD).line(i.coleweightPerItem>0?fmt(r.coleweightPerHour())+" Coleweight / hour":"Enter item weight for Coleweight/hour",GREEN);
-        }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
-        card("How to read this estimate",CYAN,1).line("Gems use rough-equivalent units. Match your sale price and item weight to those units.",TEXT).line("Spread assumes extra blocks are available. Fuel, taxes, route, abilities and shaft loot are excluded. Shafting estimates Glacite only.",MUTED);
+    /** The method's hourly rate from the effective stats, or null when it cannot be computed yet. */
+    private Double perHour(){
+        var e=data.effective(method);if(e.isEmpty()||!MethodRates.supported(method))return null;
+        try{double v=MethodRates.perHour(method,e,data.inputs(method).efficiency,ability());return Double.isFinite(v)?v:null;}catch(IllegalArgumentException ex){return null;}
     }
-    private void compareCards(){
-        if(data.demo){card("Method comparison",GOLD,0).line("Demo has no API data. Load your player to compare methods.",TEXT);return;}
+    private void rateTile(){
+        Card c=card("Rate now",CYAN,1);c.icon=productIcon(method);
+        Double rate=perHour();
+        if(rate==null){c.line(data.statsLoading(method)?"Loading automatic stats...":"Rate unavailable until stats load (or Type Stats).",MUTED);return;}
+        Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
+        String tip=fmt(data.inputs(method).efficiency)+"% efficiency | "+MethodComparison.model(method)+"\nWindow: "+MethodComparison.window(method,ability())+"\nClick for the full rate on Methods.";
+        c.add(new Big((MethodComparison.lowerBound(method)?"≥":"")+compact(rate),MethodComparison.itemName(method)+" / hour",CYAN,tip,()->switchTab(METHODS)));
+        c.add(new Text(each==null?"Coins / hour unknown ("+data.priceMode.label+")":"≈ "+coins(rate*each)+" / hour, "+data.priceMode.label,each==null?MUTED:GOLD,
+                each==null?"No "+data.priceMode.label+" price for "+MethodComparison.itemName(method)+".":MethodComparison.priceSource(data.prices,method,data.priceMode),null));
+    }
+    private void nextUpgradeTile(Profile p){
+        Card c=card("Best next upgrade",GREEN,1);
+        if(!p.inventoryEnabled){c.line("Enable the Inventory API for upgrade advice.",RED,"SkyBlock Menu > Settings > API Settings > Inventory API: ON, then reload after the profile cache expires.");return;}
+        if(calculating){c.line("Calculating...",MUTED);return;}
+        if(!data.hasStats(method)){c.line(data.statsLoading(method)?"Loading automatic stats...":"Needs your stats (load the player or use Type Stats).",MUTED);return;}
+        if(plan.isEmpty()){c.line("No priced upgrade found to recommend.",MUTED,"This does not mean the account is maxed: unpriced and blocked upgrades are skipped.");return;}
+        var step=plan.getFirst();var u=step.upgrade();
+        c.add(new Entry(upgradeIcon(u),u.item().name,TEXT,u.current()!=null?(u.item().modification?"On: ":"Replaces: ")+u.current().name:"Step 1 of the plan",MUTED,
+                "+"+fmt(u.gain())+"%",GREEN,costText(u),Objects.equals(u.cost(),0.0)?GREEN:TEXT,upgradeTip(u,false)+"\nClick for the whole plan.",()->switchTab(UPGRADES)));
+    }
+    /** Coins / hour by method as a bar chart; the best method is cyan, the selected one gold; clicking a row selects it. */
+    private void methodChart(boolean home){
+        Card c=card("Coins / hour by method",GOLD,FULL);c.right=data.priceMode.label;c.optional=home;
+        c.tip="Ranked at the "+data.priceMode.label+" price ("+data.priceMode.meaning+"). Each method uses its best owned gear and tool in its usual zone, with that method's Type Stats values and efficiency.\n"
+                +"Coins / hour = items / hour x the quote; a missing quote stays unknown and sorts last.\n"
+                +"Windows: Coal per 30 minutes with two lobby hops; Obsidian per Mining Speed Boost cycle; gems, metals and Shafting per hour.\n"
+                +"Bazaar figures are gross, before tax. Flawless gems have no NPC price, so NPC sell counts them as Rough.\n"
+                +"Not counted: Hard Stone, the grotto's other gems, mineshaft loot, crafting into enchanted items. Coleweight is not shown (coefficients unverified).\n"
+                +"Click a row to select that method.";
+        if(data.demo){c.line("Demo has no API data. Load your player to compare methods.",MUTED);return;}
         var rows=data.comparisonRows();var r=data.comparison();
-        if(r==null||rows.isEmpty()){
-            String error=data.compareError();
-            if(!error.isEmpty())card("Method comparison unavailable",RED,0).line(error,TEXT).line("Press Refresh to retry.",MUTED);
-            else card("Comparing methods...",CYAN,0).line("Computing every method's stats with its best owned gear in the companion.",MUTED);
-            return;
-        }
-        var mode=data.priceMode;
-        Card head=card("Methods by coins / hour",GOLD,0);
-        head.line("Ranked at the "+mode.label+" price ("+mode.meaning+").",CYAN);
-        head.line("Each method uses its best owned gear and tool in its usual zone"+(r.godPotion?", God Potion assumed":", no God Potion")+"; that method's Type Stats values and efficiency apply.",TEXT);
-        head.line("Click a method, or use Pick method, to select it for the other tabs.",MUTED);
-        head.line("Profile data from "+r.fetchedAt+". Each card names its Coflnet quote time (cached up to 15 minutes).",MUTED);
-        card("How coins / hour is computed",CYAN,1).line("Coins / hour = items / hour x the quote. A missing quote stays unknown and sorts last; the item rate is still shown.",TEXT)
-                .line("Windows: Coal is valued per 30 minutes with two lobby hops (x2 per hour, hop time inside the efficiency); Obsidian per Mining Speed Boost cycle (cycles per hour); gems, metals and Shafting per hour.",MUTED)
-                .line("Bazaar figures are gross, before Bazaar tax. NPC sell uses the official items resource; Flawless gems have no NPC price there, so they count as Rough (same NPC value per Rough as Flawed and Fine).",MUTED)
-                .line("Not counted: Hard Stone, the grotto's other gems, mineshaft loot and crafting into enchanted items.",MUTED)
-                .line("Coleweight / hour is not shown: its coefficients could not be verified from a primary source.",MUTED);
-        Card same=card("Same change, different value",CYAN,1);
-        same.line("+50 Mining Fortune / +100 Mining Speed, on each method's own stats:",TEXT);
-        for(var row:rows){var stats=data.comparisonStats(row.method());var e=r.entry(row.method());if(stats==null||e==null)continue;double eff=data.inputs(row.method()).efficiency;
-            Double f=MethodComparison.gain(row.method(),stats,eff,e.ability,Map.of(Stat.MINING_FORTUNE,50.0),1),sp=MethodComparison.gain(row.method(),stats,eff,e.ability,Map.of(Stat.MINING_SPEED,100.0),1);
-            same.line(row.method().label+": "+gainText(f,row)+" / "+gainText(sp,row),row.method()==method?GREEN:MUTED);}
+        if(r==null||rows.isEmpty()){String error=data.compareError();
+            if(!error.isEmpty())c.line(error,RED,"Refresh on the Methods tab retries.");else c.line("Comparing methods in the companion...",MUTED);return;}
+        c.tip+="\nProfile data from "+r.fetchedAt+(r.godPotion?", God Potion assumed.":", no God Potion.");
         double top=rows.stream().filter(x->x.coinsPerHour()!=null).mapToDouble(MethodComparison.Row::coinsPerHour).max().orElse(1);
-        int n=0;
+        var best=rows.stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
         for(var row:rows){
-            var e=r.entry(row.method());boolean selected=row.method()==method;
-            Card c=card("#"+(++n)+"  "+row.method().label+" | "+(row.coinsPerHour()==null?"coins unknown":compact(row.coinsPerHour())+" coins / hour"),selected?GREEN:row.coinsPerHour()==null?MUTED:GOLD,n%2==1?0:1);
-            c.pick=row.method();ItemStack own=Icons.of(row.priceId());if(own!=null)c.icon=own;
-            if(selected)c.line("Selected method",GREEN);
-            if(!row.error().isEmpty())c.line("Rate unavailable: "+row.error(),RED);
-            else c.line((row.lowerBound()?"At least ":"")+fmt(row.itemsPerHour())+" "+row.item()+" / hour",CYAN);
-            if(row.coinsPerHour()!=null)c.lines.add(new Line(coins(row.coinsPerHour())+" / hour, "+mode.label,GOLD,row.coinsPerHour()/Math.max(1,top)));
-            c.line(row.priceNote(),MUTED);
-            c.line("Efficiency "+fmt(row.efficiency())+"% | "+row.model(),TEXT);
-            c.line("Window: "+row.window(),MUTED);
-            c.line("Drops: "+row.drops(),MUTED);
-            c.line("Tool: "+(row.tool().isEmpty()?"none readable":row.tool())+(e==null||e.zone.isEmpty()?"":" | "+e.zone),MUTED);
-            if(!row.statsComplete())c.line("Some counted stat sources have unknown values, so this rate is a lower bound.",RED);
+            boolean selected=row.method()==method,isBest=row==best;var e=r.entry(row.method());
+            String tip=row.method().label+(isBest?" (best)":"")+"\n"+(row.error().isEmpty()?(row.lowerBound()?"At least ":"")+fmt(row.itemsPerHour())+" "+row.item()+" / hour":"Rate unavailable: "+row.error())
+                    +(row.coinsPerHour()==null?"\nCoins unknown":"\n"+coins(row.coinsPerHour())+" / hour")+"\n"+row.priceNote()+"\nEfficiency "+fmt(row.efficiency())+"% | "+row.model()
+                    +"\nTool: "+(row.tool().isEmpty()?"none readable":row.tool())+(e==null||e.zone.isEmpty()?"":" | "+e.zone)+(row.statsComplete()?"":"\nSome stat sources are unknown: a lower bound.");
+            MiningMethod m=row.method();
+            c.add(new Bar(productIcon(m),(selected?"» ":"")+m.label,selected?GOLD:TEXT,row.coinsPerHour()==null?"?":compact(row.coinsPerHour()),
+                    row.coinsPerHour()==null?0:row.coinsPerHour()/Math.max(1,top),isBest?CYAN:selected?GOLD:DIM,tip,()->{method=m;slot="";refresh();}));
         }
     }
-    private static String gainText(Double g,MethodComparison.Row row){
-        if(g==null)return "?";if(g<=0)return "+0%";
-        return "+"+fmt(g*100)+"%"+(row.coinsPerHour()==null?"":" ("+compact(g*row.coinsPerHour())+"/h)");
-    }
-    /** The method's effective stats in the header; "*" marks a manual value, "?" one that is neither known nor entered. */
-    private String statSummary(){
-        var e=data.effective(method);var manual=data.inputs(method).stats;
-        if(e.isEmpty())return data.statsLoading(method)?"Automatic stats loading...":"Effective stats: not entered";
-        StringJoiner out=new StringJoiner("  ");
-        for(Stat s:method.relevantStats()){Double v=e.get(s);
-            out.add(switch(s){case MINING_SPEED->"SPD ";case MINING_FORTUNE->"FTN ";case GEMSTONE_FORTUNE->"GEM ";case ORE_FORTUNE->"ORE ";
-                case DWARVEN_METAL_FORTUNE->"DWM ";case BLOCK_FORTUNE->"BLK ";case MINING_SPREAD->"SPR ";case GEMSTONE_SPREAD->"GSPR ";case PRISTINE->"PRIST ";default->"";}
-                +(v==null?"?":compact(v)+(manual.containsKey(s)?"*":"")));}
-        return out.toString();
-    }
-    private void breakdownCards(){
-        if(data.demo){card("Stat breakdown",GOLD,0).line("Demo has no API data. Load your player for the automatic stat breakdown.",TEXT);return;}
-        StatsReport r=data.stats(method);
-        if(r==null){
-            String error=data.statsError(method);
-            if(!error.isEmpty())card("Stat breakdown unavailable",RED,0).line(error,TEXT).line("Press Refresh to retry. Manual values in Type Stats still work.",MUTED);
-            else card("Calculating stat breakdown...",CYAN,0).line("Loading from the companion. You can keep using the other tabs.",MUTED);
-            return;
-        }
-        var manual=data.inputs(method).stats;
-        Card used=card("Gear used | "+(r.bestGear?"best owned for "+method.label:"currently equipped"),GOLD,0);
-        if(r.loadout.isEmpty())used.line("No readable gear.",MUTED);
-        for(var piece:r.loadout)used.line(piece.name()+"  ("+piece.location()+")",TEXT);
-        used.line(r.accessories+" accessories from the accessory bag, one per family.",MUTED);
-        if(r.hotmTrees>1)used.line(StatBreakdown.treeLabel(r.hotmTree)+" of "+r.hotmTrees+": best for "+method.label+" (the API does not show which tree is active).",CYAN);
-        if(r.bestGear)used.line("Picked from all readable storage; equip these pieces to reach this total. Gear: Equipped shows what you wear now.",MUTED);
-        used.line("Attainable keeps this gear, tool, pet and HOTM tree with each source at its own maximum, plus missing attributes, essence perks, collections and consumables. It is not a maxed account: other gear, pets, perks needing tokens and set bonuses are not added.",MUTED);
-        // Method: only the method's stats (plus the focused one); the rest still feed Upgrades and Rates.
-        List<Stat> shown=statGroup.equals("All")?Arrays.asList(Stat.values()):StatBreakdown.GROUPS.getOrDefault(statGroup,method.relevantStats());
-        boolean byMethod=statGroup.equals("Method");
-        var ledgers=new ArrayList<>(r.stats.stream().filter(l->shown.contains(l.stat)||byMethod&&l.stat==stat).toList());
-        ledgers.sort(Comparator.comparing(l->byMethod&&l.stat!=stat));
-        if(ledgers.isEmpty())card("No stats in this group",MUTED,0).line("Restart the companion: an older companion does not send the new stats.",TEXT);
-        int column=0;
-        for(var l:ledgers){
-            int col=column++%2;
-            Card head=card(l.stat.label+" | "+(l.complete?"":"at least ")+amount(l.stat,l.total),col==0?GOLD:CYAN,col);
-            if(l.stat==Stat.PICKAXE_ABILITY_COOLDOWN)head.line("Reductions multiply: 1 - product of (1 - each). Sum of the parts: "+amount(l.stat,l.flat),TEXT);
-            else head.line("Flat "+amount(l.stat,l.flat)+(l.multiplier!=1?" x "+fmt(l.multiplier)+" from additive % buffs":""),TEXT);
-            if(l.stat==Stat.BREAKING_POWER&&method.breakingPower()!=null)head.line(method.label+" needs Breaking Power "+method.breakingPower()+(l.total>=method.breakingPower()?": met.":": not met with this tool."),l.total>=method.breakingPower()?GREEN:RED);
-            if(r.tool.isEmpty())head.line("No readable mining tool is owned, so tool stats are missing.",RED);
-            if(!l.complete)head.line("Some counted sources have unknown values, so this is a lower bound.",RED);
-            if(l.attainable!=null)head.meter("Attainable: "+amount(l.stat,l.attainable)+(l.total>=l.attainable-1e-9?"  ✔ maxed":""),l.total,Math.max(l.total,l.attainable));
-            else if(l.unknownMaxima>0)head.line("Attainable: unknown, at least "+amount(l.stat,l.attainableKnown)+" ("+l.unknownMaxima+" counted source"+(l.unknownMaxima==1?"":"s")+" without a known maximum, such as gear stat lines)",MUTED);
-            if(r.bestGear&&l.equipped!=null)head.meter("Wearing now: "+amount(l.stat,l.equipped),l.equipped,Math.max(l.equipped,l.total));
-            if(!r.bestGear&&l.bestOwned!=null)head.meter("Best owned gear: "+amount(l.stat,l.bestOwned),l.total,Math.max(l.total,l.bestOwned));
-            Double override=manual.get(l.stat);if(override!=null)head.line("Manual value in use instead: "+fmt(override)+" (clear it in Type Stats)",GOLD);
-            for(Breakdown.State state:Breakdown.State.values()){
-                var list=l.contributions.stream().filter(c->c.state()==state).toList();if(list.isEmpty())continue;
-                int color=switch(state){case COUNTED->GREEN;case SITUATIONAL->GOLD;case MISSING->RED;case TEMPORARY->CYAN;case UNTRACKABLE->MUTED;};
-                Card c=card(stateTitle(state)+" | "+l.stat.label,color,col);
-                for(var x:list){
-                    String value=x.value()==null?"?":(x.category().equals(Breakdown.ADDITIVE_PERCENT)?"+"+fmt(x.value())+"%":signed(l.stat,x.value()));
-                    String text=value+"  "+x.source()+" ("+x.category()+")"+(x.confidence()==Breakdown.Confidence.MANUAL&&x.value()!=null?" - assumed":"");
-                    boolean counted=state==Breakdown.State.COUNTED&&x.value()!=null;
-                    String max=x.maximum()==null?"":(x.category().equals(Breakdown.ADDITIVE_PERCENT)?fmt(x.maximum())+"%":amount(l.stat,x.maximum()));
-                    if(counted&&x.maximum()!=null&&x.maximum()>x.value()+1e-9)c.meter(text+" / "+max,x.value(),x.maximum());
-                    else if(counted&&x.maximum()!=null&&x.maximum()>0)c.line(text+"  ✔ maxed",GREEN);
-                    else if(counted)c.line(text+" / max unknown",TEXT);
-                    else if(state==Breakdown.State.MISSING&&x.maximum()!=null)c.line(text+" / "+max,TEXT);
-                    else c.line(text,x.value()==null&&state==Breakdown.State.COUNTED?RED:TEXT);
-                    if(!x.condition().isEmpty())c.line("  "+x.condition(),MUTED);
-                    if(state!=Breakdown.State.COUNTED||x.value()==null)c.line("  "+x.note(),MUTED);
-                }
-            }
-            if(!l.notes.isEmpty()){Card n=card("Notes | "+l.stat.label,MUTED,col);l.notes.forEach(t->n.line(t,MUTED));}
-        }
+
+    // Gear
+    private void gearCards(){
+        if(data.demo){card("Gear",GOLD,0).line("Demo has no API data. Load your player for your loadout and stat breakdown.",TEXT);return;}
+        loadoutCard();
+        statCards();
     }
     /** Hourly rate of the method for one loadout's totals, or null when it cannot be computed. */
     private Double rateOf(StartWith.Scenario s,double efficiency){
@@ -503,107 +409,439 @@ public final class ProgressionScreen extends Screen {
         if(before==null||after==null)return "rate change unknown";
         return gainPercent(before,after)+(each==null?", coins unknown":", "+(after>=before?"+":"-")+coins(Math.abs(after-before)*each)+" / hour");
     }
-    private void startCards(){
-        if(data.demo){card("Start with",GOLD,0).line("Demo has no API data. Load your player to see which owned gear to use.",TEXT);return;}
+    private static final List<String> SLOT_ORDER=List.of("Helmet","Chestplate","Leggings","Boots","Necklace","Cloak","Belt","Gloves","Bracelet");
+    private void loadoutCard(){
         StartWith.Report r=data.start(method);
-        if(r==null){
-            String error=data.startError(method);
-            if(!error.isEmpty())card("Start with unavailable",RED,0).line(error,TEXT).line("Press Refresh to retry.",MUTED);
-            else card("Finding your best owned gear...",CYAN,0).line("Comparing what you own with what you wear, in the companion. You can keep using the other tabs.",MUTED);
-            return;
-        }
-        var i=data.inputs(method);var mode=data.priceMode;double eff=i.efficiency;
-        Double each=MethodComparison.coinsPerItem(data.prices,method,mode);
+        Card c=card("Use this loadout",GOLD,0);
+        if(r==null){String error=data.startError(method);
+            c.line(!error.isEmpty()?error:"Finding your best owned gear...",error.isEmpty()?MUTED:RED,error.isEmpty()?"Comparing what you own with what you wear, in the companion.":"Press Refresh to retry.");
+            return;}
+        var i=data.inputs(method);double eff=i.efficiency;Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
         Double before=rateOf(r.current,eff),after=rateOf(r.bestOwned,eff);
         StatContext.Zone zone=data.zone(method);
-        Card head=card("Start with | "+method.label,GOLD,0);
-        if(!r.inventoryKnown)head.line("Inventory API off or unreadable: ownership of armor, equipment, tools and accessories is unknown. Only the pet can be compared.",RED);
-        if(!r.petsKnown)head.line("Pet data unavailable: pet ownership is unknown.",RED);
-        if(r.swaps.isEmpty())head.line(r.inventoryKnown?"You already wear the best owned gear for "+method.label+". Nothing to swap.":"No swaps found in the readable data.",GREEN);
-        else head.line(r.swaps.size()+" swap"+(r.swaps.size()==1?"":"s")+" from your own storage, nothing to buy.",CYAN);
-        head.line("Now: "+rateText(before,each),TEXT);
-        head.line("Best owned: "+rateText(after,each),after!=null&&before!=null&&after>before?GREEN:TEXT);
-        if(!r.swaps.isEmpty())head.line("Total: "+changeText(before,after,each),GOLD);
-        head.line(fmt(eff)+"% efficiency | "+(zone==null?"no zone":zone.label)+" | God Potion "+(r.godPotion?"on":"off")+" | "+mode.label+" price"+(each==null?" unknown":""),MUTED);
-        if(!r.current.complete||!r.bestOwned.complete)head.line("Some counted stat sources have unknown values, so these rates are lower bounds.",RED);
-        if(!i.stats.isEmpty())head.line("Type Stats values are not applied here: gear is compared by its automatic totals.",MUTED);
-        // Largest rate gain first; swaps whose rate cannot be computed go last.
+        c.tip="Best owned for "+method.label+": one copy per slot from all readable storage, one tool, one pet, one accessory per family.\n"
+                +StatBreakdown.treeLabel(r.hotmTree)+(r.hotmTrees>1?" of "+r.hotmTrees+" (Loadouts): best for "+method.label+"; the API does not show which tree is active.":"")
+                +(r.otherAccessories>0?"\n"+r.otherAccessories+" other accessories add no "+method.label+" stats.":"")
+                +"\n"+fmt(eff)+"% efficiency | "+(zone==null?"no zone":zone.label)+" | God Potion "+(r.godPotion?"on":"off")+" | "+data.priceMode.label+" price"+(each==null?" unknown":"");
+        // Gold outline: the tool; cyan: a piece to fetch; gray: already worn.
+        List<StartWith.Piece> pieces=new ArrayList<>(r.best);
+        pieces.sort(Comparator.comparingInt(x->{int n=SLOT_ORDER.indexOf(x.slot());return n>=0?n:x.slot().equals("Pet")?SLOT_ORDER.size()+1:x.slot().equals("Accessory")?SLOT_ORDER.size()+2:SLOT_ORDER.size();}));
+        List<Slot> slots=new ArrayList<>();
+        for(var piece:pieces){boolean tool=isTool(piece,r);
+            slots.add(new Slot(icon(piece.id(),tool?"Tool":piece.slot()),tool?GOLD:piece.worn()?EDGE:CYAN,piece.key().equals(slot),
+                    piece.name()+"\n"+piece.slot()+(piece.detail().isEmpty()?"":", "+piece.detail())+"\n"+(piece.worn()?"Wearing it":"Stored: "+piece.location()),()->{slot=slot.equals(piece.key())?"":piece.key();buildCards();}));}
+        if(slots.isEmpty())c.line(r.inventoryKnown?"No readable mining gear.":"Ownership unknown.",MUTED);
+        else c.add(new Slots(slots));
+        if(!r.inventoryKnown)c.line("Inventory API off: only the pet can be compared.",RED,"Ownership of armor, equipment, tools and accessories is unknown.");
+        if(!r.petsKnown)c.line("Pet data unavailable.",RED);
+        String rates="Now: "+rateText(before,each)+"\nBest owned: "+rateText(after,each)+(r.swaps.isEmpty()?"":"\nTotal: "+changeText(before,after,each))
+                +(r.current.complete&&r.bestOwned.complete?"":"\nSome stat sources are unknown, so these rates are lower bounds.")
+                +(i.stats.isEmpty()?"":"\nType Stats values are not applied here: gear is compared by its automatic totals.");
+        if(r.swaps.isEmpty())c.line(r.inventoryKnown?"✔ Wearing the best you own":"No swaps found in the readable data.",GREEN,rates);
+        else c.line(r.swaps.size()+" swap"+(r.swaps.size()==1?"":"s")+" needed, "+gainPercent(before,after)+" rate",GOLD,rates+"\nEach swap is rated alone on what you wear now; together they give the total, which can differ from the sum.");
+        // Detail of the clicked slot.
+        var chosen=pieces.stream().filter(x->x.key().equals(slot)).findFirst().orElse(null);
+        if(chosen!=null){
+            var sw=r.swaps.stream().filter(x->x.to().key().equals(chosen.key())).findFirst().orElse(null);
+            String swap=sw==null?(chosen.worn()?"Already worn":"No swap needed"):gainPercent(before,rateOf(sw.after(),eff));
+            c.add(new Entry(icon(chosen.id(),isTool(chosen,r)?"Tool":chosen.slot()),chosen.name(),GOLD,chosen.worn()?"Wearing it":"Stored: "+chosen.location()+(chosen.detail().isEmpty()?"":" ("+chosen.detail()+")"),CYAN,
+                    swap,sw==null?MUTED:GREEN,"",MUTED,sw==null?null:swapTip(sw,r,before,eff,each),null));
+        }else if(!slots.isEmpty())c.line("Click a slot for where it is stored.",MUTED);
+        // Swaps, largest rate gain first; those without a computable rate last.
         record Ranked(StartWith.Swap swap,Double rate){}
         List<Ranked> ranked=new ArrayList<>();for(var sw:r.swaps)ranked.add(new Ranked(sw,rateOf(sw.after(),eff)));
         ranked.sort(Comparator.comparing((Ranked x)->x.rate()==null?1:0).thenComparing(x->x.rate()==null?0:-x.rate()));
-        int n=0;
-        for(var x:ranked){
-            var sw=x.swap();var to=sw.to();var from=sw.from();
-            Card c=card("#"+(++n)+"  "+sw.slot()+": "+to.name()+" | "+gainPercent(before,x.rate()),GREEN,n%2==1?1:0);
-            c.icon=icon(to.id(),sw.slot());
-            c.line("Fetch from: "+to.location()+(to.detail().isEmpty()?"":" ("+to.detail()+")"),CYAN);
-            String action=switch(sw.slot()){
-                case "Accessory"->"Put it in your accessory bag"+(from==null?".":", in place of "+from.name()+" (same family).");
-                case "HOTM tree"->"Switch to it in Loadouts (the API does not show the active tree).";
-                default->from==null?"The slot is empty now.":"Replaces "+from.name()+(from.detail().isEmpty()?"":" ("+from.detail()+")")+".";
-            };
-            c.line(action,TEXT);
-            StringJoiner delta=new StringJoiner(", ");
-            for(Stat st:method.relevantStats()){double d=stat(sw.after().stats,st)-stat(r.current.stats,st);if(Math.abs(d)>1e-9)delta.add((d>0?"+":"")+fmt(d)+" "+st.label);}
-            if(delta.length()>0)c.line(delta.toString(),TEXT);
-            if(!Objects.equals(sw.after().ability,r.current.ability))c.line("Tool ability: "+abilityText(sw.after().ability),TEXT);
-            c.line("Rate: "+changeText(before,x.rate(),each),GOLD);
-            c.line(rateText(x.rate(),each),MUTED);
-        }
-        if(r.swaps.size()>1)card("About the swaps",CYAN,0).line("Each swap is rated alone on what you wear now. All of them together give the total above, which can differ from the sum (set bonuses, tick thresholds).",MUTED);
-        Card best=card("Best owned loadout",CYAN,0);
-        if(r.best.isEmpty())best.line(r.inventoryKnown?"No readable mining gear.":"Ownership unknown.",MUTED);
-        for(var piece:r.best)best.line(piece.slot()+": "+piece.name()+(piece.detail().isEmpty()?"":", "+piece.detail())+"  ("+(piece.worn()?"wearing":piece.location())+")",piece.worn()?TEXT:CYAN);
-        if(r.otherAccessories>0)best.line(r.otherAccessories+" other accessories add no "+method.label+" stats.",MUTED);
-        best.line(StatBreakdown.treeLabel(r.hotmTree)+(r.hotmTrees>1?" of "+r.hotmTrees+" (Loadouts): best for "+method.label+"; the API does not show which tree is active.":""),TEXT);
-        best.line("Chosen like the Breakdown tab: one copy per slot from all readable storage, one tool, one pet, one accessory per family. Zone follows the Breakdown tab.",MUTED);
-        hintCard(r);
-        if(!r.notes.isEmpty()){Card notes=card("Notes",MUTED,1);r.notes.forEach(t->notes.line(t,MUTED));}
+        for(var x:ranked){var sw=x.swap();
+            c.add(new Entry(icon(sw.to().id(),sw.slot()),sw.slot()+": "+sw.to().name(),TEXT,sw.slot().equals("HOTM tree")?"Switch in Loadouts":"From "+sw.to().location(),MUTED,
+                    gainPercent(before,x.rate()),GREEN,"",MUTED,swapTip(sw,r,before,eff,each),()->{slot=sw.to().key();buildCards();}));}
+        Card used=card("Stats use",MUTED,0);used.optional=true;
+        StatsReport s=data.stats(method);
+        if(s!=null){StringJoiner tip=new StringJoiner("\n");for(var piece:s.loadout)tip.add(piece.name()+"  ("+piece.location()+")");
+            tip.add(s.accessories+" accessories from the accessory bag, one per family.");
+            if(s.hotmTrees>1)tip.add(StatBreakdown.treeLabel(s.hotmTree)+" of "+s.hotmTrees+": best for "+method.label+" (the API does not show the active tree).");
+            if(s.bestGear)tip.add("Picked from all readable storage; equip these to reach the totals. Gear: Equipped shows what you wear now.");
+            tip.add("Attainable keeps this gear, tool, pet and HOTM tree with each source at its own maximum, plus missing attributes, essence perks, collections and consumables. It is not a maxed account.");
+            used.line((s.bestGear?"Best owned gear":"Gear worn now")+", "+s.loadout.size()+" pieces, "+s.accessories+" accessories",TEXT,tip.toString());}
+        bestMethodLines(used,r);
+        if(!r.notes.isEmpty())used.line("Notes ("+r.notes.size()+")",MUTED,String.join("\n",r.notes));
+    }
+    private static boolean isTool(StartWith.Piece piece,StartWith.Report r){
+        return !SLOT_ORDER.contains(piece.slot())&&!piece.slot().equals("Pet")&&!piece.slot().equals("Accessory")||r.bestOwned!=null&&piece.key().equals(r.bestOwned.tool);
+    }
+    private String swapTip(StartWith.Swap sw,StartWith.Report r,Double before,double eff,Double each){
+        var from=sw.from();var to=sw.to();Double rate=rateOf(sw.after(),eff);
+        StringJoiner tip=new StringJoiner("\n");
+        tip.add("Fetch from: "+to.location()+(to.detail().isEmpty()?"":" ("+to.detail()+")"));
+        tip.add(switch(sw.slot()){
+            case "Accessory"->"Put it in your accessory bag"+(from==null?".":", in place of "+from.name()+" (same family).");
+            case "HOTM tree"->"Switch to it in Loadouts (the API does not show the active tree).";
+            default->from==null?"The slot is empty now.":"Replaces "+from.name()+(from.detail().isEmpty()?"":" ("+from.detail()+")")+".";
+        });
+        StringJoiner delta=new StringJoiner(", ");
+        for(Stat st:method.relevantStats()){double d=stat(sw.after().stats,st)-stat(r.current.stats,st);if(Math.abs(d)>1e-9)delta.add((d>0?"+":"")+fmt(d)+" "+st.label);}
+        if(delta.length()>0)tip.add(delta.toString());
+        if(!Objects.equals(sw.after().ability,r.current.ability))tip.add("Tool ability: "+abilityText(sw.after().ability));
+        tip.add("Rate: "+changeText(before,rate,each));
+        tip.add(rateText(rate,each));
+        return tip.toString();
     }
     private static String abilityText(MethodRates.Ability a){
         return a==null?"none shown":a.name()+(a.cooldown()==null?"":", "+fmt(a.cooldown())+"s cooldown");
     }
-    /** Best method by coins / hour with the gear worn now (this report) and with the best owned gear (Compare tab data). */
-    private void hintCard(StartWith.Report r){
-        Card c=card("Best method for this gear",GOLD,1);var mode=data.priceMode;
-        List<MethodComparison.Row> worn=new ArrayList<>();
+    /** Best method by coins / hour with the gear worn now (Start with) and with the best owned gear (comparison). */
+    private void bestMethodLines(Card c,StartWith.Report r){
+        var mode=data.priceMode;List<MethodComparison.Row> worn=new ArrayList<>();
         for(var e:r.worn){if(e==null||e.method==null||e.stats==null)continue;var in=data.inputs(e.method);Map<Stat,Double> stats=new EnumMap<>(Stat.class);stats.putAll(e.stats);stats.putAll(in.stats);
             worn.add(MethodComparison.row(e.method,stats,e.complete,in.efficiency,e.ability,data.prices,mode,e.tool));}
         var wornTop=MethodComparison.rank(worn).stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
-        c.line(wornTop==null?"Gear worn now: no method has a known price.":"Gear worn now: "+wornTop.method().label+", "+coins(wornTop.coinsPerHour())+" / hour",wornTop!=null&&wornTop.method()==method?GREEN:TEXT);
         var bestTop=data.comparisonRows().stream().filter(x->x.coinsPerHour()!=null).findFirst().orElse(null);
-        if(data.comparison()==null)c.line(data.compareError().isEmpty()?"Best owned gear: loading the method comparison...":"Best owned gear: "+data.compareError(),MUTED);
-        else c.line(bestTop==null?"Best owned gear: no method has a known price.":"Best owned gear: "+bestTop.method().label+", "+coins(bestTop.coinsPerHour())+" / hour",bestTop!=null&&bestTop.method()==method?GREEN:TEXT);
-        c.line("At the "+mode.label+" price, each method in its usual zone with its Type Stats values and efficiency. Full ranking on the Compare tab.",MUTED);
-        if(data.comparison()!=null&&data.comparison().godPotion!=r.godPotion)c.line("God Potion is "+(r.godPotion?"on":"off")+" here but "+(data.comparison().godPotion?"on":"off")+" on Compare.",GOLD);
+        String tip="At the "+mode.label+" price, each method in its usual zone with its Type Stats values and efficiency. Full ranking on Methods."
+                +(data.comparison()!=null&&data.comparison().godPotion!=r.godPotion?"\nGod Potion is "+(r.godPotion?"on":"off")+" here but "+(data.comparison().godPotion?"on":"off")+" on Methods.":"");
+        c.line(wornTop==null?"Gear worn now: no method has a known price.":"Gear worn now: best at "+wornTop.method().label+", "+compact(wornTop.coinsPerHour())+" / h",wornTop!=null&&wornTop.method()==method?GREEN:TEXT,tip);
+        if(data.comparison()==null)c.line(data.compareError().isEmpty()?"Best owned gear: comparing methods...":"Best owned gear: "+data.compareError(),MUTED);
+        else c.line(bestTop==null?"Best owned gear: no method has a known price.":"Best owned gear: best at "+bestTop.method().label+", "+compact(bestTop.coinsPerHour())+" / h",bestTop!=null&&bestTop.method()==method?GREEN:TEXT,tip);
     }
-    /** A stat amount with its unit: "13.6%" for percentage stats (the cooldown shown as a reduction), plain otherwise. */
-    static String amount(Stat s,double v){return s==Stat.PICKAXE_ABILITY_COOLDOWN?"-"+fmt(v)+"%":s.percent?fmt(v)+"%":fmt(v);}
-    static String signed(Stat s,double v){return s==Stat.PICKAXE_ABILITY_COOLDOWN?"-"+fmt(v)+"%":(v>=0?"+":"")+fmt(v)+(s.percent?"%":"");}
-    private static String stateTitle(Breakdown.State state){
-        return switch(state){case COUNTED->"Counted";case SITUATIONAL->"Situational, not counted";case MISSING->"Missing";
-            case TEMPORARY->"Temporary, not counted";case UNTRACKABLE->"Not in the API";};
+    private void statCards(){
+        StatsReport r=data.stats(method);
+        if(r==null){String error=data.statsError(method);
+            if(!error.isEmpty())card("Stat breakdown unavailable",RED,1).line(error,TEXT).line("Press Refresh to retry. Manual values in Type Stats still work.",MUTED);
+            else card("Calculating stat breakdown...",CYAN,1).line("Loading from the companion.",MUTED);
+            return;}
+        // Method: only the method's stats (plus the focused one); the rest still feed Upgrades and Rates.
+        List<Stat> shown=statGroup.equals("All")?Arrays.asList(Stat.values()):StatBreakdown.GROUPS.getOrDefault(statGroup,method.relevantStats());
+        boolean byMethod=statGroup.equals("Method");
+        var ledgers=new ArrayList<>(r.stats.stream().filter(l->shown.contains(l.stat)||byMethod&&l.stat==stat).toList());
+        ledgers.sort(Comparator.comparing(l->byMethod&&l.stat!=stat&&!method.relevantStats().contains(l.stat)));
+        if(ledgers.isEmpty())card("No stats in this group",MUTED,1).line("Restart the companion: an older companion does not send the new stats.",TEXT);
+        for(var l:ledgers)statCard(r,l);
     }
-    private void otherCards(Profile p){
-        Card details=card("Profile progression",GOLD,0);for(var e:p.progress.entrySet())details.line(e.getKey()+": "+fmt(e.getValue()),TEXT);
-        Card notes=card("Profile notes",CYAN,1);for(String note:p.notes)notes.line(note,MUTED);
+    private static String bucket(String category){
+        return switch(category){case "Armor","Equipment","Tool","Accessory","Gear","Gemstone"->"Gear";case "HOTM","Powder"->"HOTM";case "Skill"->"Skill";case "Pet"->"Pet";default->"Other";};
+    }
+    private static int bucketColor(String bucket){return switch(bucket){case "Gear"->GOLD;case "HOTM"->CYAN;case "Skill"->GREEN;case "Pet"->PURPLE;default->MUTED;};}
+    /** One stat: a bar split by source category, a legend, the top sources, and the hidden sources behind one expandable line. */
+    private void statCard(StatsReport r,StatsReport.Ledger l){
+        var manual=data.inputs(method).stats;Double override=manual.get(l.stat);
+        double max=l.attainable!=null?l.attainable:l.attainableKnown;boolean maxed=l.attainable!=null&&l.total>=l.attainable-1e-9;
+        Card c=card(l.stat.label,l.stat==stat||method.relevantStats().contains(l.stat)?GOLD:CYAN,AUTO);
+        c.right=(l.complete?"":"≥")+amount(l.stat,l.total)+" / "+(l.attainable==null?"≥":"")+amount(l.stat,max)+(maxed?" ✔":"");c.rightColor=maxed?GREEN:TEXT;
+        StringJoiner tip=new StringJoiner("\n");
+        tip.add(l.stat==Stat.PICKAXE_ABILITY_COOLDOWN?"Reductions multiply: 1 - product of (1 - each). Sum of the parts: "+amount(l.stat,l.flat)
+                :"Flat "+amount(l.stat,l.flat)+(l.multiplier!=1?" x "+fmt(l.multiplier)+" from additive % buffs":""));
+        if(l.attainable==null&&l.unknownMaxima>0)tip.add("Attainable unknown: "+l.unknownMaxima+" counted source"+(l.unknownMaxima==1?"":"s")+" without a known maximum (such as gear stat lines); at least "+amount(l.stat,l.attainableKnown)+".");
+        if(r.bestGear&&l.equipped!=null)tip.add("Wearing now: "+amount(l.stat,l.equipped));
+        if(!r.bestGear&&l.bestOwned!=null)tip.add("Best owned gear: "+amount(l.stat,l.bestOwned));
+        l.notes.forEach(tip::add);
+        c.tip=tip.toString();
+        // Segments: what each category adds to the total; the cooldown's multiplicative parts are scaled to the total.
+        Map<String,Double> buckets=new LinkedHashMap<>();for(String b:List.of("Gear","HOTM","Skill","Pet","Other"))buckets.put(b,0.0);
+        var counted=l.contributions.stream().filter(Breakdown.Contribution::counts).toList();
+        double sum=0;for(var x:counted){double v=share(l,x);buckets.merge(bucket(x.category()),v,Double::sum);sum+=v;}
+        double factor=l.stat==Stat.PICKAXE_ABILITY_COOLDOWN&&sum>0?l.total/sum:1;
+        List<Seg> segs=new ArrayList<>();
+        buckets.forEach((b,v)->{if(Math.abs(v)>1e-9)segs.add(new Seg(b+" "+(l.stat==Stat.PICKAXE_ABILITY_COOLDOWN?fmt(v*factor)+"%":amount(l.stat,v*factor)),v*factor,bucketColor(b)));});
+        c.add(new Split(segs,Math.max(l.total,max)));
+        if(!segs.isEmpty())c.add(new Legend(segs));
+        if(override!=null)c.line("Manual value in use: "+fmt(override),GOLD,"Clear it in Type Stats (More page) to use the automatic total.");
+        if(!l.complete)c.line("Lower bound: some counted sources are unknown.",RED);
+        if(l.stat==Stat.BREAKING_POWER&&method.breakingPower()!=null&&l.total<method.breakingPower())c.line(method.label+" needs Breaking Power "+method.breakingPower()+": not met with this tool.",RED);
+        if(r.tool.isEmpty())c.line("No readable mining tool, so tool stats are missing.",RED);
+        var sorted=counted.stream().sorted(Comparator.comparingDouble((Breakdown.Contribution x)->-Math.abs(share(l,x)))).toList();
+        var unknown=l.contributions.stream().filter(x->x.state()==Breakdown.State.COUNTED&&x.value()==null).toList();
+        String allKey="all:"+l.stat;boolean all=expanded.contains(allKey);
+        int limit=all?sorted.size():Math.min(4,sorted.size());
+        for(var x:sorted.subList(0,limit))c.add(sourceRow(l,x));
+        for(var x:unknown)c.add(new Pair(x.source(),TEXT,"?",RED,x.category()+"\n"+x.note(),null));
+        if(sorted.size()>4)c.add(new Text(all?"- show fewer":"+ "+(sorted.size()-4)+" more sources",MUTED,null,()->toggle(allKey)));
+        // Situational, temporary, missing and not-in-API sources, collapsed by default.
+        var hidden=l.contributions.stream().filter(x->x.state()!=Breakdown.State.COUNTED).toList();
+        if(!hidden.isEmpty()){
+            Map<Breakdown.State,Integer> counts=new EnumMap<>(Breakdown.State.class);for(var x:hidden)counts.merge(x.state(),1,Integer::sum);
+            StringJoiner label=new StringJoiner(", ");counts.forEach((s,n)->label.add(n+" "+stateLabel(s)));
+            String key="hidden:"+l.stat;boolean open=expanded.contains(key);
+            c.add(new Text((open?"- ":"+ ")+label,MUTED,"Not part of the total. Click to "+(open?"hide":"list")+" them.",()->toggle(key)));
+            if(open)for(var x:hidden){
+                int color=switch(x.state()){case SITUATIONAL->GOLD;case MISSING->RED;case TEMPORARY->CYAN;default->MUTED;};
+                String value=x.value()==null?"?":sourceValue(l,x);
+                String max2=x.maximum()==null?"":" / "+(x.category().equals(Breakdown.ADDITIVE_PERCENT)?fmt(x.maximum())+"%":amount(l.stat,x.maximum()));
+                c.add(new Pair(x.source(),color,value+max2,TEXT,stateLabel(x.state())+" | "+x.category()+(x.condition().isEmpty()?"":"\n"+x.condition())+"\n"+x.note(),null));
+            }
+        }
+    }
+    private Pair sourceRow(StatsReport.Ledger l,Breakdown.Contribution x){
+        String value=sourceValue(l,x);boolean known=x.maximum()!=null;
+        boolean maxed=known&&x.maximum()>0&&x.value()>=x.maximum()-1e-9;
+        String max=!known?"":x.category().equals(Breakdown.ADDITIVE_PERCENT)?fmt(x.maximum())+"%":amount(l.stat,x.maximum());
+        String right=maxed?value+" ✔":known&&x.maximum()>x.value()+1e-9?value+" / "+max:value;
+        String tip=x.category()+(x.confidence()==Breakdown.Confidence.MANUAL?" (assumed)":"")+(known?"\nMaximum: "+max:"\nMaximum unknown")+(x.condition().isEmpty()?"":"\n"+x.condition())+(x.note().isEmpty()?"":"\n"+x.note());
+        return new Pair(x.source(),TEXT,right,maxed?GREEN:CYAN,tip,null);
+    }
+    private static String stateLabel(Breakdown.State state){
+        return switch(state){case COUNTED->"counted";case SITUATIONAL->"situational";case MISSING->"missing";case TEMPORARY->"temporary";case UNTRACKABLE->"not in API";};
+    }
+
+    // Upgrades
+    private ItemStack upgradeIcon(Upgrade u){
+        return icon(u.item().modification&&u.current()!=null?u.current().id:u.item().id,u.current()!=null?u.current().group:u.item().group);
+    }
+    private static String changes(Upgrade u){
+        StringJoiner changes=new StringJoiner(" / ");u.delta().forEach((s,v)->{if(v!=0)changes.add((v>0?"+":"")+fmt(v)+" "+s.label);});
+        if(u.cooldownFactor()!=1)changes.add("ability cooldown x"+fmt(u.cooldownFactor()));
+        return changes.toString();
+    }
+    /** Every detail of one upgrade, for its tooltip. */
+    private String upgradeTip(Upgrade u,boolean focused){
+        StringJoiner tip=new StringJoiner("\n");
+        tip.add(u.item().name);
+        if(u.current()!=null)tip.add((u.item().modification?"On: ":"Replaces: ")+u.current().name);
+        String changes=changes(u);if(!changes.isEmpty())tip.add(changes);
+        tip.add(u.cost()==null?("GRIND".equals(u.item().category)?"Grinding (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"));
+        if(!u.resaleNote().isEmpty()&&u.cost()!=null)tip.add(u.net()!=null?"Net "+coins(u.net())+" after selling the replaced item for "+coins(u.resale())+" ("+u.resaleNote()+")":u.resaleNote()+"; net cost unknown");
+        if(u.rateBefore()!=null)tip.add("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" "+MethodRates.unit(method,ability()));
+        else if(!focused)tip.add("Estimated drops: +"+fmt(u.gain())+"%");
+        if(u.rateBefore()!=null&&u.rateAfter()!=null){String cross=crossMethod(u);if(!cross.isEmpty())tip.add(cross);}
+        if(u.owned())tip.add("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned");
+        if(!u.blocked().isEmpty())tip.add(u.blocked());
+        var quote=data.prices.get(u.item().id);
+        if(quote!=null&&!u.item().modification)tip.add(quote.source);
+        if(quote==null||u.item().modification||u.item().source.matches("^(Cheaper|Buying|No buy|Price unknown).*"))tip.add(u.item().source);
+        return tip.toString();
+    }
+    /** The upgrade's coins/hour here, and its rate gain and coins/hour in the best method (by coins / hour). */
+    private String crossMethod(Upgrade u){
+        Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
+        double hours=MethodRates.windowHours(method,ability());
+        String here=each==null?"coins unknown":"+"+compact((u.rateAfter()-u.rateBefore())/hours*each)+" coins / hour";
+        if(bestRow==null||bestRow.method()==method)return each==null?"":"Here: "+here+" ("+data.priceMode.label+")";
+        Double g=bestGains.get(u);
+        return "Here: +"+fmt(u.gain())+"%, "+here+"\nIn "+bestRow.method().label+" (best by coins / hour): "+(g==null||g<=0?"no rate change":"+"+fmt(g*100)+"%, +"+compact(g*bestRow.coinsPerHour())+" coins / hour");
+    }
+    private String costText(Upgrade u){return u.cost()==null?("GRIND".equals(u.item().category)?"Grinding":"Price unknown"):u.cost()==0?"Free":coins(u.cost());}
+    private void upgradeCards(Profile p){
+        boolean focused=byStat;
+        if(!p.inventoryEnabled){card("Inventory unavailable",RED,0).line("Gear recommendations are paused. Enable Inventory API in SkyBlock Settings, then reload after the profile cache expires.",TEXT);return;}
+        if(calculating){card("Calculating upgrades...",CYAN,0).line("You can switch tabs or close this screen while calculations run.",MUTED);return;}
+        if(!focused&&!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Automatic method stats come from your loaded profile. Type Stats adds or overrides values.",TEXT)
+                .line("Rank: stat points works without them and ranks coins per stat point.",CYAN);return;}
+        boolean rated=!focused&&upgrades.stream().anyMatch(u->u.rateBefore()!=null);
+        String model=focused?stat.label+": cheapest points first.":rated?"Model: rate gain (automatic "+method.label+" rate, "+MethodRates.unit(method,ability())+"). Mining Speed counts only when it changes ticks; ability cooldown counts through uptime."
+                :ProgressionEngine.rateModel(method)?"Model: drop multiplier (rate unavailable for these stats). Fortune x Spread x Pristine.":"Model: drop multiplier (no rate model for "+method.label+" yet).";
+        String buy="Owned materials are used first. Supported socket unlock and removal fees are included.\nCosts are cash outlay; net cost subtracts the replaced item's sale quote when one exists; modifiers are not transferred.";
+        if(!focused){
+            Card head=card("Step-by-step plan",GOLD,FULL);
+            head.tip="Take the best value, apply it, recompute everything, repeat. Unpriced and blocked upgrades are skipped.\n"+model+"\n"+buy;
+            if(plan.isEmpty())head.line("No priced upgrade available to plan with.",MUTED);
+            else{var last=plan.getLast();
+                head.right="+"+fmt(last.totalGain())+"% "+(rated?"rate":"drops")+" for "+coins(last.totalCost());head.rightColor=GREEN;
+                String resale=last.totalResale()>0||last.unpricedResale()>0?"Selling what the steps replace: "+coins(last.totalResale())+" back, net "+coins(last.totalCost()-last.totalResale())
+                        +(last.unpricedResale()>0?" ("+last.unpricedResale()+" replaced item"+(last.unpricedResale()>1?"s":"")+" without a sale price)":""):"";
+                if(!resale.isEmpty())head.line(resale,CYAN);
+                if(bestRow!=null)head.line(bestRow.method()==method?method.label+" is your best method by coins / hour.":"Best method by coins / hour: "+bestRow.method().label+" (hover an upgrade for its value there).",MUTED);
+                int n=0;
+                for(var step:plan){var u=step.upgrade();n++;
+                    Card c=card("",GOLD,n%2==1?0:1);
+                    c.add(new Entry(upgradeIcon(u),n+". "+u.item().name+(u.current()!=null&&u.item().modification?" ("+u.current().name+")":""),TEXT,
+                            "Total +"+fmt(step.totalGain())+"% for "+coins(step.totalCost()),MUTED,"+"+fmt(u.gain())+"%",GREEN,costText(u),Objects.equals(u.cost(),0.0)?GREEN:TEXT,
+                            upgradeTip(u,false)+(step.rate()!=null?"\nAfter this step: "+fmt(step.rate())+" "+MethodRates.unit(method,ability()):""),null));
+                }
+                if(n%2==1)card("",GOLD,1).line(plan.size()==PLAN_STEPS?"First "+PLAN_STEPS+" steps shown.":"End of the plan.",MUTED);
+            }
+        }
+        Card list=card(focused?stat.label+" | cheapest points first":"All upgrades, best value first",GOLD,FULL);
+        list.right=upgrades.size()+" found";
+        var known=upgrades.stream().filter(u->u.cost()!=null&&Double.isFinite(u.costPerUnit())&&u.blocked().isEmpty()).limit(4).toList();
+        StringJoiner eff=new StringJoiner("\n");for(var u:known)eff.add(coins(u.costPerUnit())+(focused?" / point":" / 1%")+"  "+u.item().name);
+        list.tip=model+"\nEach card compares to your current setup; they are alternatives, not a combined shopping list.\n"+buy+(known.isEmpty()?"":"\nBest cost efficiency:\n"+eff);
+        if(upgrades.isEmpty()){list.line("No supported upgrades found. This does not mean the account is maxed.",MUTED);return;}
+        int rank=0;
+        for(var u:upgrades){rank++;
+            Card c=card("",u.blocked().isEmpty()?GOLD:RED,rank%2==1?0:1);
+            String gain=focused?(u.cost()==null||!Double.isFinite(u.costPerUnit())?"":coins(u.costPerUnit())+" / pt"):"+"+fmt(u.gain())+"%";
+            String changes=changes(u);
+            c.add(new Entry(upgradeIcon(u),"#"+rank+"  "+u.item().name,u.blocked().isEmpty()?TEXT:RED,!u.blocked().isEmpty()?u.blocked():!changes.isEmpty()?changes:u.current()!=null?"Replaces: "+u.current().name:"",!u.blocked().isEmpty()?RED:CYAN,
+                    gain,GREEN,u.owned()?"Owned":costText(u),u.owned()?GREEN:u.cost()==null?MUTED:TEXT,upgradeTip(u,focused),null));
+        }
+    }
+
+    // Methods
+    private void methodCards(){
+        methodChart(false);
+        rateDetail();
+        sameChangeCard();
+        manualCard();
+    }
+    private void assumptions(Card c,List<String> list){
+        if(list.isEmpty())return;String key="assume:"+method;boolean open=expanded.contains(key);
+        c.add(new Text((open?"- ":"+ ")+"Assumptions ("+list.size()+")",MUTED,null,()->toggle(key)));
+        if(open)for(String a:list)c.line("  "+a,MUTED);
+    }
+    private void coinPairs(Card c,double perHour){
+        for(var mode:MethodComparison.PriceMode.values()){Double each=MethodComparison.coinsPerItem(data.prices,method,mode);
+            String source=MethodComparison.priceSource(data.prices,method,mode);
+            c.add(new Pair("Coins / hour, "+mode.label,MUTED,each==null?"unknown":coins(perHour*each),each==null?MUTED:mode==data.priceMode?GOLD:TEXT,each==null?null:fmt(each)+" each"+(source.isEmpty()?"":"\n"+source),null));}
+    }
+    /** The selected method's automatic rate: big number, coins at each price, ticks and the next threshold; assumptions expand. */
+    private void rateDetail(){
+        var i=data.inputs(method);StatsReport r=data.stats(method);
+        Card c=card(method.label+" | automatic rate",GOLD,0);c.icon=productIcon(method);
+        if(!MethodRates.supported(method)){c.line("No rate model for this method.",MUTED);return;}
+        if(r==null&&!data.demo&&!i.stats.containsKey(Stat.MINING_SPEED)){c.line(data.statsLoading(method)?"Loading automatic stats...":"Load your profile (or enter stats in Type Stats) for the automatic rate.",TEXT);return;}
+        var entry=data.comparison()==null?null:data.comparison().entry(method);
+        String tool=entry!=null&&!entry.tool.isEmpty()?entry.tool:toolName(i.tool);StatContext.Zone zone=data.zone(method);
+        try{
+            var gem=MethodRates.gem(method);var b=MethodRates.block(method);
+            if(b==null){
+                var rate=MethodRates.gems(method,data.effective(method),i.efficiency,r==null?null:r.ability);
+                c.tip=gem.name()+" (block strength "+fmt(gem.strength())+")\nGuide reference ("+gem.guideNote()+", "+fmt(gem.guideEfficiency())+"% efficiency): "+fmt(gem.guideFlawlessPerHour())+" Flawless / hour";
+                c.add(new Big(fmt(rate.flawlessPerHour()),"Flawless "+gem.name().split(" ")[0]+" / hour",CYAN,null,null));
+                coinPairs(c,rate.flawlessPerHour());
+                c.pair("Efficiency",fmt(i.efficiency)+"%",TEXT).pair("Blocks / hour",fmt(rate.blocksPerHour()),TEXT).pair("Rough / block",fmt(rate.roughPerBlock()),TEXT);
+                c.add(new Pair("Mining Speed",MUTED,fmt(rate.speed())+": "+rate.ticks()+" ticks",TEXT,rate.uptime()>0?rate.boostedTicks()+" ticks during the ability ("+fmt(rate.uptime()*100)+"% uptime)":null,null));
+                double next=MethodRates.nextTickSpeed(rate.speed(),gem.strength());
+                if(Double.isFinite(next))c.add(new Pair("Next tick",MUTED,fmt(next)+" Mining Speed",GOLD,MethodRates.ticks(next,gem.strength())+" ticks there; speed between thresholds adds nothing.",null));
+                c.pair("Tool | zone",tool+" | "+(zone==null?"none":zone.label),TEXT);
+                assumptions(c,rate.assumptions());
+            }else{
+                var rate=MethodRates.blocks(method,data.effective(method),i.efficiency,r==null?null:r.ability);
+                String window=rate.windowHours()==1?"hour":b.abilityCycle()?"ability cycle ("+fmt(rate.windowHours()*3600)+"s)":b.window();
+                c.tip=(b.strength()>0?b.name()+" (block strength "+fmt(b.strength())+"; instamine above "+fmt(b.instamineFactor()*b.strength())+" Mining Speed, "+fmt(5*b.instamineFactor()*b.strength())+" airborne)"
+                        :b.name()+" (block strength not listed on the wiki; assumed instamined)")+"\nGuide reference ("+b.guideNote()+")"
+                        +(rate.windowHours()!=1?"\nWindow: "+MethodComparison.window(method,r==null?null:r.ability):"");
+                c.add(new Big(compact(rate.perWindow()),b.unit()+" / "+window,CYAN,fmt(rate.perWindow())+" "+b.unit()+" per "+window,null));
+                if(rate.windowHours()!=1)c.pair("Per hour",fmt(rate.perHour()),TEXT);
+                coinPairs(c,rate.perHour());
+                c.pair("Efficiency",fmt(i.efficiency)+"%",TEXT).pair("Blocks / hour",fmt(rate.blocksPerHour()),TEXT).pair(b.unit()+" / block",fmt(rate.dropsPerBlock()),TEXT);
+                c.add(new Pair("Mining Speed",MUTED,fmt(rate.speed())+": "+ticksText(rate.groundTicks())+" / "+ticksText(rate.airTicks())+" air",TEXT,
+                        "On the ground and airborne."+(rate.uptime()>0?"\nDuring the ability "+ticksText(rate.boostedGroundTicks())+" / "+ticksText(rate.boostedAirTicks())+" ("+fmt(rate.uptime()*100)+"% uptime)":""),null));
+                double nextGround=b.strength()>0?MethodRates.nextTickSpeed(rate.speed(),b.strength(),b.instamineFactor()):Double.NaN;
+                if(Double.isFinite(nextGround))c.add(new Pair("Next threshold",MUTED,fmt(nextGround)+" on the ground",GOLD,"Speed between thresholds adds nothing.",null));
+                else if(rate.airTicks()>1&&b.strength()>0)c.add(new Pair("Next threshold",MUTED,fmt(5*MethodRates.nextTickSpeed(rate.speed()/5,b.strength(),b.instamineFactor())-4)+" airborne",GOLD,"Speed between thresholds adds nothing.",null));
+                var ab=ability();
+                if(rate.uptime()>0&&rate.boostedGroundTicks()>1&&b.strength()>0)c.pair("Instamine in ability",fmt(Math.floor(b.instamineFactor()*b.strength()/(1+ab.boostPercent()/100))+1)+" Mining Speed",MUTED);
+                c.pair("Tool | zone",tool+" | "+(zone==null?"none":zone.label),TEXT);
+                assumptions(c,rate.assumptions());
+            }
+        }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
+        var row=data.comparisonRows().stream().filter(x->x.method()==method).findFirst().orElse(null);
+        if(row!=null)c.line("Drops: "+row.drops(),MUTED,"Window: "+row.window()+"\n"+row.priceNote()+(row.statsComplete()?"":"\nSome counted stat sources are unknown, so the rate is a lower bound."));
+    }
+    private static String ticksText(int t){return t==1?"instamine":t+" ticks";}
+    private void sameChangeCard(){
+        var r=data.comparison();var rows=data.comparisonRows();if(r==null||rows.isEmpty())return;
+        Card same=card("Same change, different value",CYAN,1);
+        same.tip="+50 Mining Fortune / +100 Mining Speed, on each method's own stats: rate gain and coins / hour.";
+        same.add(new Pair("Method",MUTED,"+50 Fortune / +100 Speed",MUTED,null,null));
+        for(var row:rows){var stats=data.comparisonStats(row.method());var e=r.entry(row.method());if(stats==null||e==null)continue;double eff=data.inputs(row.method()).efficiency;
+            Double f=MethodComparison.gain(row.method(),stats,eff,e.ability,Map.of(Stat.MINING_FORTUNE,50.0),1),sp=MethodComparison.gain(row.method(),stats,eff,e.ability,Map.of(Stat.MINING_SPEED,100.0),1);
+            same.add(new Pair(row.method().label,row.method()==method?GREEN:TEXT,shortGain(f)+" / "+shortGain(sp),row.method()==method?GREEN:MUTED,gainText(f,row)+" / "+gainText(sp,row),null));}
+    }
+    private static String shortGain(Double g){return g==null?"?":g<=0?"+0%":"+"+fmt(g*100)+"%";}
+    private static String gainText(Double g,MethodComparison.Row row){
+        if(g==null)return "?";if(g<=0)return "+0%";
+        return "+"+fmt(g*100)+"%"+(row.coinsPerHour()==null?"":" ("+compact(g*row.coinsPerHour())+"/h)");
+    }
+    /** Manual scenario from Type Stats (measured blocks/sec, sale price, item weight). */
+    private void manualCard(){
+        var i=data.inputs(method);var stats=data.effective(method);Card c=card("Manual rate scenario",MUTED,1);c.optional=true;
+        c.tip="Uses Type Stats: effective stats, measured active blocks/sec, base drops, sale price and item weight.\nGems use rough-equivalent units; match your sale price and weight to them.\nSpread assumes extra blocks are available. Fuel, taxes, route, abilities and shaft loot are excluded. Shafting estimates Glacite only.";
+        if(i.blocksPerSecond<=0){c.line("Enter measured blocks/sec in Type Stats (More page).",MUTED,"Default mining efficiency: "+fmt(method.defaultEfficiency())+"%");return;}
+        try{var r=ProgressionEngine.rate(method,stats,i.efficiency,i.blocksPerSecond,i.baseDrops,i.coinsPerItem,i.coleweightPerItem);
+            c.pair("Uptime",fmt(i.efficiency)+"%",TEXT).pair("Items / hour",fmt(r.itemsPerHour()),CYAN)
+                    .pair("Coins / hour",i.coinsPerItem>0?coins(r.coinsPerHour()):"enter sale price",i.coinsPerItem>0?GOLD:MUTED)
+                    .pair("Coleweight / hour",i.coleweightPerItem>0?fmt(r.coleweightPerHour()):"enter item weight",i.coleweightPerItem>0?GREEN:MUTED);
+        }catch(IllegalArgumentException e){c.line(e.getMessage(),RED);}
+    }
+
+    // More
+    private void moreCards(Profile p){
+        if(p!=null){
+            Card basic=card("Heart of the Mountain & skills",GOLD,0);
+            if(p.milestones.isEmpty())basic.line("Skill progress is not available for this profile.",MUTED);
+            for(var m:p.milestones)basic.add(new Meter(m.name(),fmt(m.current())+" / "+fmt(m.maximum()),m.current()>=m.maximum()?GREEN:TEXT,m.maximum()>0?m.current()/m.maximum():0,m.current()>=m.maximum()?GREEN:CYAN,null,null));
+            Card powder=card("Powder",CYAN,0);powder.tip="Unspent powder, as shown in game. Targets depend on your HOTM build.";
+            boolean hasPowder=false;
+            for(var e:p.progress.entrySet())if(e.getKey().contains("powder")){powder.pair(e.getKey(),fmt(e.getValue()),CYAN);hasPowder=true;}
+            if(!hasPowder)powder.line("Powder data unavailable.",MUTED);
+            gearAudit(p);
+            Card details=card("Profile progression",GOLD,0);for(var e:p.progress.entrySet())details.pair(e.getKey(),fmt(e.getValue()),TEXT);
+            if(!p.notes.isEmpty()){Card notes=card("Profile notes",CYAN,1);for(String note:p.notes)notes.line(note,MUTED);}
+        }
+        card("Help",GOLD,0).line("Tabs: Home (summary), Gear (loadout + stat sources), Upgrades (plan), Methods (rates).",TEXT)
+                .line("Hover bars, rows and card titles for details; click + lines to expand.",MUTED)
+                .line("Keys: R reload, F1 this page, 1-4 tabs, PgUp/PgDn or the wheel to scroll, ESC close.",MUTED);
         card("Manual checks",GOLD,0).line("Check HOTM perks and powder, pet level/item, reforges, drill modules/fuel, collections, attributes and temporary buffs.",TEXT).line("Stored gear is not necessarily equipped or usable.",MUTED);
         card("Inventory API help",CYAN,1).line("SkyBlock Menu > Settings > API Settings > Inventory API: ON.",TEXT).line("Profiles cache for five minutes; prices for fifteen. Unknown prices never mean free.",MUTED);
+        card("Progression scope",CYAN,1).line("Every method has a rate model; Methods ranks them by coins per hour. None is validated against a measured session yet.",MUTED);
     }
-    private void layoutCards(){
-        placed.clear();int gap=8,columns=wide?2:1,w=columns==2?(span-34)/2:span-20;
+    /** Base-item bars per slot for the focused stat, with supported enchant and gemstone progress (old Overview). */
+    private void gearAudit(Profile p){
+        Card c=card("Gear audit | "+stat.label,GOLD,1);
+        c.tip="Base-item bars compare the supported catalog. Modifier bars track supported enchants and gemstones. Change the stat with Stat focus.";
+        if(!p.inventoryEnabled){c.line("Inventory API off: gear audit paused.",RED);return;}
+        if(calculating){c.line("Calculating...",MUTED);return;}
+        if(overview.isEmpty()){c.line("No supported gear for this stat. Choose another stat focus.",MUTED);return;}
+        for(var row:overview){
+            Item current=row.current();
+            StringJoiner tip=new StringJoiner("\n");
+            if(row.value()<row.maximum())tip.add("Target: "+row.target().name);
+            if(current!=null){tip.add("Item "+(current.observed?"lore":"base")+": "+fmt(Model.stat(current.stats,stat))+" "+stat.label);if(!current.location.isBlank())tip.add("Found in "+current.location);
+                for(var m:GearUpgrades.progress(current,method,stat))tip.add(m.name()+"  "+fmt(m.current())+" / "+fmt(m.maximum()));}
+            c.add(new Entry(icon(current!=null?current.id:row.target().id,row.group()),row.group()+": "+(current==null?"Missing":current.name),current==null?RED:TEXT,
+                    row.value()<row.maximum()?"Target: "+row.target().name:"Best base item",MUTED,fmt(row.value())+" / "+fmt(row.maximum()),row.value()>=row.maximum()?GREEN:CYAN,"",MUTED,tip.toString(),null));
+        }
+    }
+
+    // ---- Layout and drawing ----
+    private List<FormattedCharSequence> wrapTip(String tip){
+        if(tip==null||tip.isEmpty())return null;
+        List<FormattedCharSequence> out=new ArrayList<>();int w=Math.max(160,Math.min(300,width/2));
+        for(String part:tip.split("\n"))out.addAll(font.split(Component.literal(part),w));
+        return out;
+    }
+    /** Word wrap of one text, run on content changes only. */
+    private List<String> wrap(String text,int w){
+        List<String> out=new ArrayList<>();String rest=text;int guard=0;
+        while(!rest.isEmpty()&&guard++<100){String part=font.plainSubstrByWidth(rest,Math.max(20,w));if(part.isEmpty())break;
+            if(part.length()<rest.length()&&part.lastIndexOf(' ')>0)part=part.substring(0,part.lastIndexOf(' '));
+            rest=rest.substring(part.length()).stripLeading();out.add(part);}
+        return out;
+    }
+    private Laid lay(Row row,int dy,int rw){
+        var tip=wrapTip(row.tip());
+        return switch(row){
+            case Text t->{var lines=wrap(t.text(),rw);yield new Laid(row,dy,lines.size()*11+1,lines,tip,null);}
+            case Meter m->new Laid(row,dy,21,List.of(fit(font,m.label(),rw-font.width(m.value())-6)),tip,null);
+            case Split s->new Laid(row,dy,10,List.of(),tip,null);
+            case Legend l->{int[] pos=new int[l.segs().size()*2];int x=0,y=0;
+                for(int k=0;k<l.segs().size();k++){int w=10+font.width(l.segs().get(k).label());if(x>0&&x+w>rw){x=0;y+=11;}pos[2*k]=x;pos[2*k+1]=y;x+=w+8;}
+                yield new Laid(row,dy,y+13,List.of(),tip,pos);}
+            case Pair p->new Laid(row,dy,11,List.of(fit(font,p.left(),rw-font.width(p.right())-6)),tip,null);
+            case Entry e->{int rightW=Math.max(font.width(e.right()),font.width(e.right2()));
+                yield new Laid(row,dy,26,List.of(fit(font,e.title(),rw-22-rightW-6),fit(font,e.sub(),rw-22-rightW-6)),tip,null);}
+            case Slots s->{int per=Math.max(1,(rw+4)/26);int[] pos=new int[s.slots().size()*2];
+                for(int k=0;k<s.slots().size();k++){pos[2*k]=(k%per)*26;pos[2*k+1]=(k/per)*26;}
+                yield new Laid(row,dy,((s.slots().size()+per-1)/per)*26+2,List.of(),tip,pos);}
+            case Big b->new Laid(row,dy,22,List.of(fit(font,b.unit(),rw-2*font.width(b.value())-8)),tip,null);
+            case Bar b->new Laid(row,dy,18,List.of(fit(font,b.label(),labelWidth(rw)-22)),tip,null);
+            default->new Laid(row,dy,0,List.of(),tip,null);
+        };
+    }
+    private static int labelWidth(int rw){return Math.min(110,Math.max(60,rw/4));}
+    private void layoutCards(){slotTips.clear();
+        placed.clear();int gap=8,columns=wide?2:1,w=columns==2?(span-34)/2:span-20,full=span-26;
+        boolean shortScreen=height<300;
         int[] ys={0,0};
         for(Card c:cards){
-            int col=columns==2?c.column:0;List<Line> lines=new ArrayList<>();
-            for(Line line:c.lines){
-                // Font wrapping only on content changes, never for every rendered frame.
-                String rest=line.text;int guard=0;
-                while(!rest.isEmpty()&&guard++<100){String part=font.plainSubstrByWidth(rest,Math.max(20,w-20));if(part.isEmpty())break;
-                    if(part.length()<rest.length()&&part.lastIndexOf(' ')>0)part=part.substring(0,part.lastIndexOf(' '));
-                    rest=rest.substring(part.length()).stripLeading();lines.add(new Line(part,line.color,rest.isEmpty()?line.progress:-1));}
-            }
-            int h=30+lines.stream().mapToInt(l->l.progress>=0?22:13).sum();
-            placed.add(new Placed(c,left+10+col*(w+gap),ys[col],w,h,lines));ys[col]+=h+gap;
+            if(c.optional&&shortScreen)continue;
+            boolean isFull=c.column==FULL&&columns==2;int col=columns==2&&!isFull?(c.column==AUTO?(ys[0]<=ys[1]?0:1):c.column):0,cw=isFull?full:columns==2?w:full;
+            int rw=cw-18,dy=c.title.isEmpty()?5:27;List<Laid> rows=new ArrayList<>();
+            for(Row row:c.rows){Laid l=lay(row,dy,rw);rows.add(l);dy+=l.h()+2;}
+            int h=dy+3;
+            int inset=c.icon.isEmpty()?9:29,rightW=c.right.isEmpty()?0:font.width(c.right)+9;
+            String title=fit(font,c.title,cw-inset-9-rightW);
+            int y=isFull?Math.max(ys[0],ys[1]):ys[col];
+            placed.add(new Placed(c,left+10+col*(w+gap),y,cw,h,title,left+10+col*(w+gap)+cw-rightW,wrapTip(c.tip!=null?c.tip:title.equals(c.title)?null:c.title),rows));
+            if(isFull){ys[0]=ys[1]=y+h+gap;}else ys[col]=y+h+gap;
         }
         contentHeight=Math.max(ys[0],ys[1]);scroll=Math.clamp(scroll,0,maxScroll());
     }
@@ -612,53 +850,107 @@ public final class ProgressionScreen extends Screen {
         if(x>=left&&x<=left+span&&y>=bodyTop&&y<=bodyBottom){scroll=Math.clamp(scroll-(int)(vertical*32),0,maxScroll());return true;}
         return super.mouseScrolled(x,y,horizontal,vertical);
     }
+    /** Click or tooltip target under the mouse: a row, or one slot of a slot grid. */
+    private record Hit(Runnable click,List<FormattedCharSequence> tip) {}
+    private Hit hit(double mx,double my){
+        if(mx<left||mx>left+span||my<bodyTop||my>=bodyBottom)return null;
+        for(Placed box:placed){int y=bodyTop+box.y-scroll;
+            if(mx<box.x||mx>=box.x+box.width||my<y||my>=y+box.height)continue;
+            if(my<y+21&&!box.card.title.isEmpty())return box.tip==null?null:new Hit(null,box.tip);
+            int x0=box.x+9;
+            for(Laid l:box.rows){int ry=y+l.dy();if(my<ry||my>=ry+l.h())continue;
+                if(l.row() instanceof Slots s){for(int k=0;k<s.slots().size();k++){int sx=x0+l.pos()[2*k],sy=ry+l.pos()[2*k+1];
+                    if(mx>=sx&&mx<sx+22&&my>=sy&&my<sy+22){var slot=s.slots().get(k);return new Hit(slot.click(),wrapTipCached(slot));}}return null;}
+                return new Hit(l.row().click(),l.tip());}
+            return null;
+        }
+        return null;
+    }
+    private final Map<Slot,List<FormattedCharSequence>> slotTips=new IdentityHashMap<>();
+    private List<FormattedCharSequence> wrapTipCached(Slot slot){return slotTips.computeIfAbsent(slot,s->wrapTip(s.tip()));}
     @Override public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){
-        double x=event.x(),y=event.y();
-        if(tab==COMPARE&&event.button()==0&&x>=left&&x<=left+span&&y>=bodyTop&&y<=bodyBottom)
-            for(Placed box:placed){int top=bodyTop+box.y-scroll;
-                if(box.card.pick!=null&&x>=box.x&&x<box.x+box.width&&y>=top&&y<top+box.height){method=box.card.pick;refresh();return true;}}
-        return super.mouseClicked(event,doubleClick);
+        if(super.mouseClicked(event,doubleClick))return true;
+        if(event.button()==0){Hit h=hit(event.x(),event.y());if(h!=null&&h.click()!=null){h.click().run();return true;}}
+        return false;
     }
     @Override public boolean keyPressed(KeyEvent event){
         if(username!=null&&username.isFocused())return super.keyPressed(event);
-        if(event.key()==82){if(!data.loading)data.load(username.getValue(),minecraft::execute,this::refresh);return true;}
-        if(event.key()==290){tab=OTHER;scroll=0;refresh();return true;}
-        if(event.key()==267){scroll=Math.min(maxScroll(),scroll+Math.max(30,bodyBottom-bodyTop-20));return true;}
-        if(event.key()==266){scroll=Math.max(0,scroll-Math.max(30,bodyBottom-bodyTop-20));return true;}
+        int key=event.key();
+        if(key==82){if(!data.loading)data.load(username.getValue(),minecraft::execute,this::refresh);return true;}
+        if(key==290){switchTab(MORE);return true;}
+        if(key>=49&&key<=52){switchTab(key-49);return true;}
+        if(key==267){scroll=Math.min(maxScroll(),scroll+page());return true;}
+        if(key==266){scroll=Math.max(0,scroll-page());return true;}
         return super.keyPressed(event);
     }
     @Override public void extractBackground(GuiGraphicsExtractor g,int x,int y,float delta){g.fill(0,0,width,height,0xD908090D);}
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float delta){
         // Draw frame before widgets; do not request Minecraft's full-screen blur pass.
         panel(g,left,top,span,bottom-top,BACK);
-        g.text(font,"SkyProgression",left+10,top+13,GOLD,true);
-        if(wide)g.text(font,"Fabric 26.1.2",left+108,top+13,MUTED,false);
-        Profile p=data.profile();String state=data.loading?"LOADING":data.demo?"DEMO":p==null?"OFFLINE":"PROFILE LOADED";
-        if(wide)g.text(font,state,left+span-95-font.width(state),top+13,data.demo?GOLD:data.loading?CYAN:p==null?MUTED:GREEN,false);
-        if(tab!=BREAKDOWN&&tab!=COMPARE&&tab!=START&&(wide||height>=330)){panel(g,left+9,bodyTop-30,span-18,24,PANEL);
-        String summary=p==null?"Mining progression":p.player+" / "+p.name+" ["+p.mode+"]";
-        g.text(font,fit(font,summary,wide?span/2:span-34),left+15,bodyTop-22,TEXT,false);
-        if(wide)g.text(font,fit(font,statSummary(),span/2-22),left+span/2,bodyTop-22,CYAN,false);
-        }
+        if(span>=520)g.text(font,"SkyProgression",left+10,top+13,GOLD,true);
         if(bodyBottom>bodyTop){
             g.enableScissor(left+4,bodyTop,left+span-4,bodyBottom);
-            for(Placed box:placed){int y=bodyTop+box.y-scroll;if(y+box.height<bodyTop||y>bodyBottom)continue;
-                panel(g,box.x,y,box.width,box.height,PANEL);g.fill(box.x+1,y+1,box.x+box.width-1,y+21,RAISED);
-                int inset=box.card.icon.isEmpty()?9:29;if(!box.card.icon.isEmpty())g.fakeItem(box.card.icon,box.x+7,y+3);
-                g.text(font,fit(font,box.card.title,box.width-inset-9),box.x+inset,y+7,box.card.accent,false);
-                int lineY=y+27;for(Line line:box.lines){if(lineY+22>=bodyTop&&lineY<bodyBottom){g.text(font,line.text,box.x+9,lineY,line.color,false);if(line.progress>=0)Theme.bar(g,box.x+9,lineY+11,box.width-18,line.progress,line.color);}lineY+=line.progress>=0?22:13;}
-                if(mx>=box.x&&mx<box.x+box.width&&my>=y&&my<y+21&&my>=bodyTop&&my<bodyBottom&&font.width(box.card.title)>box.width-inset-9)g.setTooltipForNextFrame(font,Component.literal(box.card.title),mx,my);
-            }
+            for(Placed box:placed){int y=bodyTop+box.y-scroll;if(y+box.height<bodyTop||y>bodyBottom)continue;drawCard(g,box,y,mx,my);}
             g.disableScissor();
             if(maxScroll()>0){int track=bodyBottom-bodyTop,thumb=Math.max(12,(int)((double)track*track/contentHeight));g.fill(left+span-6,bodyTop,left+span-3,bodyBottom,RAISED);int sy=bodyTop+(int)((track-thumb)*(double)scroll/maxScroll());g.fill(left+span-6,sy,left+span-3,sy+thumb,GOLD);}
         }
-        g.text(font,fit(font,data.message,span-20),left+10,bottom-42,data.demo?GOLD:MUTED,false);
-        g.text(font,fit(font,"ESC Close  |  R Reload  |  F1 Help",span-(wide?190:83)),left+70,bottom-24,MUTED,false);
-        if(my>=bottom-44&&my<bottom-32&&mx>=left&&mx<=left+span)g.setTooltipForNextFrame(font,Component.literal(data.message),mx,my);
+        g.text(font,footerState,left+58,bottom-18,footerStateColor,false);
+        g.text(font,footerMessage,footerMessageX,bottom-18,data.demo?GOLD:MUTED,false);
+        if(!footerKeys.isEmpty())g.text(font,footerKeys,footerKeysX,bottom-18,0xFF6B675F,false);
+        if(my>=bottom-22&&my<bottom-6&&mx>=footerMessageX&&mx<=footerMessageX+font.width(footerMessage)&&!footerMessage.equals(data.message))g.setTooltipForNextFrame(font,Component.literal(data.message),mx,my);
+        Hit h=hit(mx,my);if(h!=null&&h.tip()!=null)g.setTooltipForNextFrame(font,h.tip(),mx,my);
         super.extractRenderState(g,mx,my,delta);
+    }
+    private void drawCard(GuiGraphicsExtractor g,Placed box,int y,int mx,int my){
+        Card c=box.card;
+        panel(g,box.x,y,box.width,box.height,PANEL);
+        if(!c.title.isEmpty()){
+            g.fill(box.x+1,y+1,box.x+box.width-1,y+21,RAISED);g.fill(box.x+1,y+1,box.x+3,y+21,c.accent);
+            int inset=c.icon.isEmpty()?9:29;if(!c.icon.isEmpty())g.fakeItem(c.icon,box.x+8,y+3);
+            g.text(font,box.title,box.x+inset,y+7,c.accent,false);
+            if(!c.right.isEmpty())g.text(font,c.right,box.rightX,y+7,c.rightColor,false);
+            if(c.tip!=null)g.fill(box.x+box.width-4,y+3,box.x+box.width-2,y+5,MUTED);
+        }else g.fill(box.x,y+1,box.x+2,y+box.height-1,c.accent);
+        int x0=box.x+9,rw=box.width-18;
+        for(Laid l:box.rows){int ry=y+l.dy();if(ry+l.h()<bodyTop||ry>bodyBottom)continue;
+            boolean hover=mx>=x0-4&&mx<x0+rw+4&&my>=ry&&my<ry+l.h()&&my>=bodyTop&&my<bodyBottom;
+            drawRow(g,l,x0,ry,rw,hover);}
+    }
+    private void drawRow(GuiGraphicsExtractor g,Laid l,int x0,int ry,int rw,boolean hover){
+        switch(l.row()){
+            case Text t->{int color=hover&&t.click()!=null?CYAN:t.color();for(int k=0;k<l.text().size();k++)g.text(font,l.text().get(k),x0,ry+k*11,color,false);}
+            case Meter m->{if(hover&&m.click()!=null)g.fill(x0-4,ry-2,x0+rw+4,ry+l.h()-1,RAISED);
+                g.text(font,l.text().getFirst(),x0,ry,TEXT,false);g.text(font,m.value(),x0+rw-font.width(m.value()),ry,m.valueColor(),false);Theme.bar(g,x0,ry+11,rw,m.progress(),m.color());}
+            case Split s->{g.fill(x0,ry,x0+rw,ry+8,BACK);g.outline(x0-1,ry-1,rw+2,10,EDGE);
+                if(s.scale()>0){double acc=0;int prev=x0;for(var seg:s.segs()){acc+=Math.max(0,seg.amount());int to=x0+(int)Math.round(Math.min(1,acc/s.scale())*rw);if(to>prev)g.fill(prev,ry,to,ry+8,seg.color());prev=to;}
+                    if(prev>x0)g.fill(x0,ry,prev,ry+1,0x40FFFFFF);}}
+            case Legend lg->{for(int k=0;k<lg.segs().size();k++){var seg=lg.segs().get(k);int x=x0+l.pos()[2*k],y=ry+l.pos()[2*k+1];
+                g.fill(x,y+1,x+6,y+7,seg.color());g.text(font,seg.label(),x+10,y,MUTED,false);}}
+            case Pair p->{if(hover&&p.tip()!=null)g.fill(x0-4,ry-1,x0+rw+4,ry+l.h(),RAISED);
+                g.text(font,l.text().getFirst(),x0,ry+1,p.leftColor(),false);g.text(font,p.right(),x0+rw-font.width(p.right()),ry+1,p.rightColor(),false);}
+            case Entry e->{if(hover&&(e.click()!=null||e.tip()!=null))g.fill(x0-4,ry,x0+rw+4,ry+l.h(),RAISED);
+                g.fakeItem(e.icon(),x0,ry+5);
+                g.text(font,l.text().get(0),x0+22,ry+3,e.titleColor(),false);g.text(font,l.text().get(1),x0+22,ry+14,e.subColor(),false);
+                g.text(font,e.right(),x0+rw-font.width(e.right()),ry+3,e.rightColor(),false);g.text(font,e.right2(),x0+rw-font.width(e.right2()),ry+14,e.right2Color(),false);}
+            case Slots s->{for(int k=0;k<s.slots().size();k++){var slot=s.slots().get(k);int x=x0+l.pos()[2*k],y=ry+l.pos()[2*k+1];
+                g.fill(x,y,x+22,y+22,slot.selected()?RAISED:BACK);g.outline(x,y,22,22,slot.outline());if(slot.selected())g.outline(x-1,y-1,24,24,slot.outline());
+                g.fakeItem(slot.icon(),x+3,y+3);}}
+            case Big b->{if(hover&&b.click()!=null)g.fill(x0-4,ry-1,x0+rw+4,ry+l.h(),RAISED);
+                g.pose().pushMatrix();g.pose().translate(x0,ry+2);g.pose().scale(2f,2f);g.text(font,b.value(),0,0,b.color(),false);g.pose().popMatrix();
+                g.text(font,l.text().getFirst(),x0+2*font.width(b.value())+6,ry+10,MUTED,false);}
+            case Bar b->{if(hover)g.fill(x0-4,ry,x0+rw+4,ry+l.h(),RAISED);
+                g.fakeItem(b.icon(),x0,ry+1);int lw=labelWidth(rw);g.text(font,l.text().getFirst(),x0+20,ry+5,b.labelColor(),false);
+                int vw=font.width(b.value()),bx=x0+lw,bw=Math.max(10,rw-lw-vw-8);
+                g.fill(bx,ry+4,bx+bw,ry+14,BACK);int filled=(int)(Math.clamp(b.fraction(),0,1)*bw);if(filled>0){g.fill(bx,ry+4,bx+filled,ry+14,b.color());g.fill(bx,ry+4,bx+filled,ry+5,0x40FFFFFF);}
+                g.text(font,b.value(),x0+rw-vw,ry+5,b.color()==DIM?TEXT:b.color(),false);}
+            default->{}
+        }
     }
     @Override public void removed(){analysisGeneration++;if(analysis!=null)analysis.cancel(true);}
     @Override public boolean isPauseScreen(){return false;}
+    /** A stat amount with its unit: "13.6%" for percentage stats (the cooldown shown as a reduction), plain otherwise. */
+    static String amount(Stat s,double v){return s==Stat.PICKAXE_ABILITY_COOLDOWN?"-"+fmt(v)+"%":s.percent?fmt(v)+"%":fmt(v);}
+    static String signed(Stat s,double v){return s==Stat.PICKAXE_ABILITY_COOLDOWN?"-"+fmt(v)+"%":(v>=0?"+":"")+fmt(v)+(s.percent?"%":"");}
     static String fmt(double n){return String.format(Locale.US,"%,.2f",n).replaceAll("\\.?0+$","");}
     static String compact(double n){return n>=1_000_000?fmt(n/1_000_000)+"M":n>=1_000?fmt(n/1_000)+"K":fmt(n);}
     static String coins(double n){return compact(n)+" coins";}
