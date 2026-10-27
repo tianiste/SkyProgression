@@ -1,0 +1,6 @@
+# HTTPS for the relay with an automatic Let's Encrypt certificate. The companion only answers its own Host name.
+relay.skyprogression.dev {
+	reverse_proxy 127.0.0.1:18475 {
+		header_up Host localhost:18475
+	}
+}

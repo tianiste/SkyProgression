@@ -76,7 +76,11 @@ limits). It runs on Cloudflare's free Workers plan. One-time setup, done by the 
 5. Put the Worker URL into `ClientData.HOSTED_BACKEND` and rebuild the mod, or set it in
    `config/skyprogression.json` for testing. (Done for `skyprogression-api.tian-istenic34.workers.dev`, deployed
    2026-10-27.) Wrangler writes the KV namespace ID into the local `wrangler.jsonc`; keep it out of Git.
-6. Optional: a custom domain for the Worker (Cloudflare dashboard > the Worker > Domains & Routes) makes the
+6. If the application key is locked to an IP allowlist (it is for the owner's key; Workers have no fixed outbound IP),
+   run the profile relay on a fixed-IP server instead of storing the key in the Worker: [deploy/relay](../deploy/relay/README.md)
+   (Oracle Always Free VM, reserved IP, `relay.skyprogression.dev`, Caddy, systemd), then `RELAY_URL` and `RELAY_SECRET`
+   on the Worker.
+7. Optional: a custom domain for the Worker (Cloudflare dashboard > the Worker > Domains & Routes) makes the
    Cache API effective for profiles; on `workers.dev` only in-memory caching helps.
 
 ## Using the tabs

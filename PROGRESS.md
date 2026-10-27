@@ -12,9 +12,14 @@ errors/Origin refusal as designed. The owner's application key was rejected from
 IP-restricted (allowlist), and Workers have no fixed egress IP (static egress is not on the free plan), so it cannot be
 used there. The owner then stored a personal key, which works: live end-to-end check 2026-10-27 11:50 UTC (scratch runner,
 same calls as the mod): profile 0.54 s, decode 0.18 s, prices 0.14 s (334 + mayor), stats 0.08-0.16 s, compare ~0.4 s,
-start ~0.4 s, resale quotes returned. Open decision: personal keys are not meant for public apps; for public release either
-an application key without an allowlist (ask Hypixel) or `/profile` on a fixed-IP host (VPS/Azure) with prices staying on
-Cloudflare. Workers Logs (observability)
+start ~0.4 s, resale quotes returned. Decision (owner): `/profile` moves to a fixed-IP relay; domain `skyprogression.dev`
+(Name.com, DNS moving to Cloudflare), Oracle Always Free VM (region being chosen; Azure for Students as fallback).
+**Relay kit built (in-game/VM test pending):** companion relay mode (`SKYPROGRESSION_RELAY_SECRET`: only `/health` and
+`/profile`, secret checked in constant time, no price fetching), Worker `RELAY_URL` var + `RELAY_SECRET` secret (forwards
+`/profile`, keeps caching and limits), `deploy/relay/` (README with Oracle firewall, DNS-only `relay` record, Temurin 25,
+Caddy, systemd unit, env example). Local check: relay on 18477 with the key, `wrangler dev` without any key -> profile 200
+via the relay; no/wrong secret and `/prices` -> 404. **Owner next:** VM + reserved IP, DNS record, allowlist the IP, then
+follow deploy/relay/README.md (or send the IP and I walk through it). Workers Logs (observability)
 enabled in `wrangler.jsonc` so deploys keep it on. Mojang returns 403 to the Worker, so the mod now resolves names itself (own name from the session UUID, others
 at Mojang directly, backend `/uuid` as fallback). The KV namespace ID that wrangler wrote into the owner's local
 `wrangler.jsonc` is deliberately not committed. **Owner next:** set the secret, then Load in game with the default config;

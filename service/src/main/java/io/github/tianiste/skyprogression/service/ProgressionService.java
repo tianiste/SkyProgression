@@ -16,6 +16,8 @@ import static io.github.tianiste.skyprogression.core.ProfileParser.*;
 /**
  * Local data backend for the mod, with the same endpoints as the hosted SkyProgression API: raw profiles, a price
  * bundle and resale quotes. All calculations run in the mod. The Hypixel key never goes into the mod or a response.
+ * With SKYPROGRESSION_RELAY_SECRET set it runs as the hosted API's profile relay on a fixed-IP server (behind an HTTPS
+ * reverse proxy): only /health and /profile, and /profile only for requests carrying that secret.
  */
 public final class ProgressionService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
@@ -33,6 +35,14 @@ public final class ProgressionService {
     private static final int PORT = Integer.parseInt(Objects.requireNonNullElse(System.getenv("SKYPROGRESSION_PORT"), "18475"));
     /** Raw Hypixel profiles response of one player, passed through to the mod unparsed. */
     private record Cached(Instant time, byte[] body) {}
+    /** Shared secret of relay mode (the Worker sends it as X-Relay-Secret); null for the local companion. */
+    private static final byte[] RELAY_SECRET = relaySecret();
+    private static byte[] relaySecret() {
+        String value = System.getenv("SKYPROGRESSION_RELAY_SECRET");
+        if (value == null || value.isBlank()) return null;
+        if (value.strip().length() < 32) throw new IllegalStateException("SKYPROGRESSION_RELAY_SECRET must be at least 32 characters");
+        return value.strip().getBytes(StandardCharsets.UTF_8);
+    }
     private static String readApiKey() {
         String configured = System.getenv("HYPIXEL_API_KEY");
         if (configured != null && !configured.isBlank()) return configured;
@@ -53,8 +63,9 @@ public final class ProgressionService {
         server.createContext("/", this::handle);
         server.setExecutor(Executors.newFixedThreadPool(4));
         server.start();
-        System.out.println("SkyProgression service listening on http://localhost:" + PORT + " (local access only)");
+        System.out.println("SkyProgression service listening on http://localhost:" + PORT + (RELAY_SECRET != null ? " (profile relay mode)" : " (local access only)"));
         if (apiKey == null || apiKey.isBlank()) System.out.println("HYPIXEL_API_KEY is not set. Profile lookup is unavailable; price lookup still works.");
+        if (RELAY_SECRET != null) return; // The relay serves profiles only; the hosted API builds prices itself.
         // Warm the shared caches so the first screen does not wait for ~300 price quotes.
         background.submit(() -> { try { prices(); } catch (Exception ignored) { /* Retried on the first /prices request. */ } });
         background.submit(this::mayorPerks);
@@ -67,7 +78,14 @@ public final class ProgressionService {
             if (origin != null || host == null || !(host.equals("localhost:" + PORT) || host.equals("127.0.0.1:" + PORT) || host.equals("[::1]:" + PORT))) {
                 send(x, 403, Map.of("error", "Local mod access only")); return;
             }
-            switch (x.getRequestURI().getPath()) {
+            String path = x.getRequestURI().getPath();
+            if (RELAY_SECRET != null && !path.equals("/health")) {
+                String given = Objects.toString(x.getRequestHeaders().getFirst("X-Relay-Secret"), "");
+                if (!path.equals("/profile") || !java.security.MessageDigest.isEqual(RELAY_SECRET, given.getBytes(StandardCharsets.UTF_8))) {
+                    send(x, 404, Map.of("error", "Unknown endpoint")); return;
+                }
+            }
+            switch (path) {
                 case "/health" -> send(x, 200, Map.of("ok", true, "ready", apiKey != null && !apiKey.isBlank()));
                 case "/uuid" -> send(x, 200, uuid(query(x).getOrDefault("name", "")));
                 case "/profile" -> profile(x, query(x));

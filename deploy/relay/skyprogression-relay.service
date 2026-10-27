@@ -1,0 +1,21 @@
+[Unit]
+Description=SkyProgression profile relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=skyprogression
+Group=skyprogression
+# HYPIXEL_API_KEY and SKYPROGRESSION_RELAY_SECRET; readable only by root and this service user.
+EnvironmentFile=/etc/skyprogression/relay.env
+Environment="JAVA_OPTS=-Xmx256m -XX:+UseSerialGC"
+ExecStart=/opt/skyprogression/service/bin/service
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
