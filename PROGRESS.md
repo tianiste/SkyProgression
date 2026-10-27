@@ -297,7 +297,7 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   into this file or Git. Owner plans to rotate it later. See AGENTS.md for handling.
 - Private raw API snapshot: `service-data/debotes-profiles.json`; concise profile summary:
   `service-data/debotes-summary.json`. Both ignored. Refetch when testing changed gear.
-- Four user-supplied bot screenshots are preserved in `docs/references/miningcat/`;
+- Four user-supplied bot screenshots are preserved locally in Git-ignored `service-data/references/miningcat/`;
   see `docs/references/MININGCAT.md` for observations and missing evidence.
 - The supplied early/mid/end progression checklist is preserved in
   `docs/references/PROGRESSION-CHECKLIST.md`. Its FALSE cells are NOT profile facts.

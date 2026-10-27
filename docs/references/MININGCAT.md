@@ -9,7 +9,7 @@ Prices below are historical displayed examples, not quotes to hardcode into test
 
 ## Coal progression — page 1 of 7
 
-Image: [coal-progression.png](miningcat/coal-progression.png). Footer: 50 upgrades + 7 extras.
+Image (private, not in Git): `service-data/references/miningcat/coal-progression.png`. Footer: 50 upgrades + 7 extras.
 
 - DR-X655 Universal Slot: replace Perfect Topaz with Flawless Jade, +35 Mining Fortune;
   purchase 2.12M, sale credit 14.67M, labeled free after selling; +1.8% total increase.
@@ -28,7 +28,7 @@ attribute levels; paired upgrades; marginal deltas after prerequisites; pet item
 
 ## Coal Other Upgrades
 
-Image: [coal-other.png](miningcat/coal-other.png).
+Image (private, not in Git): `service-data/references/miningcat/coal-other.png`.
 
 **Can't check if owned:** Dwarven O's Ore Oats x5 (+10 Ore Fortune, 3.91M, +0.52%);
 Hideosun Shard X (+50 Ore Fortune, 6.4M, +2.6%), both explicitly conditional on having none.
@@ -47,7 +47,7 @@ CALCULATIONS.md, not tuned.
 
 ## Grotto progression
 
-Image: [grotto-progression.png](miningcat/grotto-progression.png). Visible first upgrades:
+Image (private, not in Git): `service-data/references/miningcat/grotto-progression.png`. Visible first upgrades:
 
 - Mithril Lantern: Lantern + Refined Mithril +16 Enchanted Emerald; +10 Fortune/+40 Speed,
   707.5K, 835.68K per 1%, +0.85%.
@@ -69,7 +69,7 @@ method-specific speed effects; paired recommendation accounting.
 
 ## MF Gems progression
 
-Image: [mf-gems-progression.png](miningcat/mf-gems-progression.png). Lower part is cut off.
+Image (private, not in Git): `service-data/references/miningcat/mf-gems-progression.png`. Lower part is cut off.
 
 - Mithril Lantern: same +10 Fortune/+40 Speed and 707.5K purchase, but +0.84% and
   845.74K per 1% (different baseline/method from Grotto).
@@ -95,7 +95,7 @@ or clone proprietary calculations. Verify each rule independently and track disc
 
 ## Second capture set (2026-10-26, ~15:04)
 
-Images in `miningcat/`: `coal-p1..p7.png` (complete Coal: 50 upgrades + 7 extras),
+Images in `service-data/references/miningcat/` (private, not in Git): `coal-p1..p7.png` (complete Coal: 50 upgrades + 7 extras),
 `gold-p1..p4.png` (Gold pages 1-4 of 6; pages 5-6 not supplied), and
 `ingame-mining-stats.png` (owner's in-game Mining Stats tooltip, same session).
 
