@@ -49,6 +49,11 @@ public final class StatsReport {
     public Ledger ledger(Stat stat) { return stats.stream().filter(l -> l.stat == stat).findFirst().orElse(null); }
 
     public static StatsReport of(JsonObject member, Loadout.Owned owned, MiningMethod method, String tool, boolean bestGear, StatContext context) {
+        return of(member, owned, method, tool, bestGear, context, null);
+    }
+    /** perks: current mayor and minister perks (election resource), listed as temporary sources; null when unknown. */
+    public static StatsReport of(JsonObject member, Loadout.Owned owned, MiningMethod method, String tool, boolean bestGear, StatContext context,
+                                 List<StatBreakdown.MayorPerk> perks) {
         StatsReport r = new StatsReport();
         for (Item item : owned.tools()) r.tools.add(new Tool(key(item), item.name, item.location));
         r.tools.sort(Comparator.comparing(Tool::name).thenComparing(Tool::location));
@@ -81,6 +86,7 @@ public final class StatsReport {
         }
         for (Stat stat : StatBreakdown.SUPPORTED) {
             Breakdown b = StatBreakdown.compute(member, main, context, stat);
+            StatBreakdown.mayor(b, perks);
             Ledger l = new Ledger();
             l.stat = stat; l.flat = b.flat(); l.multiplier = b.multiplier(); l.total = b.total(); l.complete = b.complete();
             l.contributions.addAll(b.contributions); l.notes.addAll(new LinkedHashSet<>(b.notes));

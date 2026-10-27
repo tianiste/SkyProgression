@@ -105,7 +105,7 @@ public final class ProgressionService {
                     !"false".equals(q.get("god")));
         } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, zone or block target"); }
         Member m = member(ign, profileId);
-        StatsReport result = StatsReport.of(m.member, m.owned, method, tool, !"equipped".equals(q.get("gear")), context);
+        StatsReport result = StatsReport.of(m.member, m.owned, method, tool, !"equipped".equals(q.get("gear")), context, mayorPerks());
         result.player = ign; result.profileId = m.id; result.profile = m.name;
         result.fetchedAt = m.fetchedAt;
         result.resale = resale(result.resaleQueries);
@@ -295,6 +295,32 @@ public final class ProgressionService {
         }
         npcPrices = Map.copyOf(out); npcAt = Instant.now();
         return npcPrices;
+    }
+    private List<StatBreakdown.MayorPerk> mayorPerks = List.of();
+    private Instant mayorAt = Instant.EPOCH;
+    /**
+     * Current mayor and minister perks from the official election resource (no key needed), refreshed every 20 minutes.
+     * Null when the resource cannot be read, so the ledger keeps its untrackable lines.
+     */
+    private synchronized List<StatBreakdown.MayorPerk> mayorPerks() {
+        if (mayorAt.plusSeconds(20 * 60).isAfter(Instant.now())) return mayorPerks;
+        try {
+            JsonObject election = get("https://api.hypixel.net/v2/resources/skyblock/election", false);
+            List<StatBreakdown.MayorPerk> out = new ArrayList<>();
+            JsonElement mayor = at(election, "mayor");
+            String name = string(at(mayor, "name"), "");
+            if (at(mayor, "perks").isJsonArray()) for (JsonElement p : at(mayor, "perks").getAsJsonArray())
+                out.add(new StatBreakdown.MayorPerk(name, string(at(p, "name"), ""), string(at(p, "description"), ""), false));
+            JsonElement minister = at(mayor, "minister");
+            if (minister.isJsonObject()) out.add(new StatBreakdown.MayorPerk(string(at(minister, "name"), ""), string(at(minister, "perk", "name"), ""),
+                    string(at(minister, "perk", "description"), ""), true));
+            mayorPerks = List.copyOf(out); mayorAt = Instant.now();
+            return mayorPerks;
+        } catch (Exception e) {
+            // Retry after five minutes instead of slowing every /stats request.
+            mayorPerks = null; mayorAt = Instant.now().minusSeconds(15 * 60);
+            return null;
+        }
     }
     /** "PET_TYPE;RARITY;LEVEL": lowest Auction House BIN with that rarity and level (Coflnet filters). */
     private Price petPrice(String key) throws Exception {

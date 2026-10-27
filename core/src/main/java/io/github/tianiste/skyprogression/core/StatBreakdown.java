@@ -73,6 +73,7 @@ public final class StatBreakdown {
      */
     static final Map<Stat, String> SKY_MALL_CODES = Map.of(Stat.MINING_SPEED, "dig_speed", Stat.ALL_POWDER, "powder_bonus");
 
+    static final String FIESTA = "While Cole's Mining Fiesta is active";
     /** Attribute: rarity (shard cost table) and linear effect per level up to 10 (wiki shard pages). */
     record Attribute(String id, String name, String rarity, Stat stat, double perLevel, Condition condition) {}
     static final List<Attribute> ATTRIBUTES = List.of(
@@ -90,7 +91,9 @@ public final class StatBreakdown {
             new Attribute("cold_resistance", "Cold Resistance (Wumpa Shard)", "LEGENDARY", Stat.COLD_RESISTANCE, .5, Condition.NONE),
             new Attribute("atomized_mithril", "Atomized Mithril (Star Sentry Shard)", "RARE", Stat.MITHRIL_POWDER, 1, Condition.NONE),
             new Attribute("atomized_crystals", "Atomized Crystals (Thyst Shard)", "RARE", Stat.GEMSTONE_POWDER, 1, Condition.NONE),
-            new Attribute("atomized_glacite", "Atomized Glacite (Stalagmight Shard)", "RARE", Stat.GLACITE_POWDER, 1, Condition.NONE));
+            new Attribute("atomized_glacite", "Atomized Glacite (Stalagmight Shard)", "RARE", Stat.GLACITE_POWDER, 1, Condition.NONE),
+            // Packrat Shard (wiki): only while Cole's Mining Fiesta perk is active, a temporary buff.
+            new Attribute("fiesta_fortune", "Fiesta Fortune (Packrat Shard)", "UNCOMMON", Stat.GEMSTONE_FORTUNE, 5, Condition.unchecked(FIESTA)));
     /** Attribute keys taken from the attribute's name (as every observed key is) but not yet seen in an API response. */
     static final Set<String> ASSUMED_ATTRIBUTE_KEYS = Set.of("cold_resistance", "atomized_glacite");
     /** Which powder sources the attribute boosts (wiki Powder Sources tables). */
@@ -733,6 +736,9 @@ public final class StatBreakdown {
     public static void mayor(Breakdown b, List<MayorPerk> perks) {
         if (perks == null) return;
         for (MayorPerk p : perks) {
+            if (p.name().equals("Mining Fiesta")) b.contributions.replaceAll(c -> c.state() == State.SITUATIONAL && c.condition().equals(FIESTA)
+                    ? new Contribution(c.category(), c.source(), c.stat(), c.value(), c.maximum(), "During the Mining Fiesta (active now)", State.TEMPORARY,
+                    c.confidence(), "The Fiesta runs now (election data); temporary buffs are not counted.") : c);
             String text = GearReader.clean(p.description());
             Matcher m = Pattern.compile("\\+([0-9][0-9,]*(?:\\.[0-9]+)?)(%?)[^A-Za-z0-9+%]*" + Pattern.quote(b.stat.label) + "\\b").matcher(text);
             if (!m.find()) continue;
