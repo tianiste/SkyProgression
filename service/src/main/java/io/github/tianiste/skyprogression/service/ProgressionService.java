@@ -17,8 +17,9 @@ import static io.github.tianiste.skyprogression.core.ProfileParser.*;
  * Local data backend for the mod, with the same endpoints as the hosted SkyProgression API: raw profiles, a price
  * bundle and resale quotes. All calculations run in the mod. The Hypixel key never goes into the mod or a response.
  * With SKYPROGRESSION_RELAY_SECRET set it runs as the hosted API's profile relay on a fixed-IP server (behind an HTTPS
- * reverse proxy): only /health, /profile and /uuid (Mojang refuses Cloudflare's addresses), the latter two only for
- * requests carrying that secret.
+ * reverse proxy): only /health, /profile, /uuid (Mojang refuses Cloudflare's addresses) and POST /checklist (the website's
+ * guide checklist, evaluated by the core engine), all but /health only for requests carrying that secret.
+ * SKYPROGRESSION_PROFILE_FIXTURE (local mode only, for development): a saved profiles response served for every player.
  */
 public final class ProgressionService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
@@ -44,6 +45,12 @@ public final class ProgressionService {
         if (value.strip().length() < 32) throw new IllegalStateException("SKYPROGRESSION_RELAY_SECRET must be at least 32 characters");
         return value.strip().getBytes(StandardCharsets.UTF_8);
     }
+    /** Development: a saved v2/skyblock/profiles body used instead of Hypixel (ignored in relay mode). */
+    private static final java.nio.file.Path FIXTURE = fixture();
+    private static java.nio.file.Path fixture() {
+        String value = System.getenv("SKYPROGRESSION_PROFILE_FIXTURE");
+        return value == null || value.isBlank() || RELAY_SECRET != null ? null : java.nio.file.Path.of(value.strip());
+    }
     private static String readApiKey() {
         String configured = System.getenv("HYPIXEL_API_KEY");
         if (configured != null && !configured.isBlank()) return configured;
@@ -65,7 +72,8 @@ public final class ProgressionService {
         server.setExecutor(Executors.newFixedThreadPool(4));
         server.start();
         System.out.println("SkyProgression service listening on http://localhost:" + PORT + (RELAY_SECRET != null ? " (profile relay mode)" : " (local access only)"));
-        if (apiKey == null || apiKey.isBlank()) System.out.println("HYPIXEL_API_KEY is not set. Profile lookup is unavailable; price lookup still works.");
+        if (FIXTURE != null) System.out.println("Serving the profile fixture " + FIXTURE + " for every player.");
+        else if (apiKey == null || apiKey.isBlank()) System.out.println("HYPIXEL_API_KEY is not set. Profile lookup is unavailable; price lookup still works.");
         if (RELAY_SECRET != null) return; // The relay serves profiles only; the hosted API builds prices itself.
         // Warm the shared caches so the first screen does not wait for ~300 price quotes.
         background.submit(() -> { try { prices(); } catch (Exception ignored) { /* Retried on the first /prices request. */ } });
@@ -73,16 +81,17 @@ public final class ProgressionService {
     }
     private void handle(HttpExchange x) throws IOException {
         try {
-            if (!x.getRequestMethod().equals("GET")) { send(x, 405, Map.of("error", "GET required")); return; }
+            String path = x.getRequestURI().getPath();
+            String method = path.equals("/checklist") ? "POST" : "GET";
+            if (!x.getRequestMethod().equals(method)) { send(x, 405, Map.of("error", method + " required")); return; }
             String origin = x.getRequestHeaders().getFirst("Origin");
             String host = x.getRequestHeaders().getFirst("Host");
             if (origin != null || host == null || !(host.equals("localhost:" + PORT) || host.equals("127.0.0.1:" + PORT) || host.equals("[::1]:" + PORT))) {
                 send(x, 403, Map.of("error", "Local mod access only")); return;
             }
-            String path = x.getRequestURI().getPath();
             if (RELAY_SECRET != null && !path.equals("/health")) {
                 String given = Objects.toString(x.getRequestHeaders().getFirst("X-Relay-Secret"), "");
-                if (!(path.equals("/profile") || path.equals("/uuid")) || !java.security.MessageDigest.isEqual(RELAY_SECRET, given.getBytes(StandardCharsets.UTF_8))) {
+                if (!(path.equals("/profile") || path.equals("/uuid") || path.equals("/checklist")) || !java.security.MessageDigest.isEqual(RELAY_SECRET, given.getBytes(StandardCharsets.UTF_8))) {
                     send(x, 404, Map.of("error", "Unknown endpoint")); return;
                 }
             }
@@ -90,6 +99,7 @@ public final class ProgressionService {
                 case "/health" -> send(x, 200, Map.of("ok", true, "ready", apiKey != null && !apiKey.isBlank()));
                 case "/uuid" -> send(x, 200, uuid(query(x).getOrDefault("name", "")));
                 case "/profile" -> profile(x, query(x));
+                case "/checklist" -> send(x, 200, checklist(x));
                 case "/prices" -> send(x, 200, bundle());
                 case "/resale" -> send(x, 200, Collections.singletonMap("price", resale(query(x))));
                 default -> send(x, 404, Map.of("error", "Unknown endpoint"));
@@ -193,12 +203,7 @@ public final class ProgressionService {
     private void profile(HttpExchange x, Map<String, String> q) throws Exception {
         String uuid = q.getOrDefault("uuid", "").replace("-", "").toLowerCase(Locale.ROOT);
         if (!uuid.matches("[a-f0-9]{32}")) throw new LookupException(400, "uuid must be 32 hex characters");
-        Cached c = profiles.get(uuid);
-        if (c == null || "1".equals(q.get("fresh")) && !fresh(c)) c = fetchProfile(uuid);
-        else if (!fresh(c) && refreshing.add(uuid)) background.submit(() -> {
-            try { fetchProfile(uuid); } catch (Exception ignored) { /* Keep the cached copy; the next request retries. */ }
-            finally { refreshing.remove(uuid); }
-        });
+        Cached c = cachedProfile(uuid, "1".equals(q.get("fresh")));
         x.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
         x.getResponseHeaders().set("Cache-Control", "no-store");
         x.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
@@ -206,9 +211,89 @@ public final class ProgressionService {
         x.sendResponseHeaders(200, c.body.length);
         x.getResponseBody().write(c.body);
     }
+    /** The cached copy (refreshed in the background when older than five minutes), or a new fetch when none or {@code fresh}. */
+    private Cached cachedProfile(String uuid, boolean fresh) throws Exception {
+        Cached c = profiles.get(uuid);
+        if (c == null || fresh && !fresh(c)) return fetchProfile(uuid);
+        if (!fresh(c) && refreshing.add(uuid)) background.submit(() -> {
+            try { fetchProfile(uuid); } catch (Exception ignored) { /* Keep the cached copy; the next request retries. */ }
+            finally { refreshing.remove(uuid); }
+        });
+        return c;
+    }
+    /** Largest accepted /checklist body (a guide's requirements are about 10-40 KB). */
+    private static final int MAX_CHECKLIST_BYTES = 256 * 1024;
+    /** Parsed copies of the latest profile bodies, so several guides for one player parse the body once. */
+    private final Map<Cached, JsonObject> parsed = Collections.synchronizedMap(new LinkedHashMap<>(4, .75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<Cached, JsonObject> eldest) { return size() > 3; }
+    });
+    /**
+     * POST /checklist {"uuid" or "ign", "profile" (id or name; empty = selected), "requirements": [...]}: the guide's
+     * requirements checked against that profile, with the player's profile list and when the data was fetched.
+     */
+    private Map<String, Object> checklist(HttpExchange x) throws Exception {
+        String length = x.getRequestHeaders().getFirst("Content-Length");
+        if (length != null && length.matches("[0-9]{1,12}") && Long.parseLong(length) > MAX_CHECKLIST_BYTES) throw new LookupException(413, "Request too large");
+        byte[] bytes = x.getRequestBody().readNBytes(MAX_CHECKLIST_BYTES + 1);
+        if (bytes.length > MAX_CHECKLIST_BYTES) throw new LookupException(413, "Request too large");
+        JsonObject request;
+        try { request = JsonParser.parseString(new String(bytes, StandardCharsets.UTF_8)).getAsJsonObject(); }
+        catch (RuntimeException e) { throw new LookupException(400, "Body must be a JSON object"); }
+        JsonElement requirements = request.get("requirements");
+        if (requirements == null || !requirements.isJsonArray()) throw new LookupException(400, "requirements must be an array");
+        String uuid = string(request.get("uuid"), "").replace("-", "").toLowerCase(Locale.ROOT), player = string(request.get("ign"), "");
+        if (uuid.isEmpty()) { Map<String, String> found = uuid(player); uuid = found.get("id"); player = found.get("name"); }
+        if (!uuid.matches("[a-f0-9]{32}")) throw new LookupException(400, "uuid must be 32 hex characters");
+        Cached c = cachedProfile(uuid, false);
+        JsonObject root = parsed.computeIfAbsent(c, ignored -> JsonParser.parseString(new String(c.body, StandardCharsets.UTF_8)).getAsJsonObject());
+        JsonElement list = root.get("profiles");
+        if (list == null || !list.isJsonArray()) throw new LookupException(404, "This player has no SkyBlock profiles");
+        String wanted = string(request.get("profile"), "");
+        List<Map<String, Object>> choices = new ArrayList<>();
+        List<JsonObject> members = new ArrayList<>();
+        for (JsonElement p : list.getAsJsonArray()) {
+            JsonElement m = at(p, "members", uuid);
+            // The development fixture's single member stands in for whoever is looked up.
+            if (!m.isJsonObject() && FIXTURE != null && at(p, "members").isJsonObject() && at(p, "members").getAsJsonObject().size() == 1)
+                m = at(p, "members").getAsJsonObject().entrySet().iterator().next().getValue();
+            if (!m.isJsonObject()) continue;
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("id", string(at(p, "profile_id"), ""));
+            info.put("name", string(at(p, "cute_name"), "Profile"));
+            info.put("mode", string(at(p, "game_mode"), "normal"));
+            info.put("selected", "true".equals(string(at(p, "selected"), "false")));
+            choices.add(info);
+            members.add(m.getAsJsonObject());
+        }
+        if (choices.isEmpty()) throw new LookupException(404, "This player has no SkyBlock profiles");
+        int index = -1;
+        for (int i = 0; i < choices.size() && index < 0; i++) {
+            Map<String, Object> info = choices.get(i);
+            if (wanted.isEmpty() ? (boolean)info.get("selected") : wanted.equals(info.get("id")) || wanted.equalsIgnoreCase((String)info.get("name"))) index = i;
+        }
+        if (index < 0 && !wanted.isEmpty()) throw new LookupException(404, "Profile not found");
+        if (index < 0) index = 0; // None marked selected.
+        Checklist.Report report;
+        try { report = Checklist.evaluate(requirements.getAsJsonArray(), members.get(index)); }
+        catch (IllegalArgumentException e) { throw new LookupException(400, e.getMessage()); }
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (!player.isEmpty()) out.put("player", player);
+        out.put("uuid", uuid);
+        out.put("profile", choices.get(index));
+        out.put("profiles", choices);
+        out.put("fetchedAt", c.time.toString());
+        out.put("api", report.api());
+        out.put("results", report.results());
+        return out;
+    }
     private static boolean fresh(Cached c) { return c.time.plusSeconds(300).isAfter(Instant.now()); }
     private Cached fetchProfile(String uuid) throws Exception {
         synchronized (profileLock) {
+            if (FIXTURE != null) {
+                Cached fixture = new Cached(Instant.now(), java.nio.file.Files.readAllBytes(FIXTURE));
+                profiles.put(uuid, fixture);
+                return fixture;
+            }
             if (apiKey == null || apiKey.isBlank()) throw new LookupException(503, "Set HYPIXEL_API_KEY for the companion service, then restart it. Never enter an API key into Minecraft chat.");
             Cached old = profiles.get(uuid);
             if (old != null && fresh(old)) return old;
