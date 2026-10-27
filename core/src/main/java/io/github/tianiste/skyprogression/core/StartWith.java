@@ -126,7 +126,7 @@ public final class StartWith {
             s.stats.put(stat, b.total());
             if (relevant.contains(stat) && !b.complete()) s.complete = false;
         }
-        s.ability = MethodRates.ability(l.tool);
+        s.ability = StatBreakdown.effectiveAbility(member, l, context);
         s.tool = l.tool == null ? "" : l.tool.name;
         s.hotmTree = l.hotmTree;
         return s;

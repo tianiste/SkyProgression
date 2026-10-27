@@ -77,7 +77,7 @@ public final class StatsReport {
         List<Item> sellable = new ArrayList<>(pieces); sellable.addAll(main.accessories);
         for (Item item : sellable) if (!item.instance.isBlank()) r.resaleQueries.put(item.instance, Resale.of(item));
         if (main.pet != null) r.resaleQueries.put("pet", Resale.of(main.pet));
-        r.ability = MethodRates.ability(main.tool);
+        r.ability = StatBreakdown.effectiveAbility(member, main, context);
         boolean drill = main.tool != null && main.tool.category.equals("DRILL");
         r.profileUpgrades = ProfileUpgrades.state(member, r.hotmTree, context, StatBreakdown.blueCheese(main.tool));
         if (main.petsKnown) {

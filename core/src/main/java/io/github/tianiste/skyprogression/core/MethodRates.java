@@ -169,8 +169,12 @@ public final class MethodRates {
             uptime = Math.min(1, ability.duration() / ability.cooldown());
             boost = ability.boostPercent() / 100;
             assumptions.add(ability.name() + " +" + fmt(ability.boostPercent()) + "% for " + fmt(ability.duration()) + "s every "
-                    + fmt(ability.cooldown()) + "s (tool lore), used on cooldown and applied to all Mining Speed.");
+                    + fmt(ability.cooldown()) + "s (tool lore boost; cooldown from the Pickaxe Ability Cooldown ledger), used on cooldown and applied to all Mining Speed.");
         } else assumptions.add(ability == null ? "No pickaxe ability found on the tool; no speed boost." : ability.name() + " is not modelled (no rule for its effect yet); no boost.");
+        if (m == MiningMethod.UMBER || m == MiningMethod.TUNGSTEN || m == MiningMethod.SHAFTING)
+            // Wiki Cold Resistance: Cold above Cold Resistance cuts Mining Speed by (Cold - Cold Resistance) / 2 %.
+            assumptions.add("Cold: no Mining Speed loss while Cold stays at or below your Cold Resistance (" + fmt(stat(stats, Stat.COLD_RESISTANCE))
+                    + "); above it Mining Speed drops by (Cold - Cold Resistance) / 2 %. How much Cold builds up during a session is not known, so no loss is applied.");
         double f = b.instamineFactor();
         boolean known = b.strength() > 0;
         int ground = known ? ticks(speed, b.strength(), f) : 1, air = known ? ticks(speed / 5, b.strength(), f) : 1;
@@ -203,7 +207,7 @@ public final class MethodRates {
             uptime = Math.min(1, ability.duration() / ability.cooldown());
             boosted = ticks(speed * (1 + ability.boostPercent() / 100), gem.strength);
             assumptions.add(ability.name() + " +" + fmt(ability.boostPercent()) + "% for " + fmt(ability.duration()) + "s every "
-                    + fmt(ability.cooldown()) + "s (tool lore), used on cooldown and applied to all Mining Speed.");
+                    + fmt(ability.cooldown()) + "s (tool lore boost; cooldown from the Pickaxe Ability Cooldown ledger), used on cooldown and applied to all Mining Speed.");
         } else assumptions.add(ability == null ? "No pickaxe ability found on the tool; no speed boost." : ability.name() + " is not modelled; no speed boost.");
         double blocksPerSecond = ticks == Integer.MAX_VALUE ? 0 : 20 * (uptime / boosted + (1 - uptime) / ticks);
         double spread = Math.max(0, stat(stats, Stat.GEMSTONE_SPREAD));

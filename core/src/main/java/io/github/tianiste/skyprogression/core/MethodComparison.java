@@ -179,7 +179,7 @@ public final class MethodComparison {
             e.hotmTree = StatBreakdown.chooseTree(member, best, context, m);
             e.tool = best.tool == null ? "" : best.tool.name;
             e.zone = context.zone() == null ? "" : context.zone().label;
-            e.ability = MethodRates.ability(best.tool);
+            e.ability = StatBreakdown.effectiveAbility(member, best, context);
             List<Stat> relevant = m.relevantStats();
             for (Stat s : StatBreakdown.RATE_STATS) {
                 Breakdown b = StatBreakdown.compute(member, best, context, s);
