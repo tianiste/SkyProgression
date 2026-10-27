@@ -149,6 +149,21 @@ final class ClientData {
             dispatch.accept(()->{
                 if(requestGeneration!=generation||!key.equals(statsPending))return;
                 statsPending="";statsKey=key;stats=loaded;statsError=failure;revision++;changed.run();
+                if(loaded!=null&&loaded.resalePending)refreshResale(key,requestGeneration,2,dispatch,changed);
+            });
+        });
+    }
+    /** The companion answered before every sale quote arrived: ask again shortly and swap in the completed report. */
+    private void refreshResale(String key,int requestGeneration,int attempts,Consumer<Runnable> dispatch,Runnable changed) {
+        statsRequest=WORK.submit(()->{
+            StatsReport result;
+            try{Thread.sleep(2500);result=Catalog.GSON.fromJson(fetch(key,30),StatsReport.class);}
+            catch(Exception e){return;}
+            if(result==null||result.stats==null)return;
+            dispatch.accept(()->{
+                if(requestGeneration!=generation||!key.equals(statsKey)||!statsPending.isEmpty())return;
+                stats=result;revision++;changed.run();
+                if(result.resalePending&&attempts>1)refreshResale(key,requestGeneration,attempts-1,dispatch,changed);
             });
         });
     }

@@ -17,10 +17,19 @@ import static io.github.tianiste.skyprogression.core.ProfileParser.*;
 public final class ProgressionService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
     private final String apiKey = readApiKey();
-    private final Map<String, Cached> reports = new HashMap<>();
+    private final Map<String, Cached> reports = new ConcurrentHashMap<>();
     private final Object profileLock = new Object();
-    private Map<String, Price> quotes = Map.of();
-    private Instant quotedAt = Instant.EPOCH;
+    private volatile Map<String, Price> quotes = Map.of();
+    private volatile Instant quotedAt = Instant.EPOCH;
+    /** Background refreshes and quote lookups, so a request never waits for data it can answer from cache. */
+    private final ExecutorService background = Executors.newFixedThreadPool(3, Thread.ofPlatform().daemon().name("SkyProgression refresh").factory());
+    private final Set<String> refreshing = ConcurrentHashMap.newKeySet();
+    private final java.util.concurrent.atomic.AtomicBoolean pricesRefreshing = new java.util.concurrent.atomic.AtomicBoolean();
+    private final Map<Resale.Query, CompletableFuture<Price>> quoting = new ConcurrentHashMap<>();
+    /** How long /stats waits for missing sale quotes before answering without them (they keep loading into the cache). */
+    private static final long RESALE_WAIT_MS = 1500;
+    /** The mod connects to 18475; SKYPROGRESSION_PORT is only for running a second copy during development. */
+    private static final int PORT = Integer.parseInt(Objects.requireNonNullElse(System.getenv("SKYPROGRESSION_PORT"), "18475"));
     /** Parsed report plus the raw payload, which the stat ledger reads; owned items are decoded once per profile. */
     private record Cached(Instant time, Report report, JsonObject raw, String uuid, Map<String, Loadout.Owned> owned) {}
     private static String readApiKey() {
@@ -39,19 +48,22 @@ public final class ProgressionService {
         new ProgressionService().start();
     }
     private void start() throws IOException {
-        var server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 18475), 16);
+        var server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), PORT), 16);
         server.createContext("/", this::handle);
         server.setExecutor(Executors.newFixedThreadPool(4));
         server.start();
-        System.out.println("SkyProgression service listening on http://localhost:18475 (local access only)");
+        System.out.println("SkyProgression service listening on http://localhost:" + PORT + " (local access only)");
         if (apiKey == null || apiKey.isBlank()) System.out.println("HYPIXEL_API_KEY is not set. Profile lookup is unavailable; price lookup still works.");
+        // Warm the shared caches so the first screen does not wait for ~300 price quotes.
+        background.submit(() -> { try { prices(); } catch (Exception ignored) { /* Retried on the first /prices request. */ } });
+        background.submit(this::mayorPerks);
     }
     private void handle(HttpExchange x) throws IOException {
         try {
             if (!x.getRequestMethod().equals("GET")) { send(x, 405, Map.of("error", "GET required")); return; }
             String origin = x.getRequestHeaders().getFirst("Origin");
             String host = x.getRequestHeaders().getFirst("Host");
-            if (origin != null || host == null || !(host.equals("localhost:18475") || host.equals("127.0.0.1:18475") || host.equals("[::1]:18475"))) {
+            if (origin != null || host == null || !(host.equals("localhost:" + PORT) || host.equals("127.0.0.1:" + PORT) || host.equals("[::1]:" + PORT))) {
                 send(x, 403, Map.of("error", "Local mod access only")); return;
             }
             switch (x.getRequestURI().getPath()) {
@@ -108,7 +120,7 @@ public final class ProgressionService {
         StatsReport result = StatsReport.of(m.member, m.owned, method, tool, !"equipped".equals(q.get("gear")), context, mayorPerks());
         result.player = ign; result.profileId = m.id; result.profile = m.name;
         result.fetchedAt = m.fetchedAt;
-        result.resale = resale(result.resaleQueries);
+        result.resalePending = !resale(result.resaleQueries, result.resale);
         return result;
     }
     /** Best owned loadout for one method, where each piece is stored, and the swaps from what is worn now. */
@@ -141,7 +153,7 @@ public final class ProgressionService {
     }
     private record Member(JsonObject member, Loadout.Owned owned, String id, String name, String fetchedAt) {}
     private Member member(String ign, String profileId) throws Exception {
-        Cached cached = fetch(ign);
+        Cached cached = fetchOrStale(ign);
         JsonObject entry = null;
         for (JsonElement p : cached.raw.getAsJsonArray("profiles")) {
             boolean match = profileId.isEmpty() ? "true".equals(string(at(p, "selected"), "false")) : profileId.equals(string(at(p, "profile_id"), ""));
@@ -162,23 +174,30 @@ public final class ProgressionService {
      * Modifier-aware sale quotes for the evaluated copies: Coflnet's lowest BIN with the copy's rarity, recombobulation,
      * reforge, coating and drill parts (pets: rarity, level, pet item). Only filters Coflnet lists for that item are
      * used, matched case-insensitively; the quote names the filters used and left out. No listing means no quote.
+     * Waits at most {@link #RESALE_WAIT_MS} in total; quotes still loading finish into the cache. Returns false then.
      */
-    private Map<String, Price> resale(Map<String, Resale.Query> queries) throws Exception {
+    private boolean resale(Map<String, Resale.Query> queries, Map<String, Price> out) throws Exception {
         if (catalogIds == null) { Set<String> ids = new HashSet<>(); Catalog.load().forEach(i -> ids.add(i.id)); catalogIds = ids; }
-        Map<String, Price> out = new ConcurrentHashMap<>();
-        try (var pool = Executors.newFixedThreadPool(3)) {
-            List<Future<?>> jobs = new ArrayList<>();
-            for (var e : queries.entrySet()) {
-                Resale.Query q = e.getValue();
-                if (!q.tag().matches("[A-Z0-9_]{1,64}") || !q.tag().startsWith("PET_") && !catalogIds.contains(q.tag())) continue;
-                jobs.add(pool.submit(() -> {
-                    try { Price p = copyQuote(q); if (p != null) out.put(e.getKey(), p); }
-                    catch (Exception ignored) { /* No quote: the upgrade says there is no sale price. */ }
-                }));
-            }
-            for (Future<?> job : jobs) job.get();
+        Map<String, CompletableFuture<Price>> jobs = new LinkedHashMap<>();
+        for (var e : queries.entrySet()) {
+            Resale.Query q = e.getValue();
+            if (!q.tag().matches("[A-Z0-9_]{1,64}") || !q.tag().startsWith("PET_") && !catalogIds.contains(q.tag())) continue;
+            // One lookup per query at a time, shared by concurrent requests.
+            jobs.put(e.getKey(), quoting.computeIfAbsent(q, key -> CompletableFuture.supplyAsync(() -> {
+                try { return copyQuote(key); }
+                catch (Exception ignored) { return null; /* No quote: the upgrade says there is no sale price. */ }
+                finally { quoting.remove(key); }
+            }, background)));
         }
-        return out;
+        long deadline = System.nanoTime() + RESALE_WAIT_MS * 1_000_000;
+        boolean complete = true;
+        for (var e : jobs.entrySet()) {
+            try {
+                Price p = e.getValue().get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+                if (p != null) out.put(e.getKey(), p);
+            } catch (TimeoutException late) { complete = false; }
+        }
+        return complete;
     }
     private Price copyQuote(Resale.Query q) throws Exception {
         Map<String, List<String>> options = filterOptions(q.tag());
@@ -229,14 +248,30 @@ public final class ProgressionService {
         filterOptions.put(tag, new Timed<>(Instant.now(), out));
         return out;
     }
+    /** Fresh profile for an explicit Load: refetches when the cached copy is older than five minutes. */
     private Cached fetch(String ign) throws Exception {
         synchronized (profileLock) { return fetchLocked(ign); }
     }
+    /**
+     * Profile for /stats, /compare and /start: a cached copy is returned at once, and an expired one is refreshed in
+     * the background so the next request gets the new data. Only the first lookup of a player waits for Hypixel.
+     */
+    private Cached fetchOrStale(String ign) throws Exception {
+        String name = ign.toLowerCase(Locale.ROOT);
+        Cached old = reports.get(name);
+        if (old == null) return fetch(ign);
+        if (!fresh(old) && refreshing.add(name)) background.submit(() -> {
+            try { fetch(ign); } catch (Exception ignored) { /* Keep the cached copy; the next request retries. */ }
+            finally { refreshing.remove(name); }
+        });
+        return old;
+    }
+    private static boolean fresh(Cached c) { return c.time.plusSeconds(300).isAfter(Instant.now()); }
     private Cached fetchLocked(String ign) throws Exception {
         if (apiKey == null || apiKey.isBlank()) throw new LookupException(503, "Set HYPIXEL_API_KEY for the companion service, then restart it. Never enter an API key into Minecraft chat.");
         String name = ign.toLowerCase(Locale.ROOT);
         Cached old = reports.get(name);
-        if (old != null && old.time.plusSeconds(300).isAfter(Instant.now())) return old;
+        if (old != null && fresh(old)) return old;
         JsonObject identity = get("https://api.mojang.com/users/profiles/minecraft/" + ign, false);
         String uuid = string(identity.get("id"), "");
         if (!uuid.matches("[a-fA-F0-9]{32}")) throw new LookupException(404, "Minecraft player not found");
@@ -251,8 +286,22 @@ public final class ProgressionService {
         reports.put(name, fresh);
         return fresh;
     }
-    private synchronized Map<String, Price> prices() throws Exception {
-        if (quotedAt.plusSeconds(900).isAfter(Instant.now())) return quotes;
+    /** Price quotes: after the first load, expired quotes are served while a background refresh replaces them. */
+    private Map<String, Price> prices() throws Exception {
+        if (quotes.isEmpty()) return refreshPrices();
+        if (!quotedAt.plusSeconds(900).isAfter(Instant.now()) && pricesRefreshing.compareAndSet(false, true)) background.submit(() -> {
+            try { refreshPrices(); } catch (Exception ignored) { /* Keep the old quotes. */ }
+            finally { pricesRefreshing.set(false); }
+        });
+        return quotes;
+    }
+    /** Own lock: a price refresh (~300 quotes) must not hold up /stats, which reads the mayor perks. */
+    private final Object priceLock = new Object();
+    private Map<String, Price> refreshPrices() throws Exception {
+        synchronized (priceLock) { return refreshPricesLocked(); }
+    }
+    private Map<String, Price> refreshPricesLocked() throws Exception {
+        if (!quotes.isEmpty() && quotedAt.plusSeconds(900).isAfter(Instant.now())) return quotes;
         Map<String, Price> fresh = new ConcurrentHashMap<>();
         // Bounded parallelism avoids issuing dozens of requests at once.
         try (var pool = Executors.newFixedThreadPool(3)) {

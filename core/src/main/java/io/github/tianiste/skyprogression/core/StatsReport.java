@@ -35,6 +35,8 @@ public final class StatsReport {
     /** Sale queries for the evaluated copies (instance key, or "pet"), and the quotes the companion found for them. */
     public Map<String, Resale.Query> resaleQueries = new LinkedHashMap<>();
     public Map<String, Price> resale = new HashMap<>();
+    /** True when some sale quotes were still loading; asking again shortly returns them from the companion's cache. */
+    public boolean resalePending;
 
     public record Tool(String key, String name, String location) {}
     /** The evaluated pet now and at level 100: XP held and needed (pet level table), and its counted stats there. */

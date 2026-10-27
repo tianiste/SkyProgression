@@ -590,3 +590,14 @@ Summarized in `docs/references/TICK-THRESHOLDS.md` (rules + implied block streng
 All 210 tick thresholds in its tables match `MethodRates.ticks`/`nextTickSpeed`; no code change needed. It
 also confirms Jasper 4 ticks needs > 32,000. Non-gem rate models (roadmap 2) should take strengths and
 the mid-air x5 rule from that file after confirming each strength on the wiki. Documentation only; no rebuild.
+
+2026-10-27 (stats loading speed): owner reported slow stats loading. Causes found in the companion: a price refresh
+(~300 Coflnet quotes, 3 at a time) held the same lock as the mayor-perk lookup that every `/stats` reads, so `/stats`
+could wait ~14 s at startup and every 15 minutes; each `/stats` also waited for all resale quotes; and an expired
+profile (5 min) was refetched while the request waited. Fixes: separate price lock; prices and mayor perks warmed at
+startup; expired prices and profiles are served from cache while a background refresh runs (explicit Load/`/report`
+still refetches); resale quotes wait at most 1.5 s, with `resalePending` telling the mod to re-ask (up to twice, 2.5 s
+apart) and swap in the completed report. `SKYPROGRESSION_PORT` (default 18475) lets a second companion run for
+development only. Measured on a temporary copy (port 18476): cold start `/report` 3.2 s, first `/stats` 1.1 s during
+the price warm-up (was 13.9 s), next `/stats` 0.1-0.2 s, `/compare` 0.4 s, `/prices` 0.05 s. Build passed. Not yet checked
+in game; restart the companion to pick it up.
