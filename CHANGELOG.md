@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.1 - 2026-10-27
+
+### Minecraft versions
+
+- SkyProgression now runs on Minecraft **26.1.1**, **26.1.2** and **26.2**. Each release has one jar per version:
+  `skyprogression-0.4.1+26.1.1-26.1.2.jar` for 26.1.1 and 26.1.2, `skyprogression-0.4.1+26.2.jar` for 26.2. Install
+  the one that matches your game together with Fabric API for that version.
+- The update notice on Home only mentions a new release when it has a jar for your Minecraft version.
+
+### Other
+
+- New logo, also shown as the mod's icon in the mod list, with links to the source and issue tracker.
+- SkyProgression is now licensed under the MIT License; the bundled NotEnoughUpdates data is credited with its license.
+- Clearer README, and a CONTRIBUTING guide for reporting wrong numbers, building and releasing.
+
 ## 0.4.0 - 2026-10-27
 
 The first release that works without running anything besides the mod. Install the jar, open `/sp`, and your profile

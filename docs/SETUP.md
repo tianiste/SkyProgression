@@ -2,9 +2,10 @@
 
 ## Mod
 
-1. Use Minecraft **26.1.2**, **Fabric Loader 0.20.1 or newer**, and Java **25**.
-2. Install **Fabric API for 26.1.2**. Keep your other existing mods.
-3. Download `skyprogression-<version>.jar` from the [latest release](https://github.com/tianiste/SkyProgression/releases/latest)
+1. Use Minecraft **26.1.1**, **26.1.2** or **26.2**, **Fabric Loader 0.20.1 or newer**, and Java **25**.
+2. Install **Fabric API** for that Minecraft version. Keep your other existing mods.
+3. Download the jar for your Minecraft version from the [latest release](https://github.com/tianiste/SkyProgression/releases/latest)
+   (`skyprogression-<version>+26.1.1-26.1.2.jar` for 26.1.1 and 26.1.2, `skyprogression-<version>+26.2.jar` for 26.2)
    and copy it into that instance's `mods` folder. You do not need the `service-<version>.zip` (the optional companion).
 4. In SkyBlock, enable **SkyBlock Menu > Settings > API Settings > Inventory API** (and the skill/collection API
    options if available).
@@ -149,7 +150,8 @@ result stays unavailable. The Home rate tile and the Methods tab use the rate mo
 - **Rate limited:** wait a minute. Profiles cache for five minutes; prices for about fifteen.
 - **Prices are still loading:** a freshly deployed API fills its price bundle within about 15 minutes.
 - **Wrong numbers:** compare the stated base-item scope with the in-game effective total.
-- **Newer Minecraft:** this jar intentionally declares 26.1.2 only. Rebuild and test before upgrading.
+- **Other Minecraft versions:** each jar declares only the versions in its name (26.1.1 and 26.1.2, or 26.2). Other
+  versions need a new build target and testing first.
 
 ## Updating from an earlier build
 

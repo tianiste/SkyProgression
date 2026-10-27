@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/tianiste/SkyProgression/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/tianiste/SkyProgression"></a>
-  <img alt="Minecraft 26.1.2" src="https://img.shields.io/badge/Minecraft-26.1.2-62B47A">
+  <img alt="Minecraft 26.1.1 | 26.1.2 | 26.2" src="https://img.shields.io/badge/Minecraft-26.1.1%20%7C%2026.1.2%20%7C%2026.2-62B47A">
   <img alt="Fabric" src="https://img.shields.io/badge/loader-Fabric-DBD0B4">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
@@ -34,9 +34,11 @@ SkyProgression only gives advice. It never buys, equips or mines for you.
 
 ## Install
 
-1. Install **Fabric Loader 0.20.1+** and **Fabric API** for Minecraft **26.1.2** (Java **25**).
-2. Download `skyprogression-<version>.jar` from the [latest release](https://github.com/tianiste/SkyProgression/releases/latest)
-   and put it in your `mods` folder.
+1. Install **Fabric Loader 0.20.1+** and **Fabric API** for Minecraft **26.1.1**, **26.1.2** or **26.2** (Java **25**).
+2. From the [latest release](https://github.com/tianiste/SkyProgression/releases/latest), download the jar for your
+   Minecraft version and put it in your `mods` folder:
+   - 26.1.1 or 26.1.2: `skyprogression-<version>+26.1.1-26.1.2.jar`
+   - 26.2: `skyprogression-<version>+26.2.jar`
 3. In SkyBlock, turn on **SkyBlock Menu > Settings > API Settings > Inventory API**.
 4. Type `/sp`. Your profile loads automatically.
 

@@ -27,12 +27,20 @@ SkyProgression aims to be right, not to match another tool. If a stat, rate or c
 You need **Java 25**.
 
 ```bash
-./gradlew build                  # mod jar: build/libs/skyprogression-<version>.jar
+./gradlew build                  # mod jar for the default target: build/libs/skyprogression-<version>+26.1.1-26.1.2.jar
+./gradlew build -Pmc_target=26.2 # mod jar for Minecraft 26.2: build/libs/skyprogression-<version>+26.2.jar
 ./gradlew :service:installDist   # optional local companion: service/build/install/service/
 ./gradlew runClient -Ppreview    # dev client with the offline demo
 ```
 
-On Windows use `.\gradlew.bat`. Version pins live in `gradle.properties`.
+On Windows use `.\gradlew.bat`. Shared pins (mod, Fabric Loader and Loom versions) live in `gradle.properties`.
+
+### Minecraft versions
+
+Each file in `versions/` is one build target with its own Minecraft and Fabric API pins and the game versions its jar
+declares; `-Pmc_target=<name>` picks one (default `26.1`, which covers 26.1.1 and 26.1.2 in one jar). Code that differs
+between targets stays in `src/compat/<target>/java` (currently only `Compat.java`); everything else, including `core/`,
+is shared. To add a target, add its properties file and compat class, build it and test it in game.
 
 ## Project layout
 
@@ -69,11 +77,12 @@ Releases are published automatically when `mod_version` in `gradle.properties` c
 
 1. In your pull request, raise `mod_version` (for example `0.4.0` to `0.4.1`) and add a `## 0.4.1 - <date>` section to
    [CHANGELOG.md](CHANGELOG.md). That section becomes the release notes; without it the release fails.
-2. When the pull request is merged, the Release workflow builds the jar, tags `v0.4.1` and publishes a GitHub Release
-   (and the Modrinth version, once that is configured).
+2. When the pull request is merged, the Release workflow builds a jar for every target in `versions/`, tags `v0.4.1`
+   and publishes one GitHub Release with all jars and the companion zip (and one Modrinth version per jar, tagged with
+   its game versions, once that is configured).
 
-Merges that leave `mod_version` unchanged only build. The jar is named after the mod version and the Minecraft version
-it targets (`minecraft_version` in `gradle.properties`), e.g. `skyprogression-0.4.1+26.1.2.jar`. Do not push `v*` tags
+Merges that leave `mod_version` unchanged only build. Each jar is named after the mod version and the Minecraft versions
+it runs on, e.g. `skyprogression-0.4.1+26.1.1-26.1.2.jar` and `skyprogression-0.4.1+26.2.jar`. Do not push `v*` tags
 by hand.
 
 By contributing you agree that your contribution is licensed under the [MIT License](LICENSE).
