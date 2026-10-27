@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (GUI redesign). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (Other & progress view). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -110,10 +110,9 @@ fix them later; do not block on the in-game test. Order:
    Breakdown tab Stats picker, the new ledgers against the in-game stat menu (Wisdom, Breaking Power, Cooldown, Heat/Cold, powder),
    the attainable lines and check marks; then the Compare tab and the Start with tab (Start with already confirmed): piece
    list and storage labels against the game (wardrobe slot and ender chest page numbering especially), swaps after moving a piece
-   to storage, Held tool, Price, God Potion, Refresh, the hint, and the old-companion message. Then roadmap 4's remaining
-   "Other Upgrades/progression" view. Open: a measured session for the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule;
+   to storage, Held tool, Price, God Potion, Refresh, the hint, and the old-companion message. Roadmap 4's view is now built (below). Open: a measured session for the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule;
    Fungus/Harena Fortuna in the stat ledger; Bazaar tax and NPC sale prices in coins/hour.
-   **GUI redesign (2026-10-27, in-game test pending):** four icon tabs (Home, Gear, Upgrades, Methods) plus a More page
+   **GUI redesign (2026-10-27; owner confirmed in game that it is good, 2026-10-27):** four icon tabs (Home, Gear, Upgrades, Methods) plus a More page
    behind the settings button replace the eight text tabs; nothing was removed (map in docs/DESIGN.md "Interface layout").
    Engine, companion and numbers unchanged. Owner should check in game with `build/libs/skyprogression-0.3.0.jar`: top
    bar at full and narrow widths (the second row below 860 px), Home stat bars and their tooltips, Rate now and Best next
@@ -121,6 +120,18 @@ fix them later; do not block on the in-game test. Order:
    and the "+ N situational..." expansion, Upgrades plan/list cards and tooltips, Rank toggle, Methods rate card and
    assumptions, More page (Type Stats, Demo, gear audit), keys R/F1/1-4/PgUp/PgDn, the big rate number's scaling, short
    screens, Demo, loading, error and old-companion messages.
+   **Other & progress view (2026-10-27, in-game test pending):** Upgrades tab **View** toggle (Purchases / Other & progress),
+   `OtherUpgrades` on the analysis worker, `/stats` adds `petLevel`. Three parts: guide stage (Early / Mid / End game or Before the
+   checklist, from the checklist's stage headings only; fixture: Mid game); "Can't check: skip if you already have it" (Dwarven
+   O's Gemstone Grahams / Ore Oats / Block Bran / Metallic Minis x5, Gold Box X, Royal Riches X for Crystal Hollows methods,
+   Dwarven Expertise 10; wiki-verified effects, Coflnet price, rate gain; fixture Coal: Gold Box +2.5%, Oats +0.51%); "Progress you
+   have to grind" ranked by rate gain without coins (HOTM/skill/collection levels the balances don't cover, pet to level 100 with
+   XP left, Compact tier and blocks left, forge-only items such as the Relic of Power with inputs, forge time and HOTM tier;
+   fixture MF Gems: Relic of Power +6.3%, Bal 97 -> 100 +0.76% for 4.45M XP, Compact 9 -> X 190,452 blocks, +0%). Left out after
+   checking: Refined Dark Cacao Truffle (farming), Chilled Pristine Potato (1-hour buff). Rules: CALCULATIONS.md "Other upgrades
+   and progression". **Next:** owner restarts the companion (new `/stats` field) and checks the view in game: the View toggle,
+   the stage card and its expandable list, the bonus and grinding cards and tooltips (effect, distance, how, notes), MF Gems vs
+   Coal vs Tungsten (different bonuses), Demo and Inventory-API-off messages.
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
    prerequisites (HOTM tier/tokens, recipe unlocks), mutual exclusions and prices, valued by each method's model, with a
    greedy sequential plan. Remaining: recursive recipes, Core of the Mountain levels for tokens, scrolls, pet-item carry-over.
@@ -243,7 +254,14 @@ Other Upgrades, Rates, efficiency/settings, command options) for MF Gems, Grotto
   cancellation, stale-response rejection and screen-reopen refresh. Flat backgrounds.
 - [x] Windows CMD service launcher avoids PowerShell execution-policy problems.
 
-Latest verification (rest of the stat model, 2026-10-27): `./gradlew build :service:installDist` succeeded after each step;
+Latest verification (Other & progress view, 2026-10-27): `./gradlew build :service:installDist` succeeded; existing tests pass,
+no tests added. Scratch runner on the private snapshot with live Coflnet quotes for the new IDs: `OtherUpgrades.of` for Coal, MF
+Gems, Grotto and Tungsten (under 0.01 s each), values quoted above and in CALCULATIONS.md; a lowered copy (Mining XP 2M, two
+HOTM perks removed) shows Mining 23 -> 24 as grinding and the perks as free Purchases (tokens and powder cover them). In the
+runner only a few prices were fetched, so tradeable lanterns and the Pendant showed as forge-only there; Coflnet has quotes for
+them (checked with curl), so live only the Relic of Power stays forge-only. The companion was compiled but not run as a service;
+the mod screen was not run by the agent.
+Earlier verification (rest of the stat model, 2026-10-27): `./gradlew build :service:installDist` succeeded after each step;
 existing tests pass, no tests added. GitHub Actions Build succeeded for `2fbfa62`, `5d1f3b5`, `8014139` (and was checked for
 `3544f5c` at handoff). Scratch runner on the private snapshot with the live election resource: all 18 ledgers for MF Gems
 (0.24 s per report), values quoted above and in CALCULATIONS.md; rates with lore vs ledger cooldown for MF Gems, Grotto, Coal,
@@ -379,12 +397,14 @@ Recent milestones:
 
 ### 4. Other Upgrades and general progression
 
-- [ ] Separate purchasable recommendations, uncheckable/manual bonuses, and things
-  that require grinding/unlocks (pet levels, Compact, collections, HOTM, etc.).
-  *Partial:* HOTM powder/tokens/tiers, Mining skill and collections are labelled "Grinding" with the distance left.
-- [ ] Use early/mid/end guide stages for orientation; personalize actual next steps.
+- [x] Separate purchasable recommendations, uncheckable/manual bonuses, and things
+  that require grinding/unlocks (pet levels, Compact, collections, HOTM, etc.) (Upgrades tab View: Other & progress; in-game test pending).
+- [x] Use early/mid/end guide stages for orientation; personalize actual next steps (stage card from the checklist headings;
+  next steps stay the engine's ranked lists; in-game test pending).
 - [ ] Explain prerequisites, where/how to acquire, owned/missing quantities, source
   confidence and distance from a validated method-specific max.
+  *Partial:* Other & progress entries show requirement, distance, how to get it and caveats; forge inputs owned/missing. Not
+  done: distance from a validated method maximum (no validated maxima yet), source confidence per entry.
 - [x] **Start with tab (owner request, 2026-10-26; `69e34a3`, `51907cd`; owner confirmed working in game 2026-10-27):** which owned gear to use
   for the selected method before buying anything (best owned armor, equipment, tool, pet with item, method accessories and
   HOTM tree, where each piece is stored, swaps from the current loadout with stat and rate change, best-method hint).
@@ -432,6 +452,12 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-27 (Other & progress view): new core `OtherUpgrades` (Entry/Stage/Report, `of`, `stage`, `priceIds`), `StatsReport.petLevel`
+(`PetLevel`, `Loadout.petExp`), `Recipes.recipe`/`duration` package access, new price IDs (cereals, SHARD_HIDEONSUN, SHARD_NILBOG,
+ESSENCE_FOSSIL, ENCHANTMENT_COMPACT_1). `ProgressionScreen`: `otherView` toggle on Upgrades, `otherCards`, `otherIcon`, `otherTip`;
+the worker skips the plan and ranking in that view. Open: Gold Box / Royal Riches / Dwarven Expertise keys, Compact's rate effect,
+Relic of Power rarity with full Perfect gems, the pet XP table's official check, Mines of Divan as a zone.
 
 2026-10-27 (GUI redesign): `ProgressionScreen` rewritten around typed card rows (Text, Meter, Split, Legend, Pair,
 Entry, Slots, Big, Bar) laid out on content change; tabs HOME 0, GEAR 1, UPGRADES 2, METHODS 3, MORE 4 (F1). Gear merges

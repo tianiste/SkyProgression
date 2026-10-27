@@ -20,7 +20,9 @@ lines, and the existing flat palette (no blur).
   "+ N more" expands) and one collapsed line for situational, temporary, missing and not-in-API sources.
 - **Upgrades:** the step-by-step plan as numbered icon cards (gain green, cost right), then every ranked upgrade in
   the same card style; the model, assumptions, cost efficiency and resale notes are tooltips. "Rank: rate gain" /
-  "Rank: <stat> points" replaces the old Stats tab.
+  "Rank: <stat> points" replaces the old Stats tab. **View: Other & progress** switches to the guide stage (purple, expandable
+  checklist items), "Can't check: skip if you already have it" bonuses (cyan cards: effect, gain, price) and "Progress you
+  have to grind" (green cards: distance as the subtitle, gain, "Grinding"); requirement, how to get it and caveats are tooltips.
 - **Methods** (old Rates + Compare): the bar chart, then the selected method's rate card (big number, coins at each
   price, efficiency, ticks, next threshold, tool and zone, expandable assumptions), "Same change, different value"
   and the manual Type Stats scenario.

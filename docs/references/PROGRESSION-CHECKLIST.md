@@ -87,6 +87,14 @@ where it matters; spelling is lightly normalized. Track actual development in PR
 - [ ] Speed Relic.
 - [ ] Magic 8 Ball.
 
+## Checked against the wiki (2026-10-27)
+
+- "Refined Dark Cocoa Truffles" are Refined Dark Cacao Truffles: +1 permanent Cocoa Beans Fortune each (farming), no mining
+  stat. Left out of the engine.
+- "Hideosun"/Hideonsun shards give Gold Box (+5 Ore Fortune per level); the Dwarven O's cereals give +2 each for the first 5.
+- The stage headings (Divan armor, drill, Pendant, HOTM tier) place a profile on this list in the Upgrades tab's Other &
+  progress view (docs/CALCULATIONS.md "Other upgrades and progression"); the rows themselves are not checked against a profile.
+
 ## How this should influence the engine
 
 Provide a basic stage overview, but compute personalized recommendations from missing

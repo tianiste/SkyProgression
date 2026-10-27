@@ -827,3 +827,63 @@ snapshot); mod **Start with** tab. Added 2026-10-27 (owner request, roadmap 4).
   Gems, Coal and Grotto, so only the tool can differ. With the helmet moved to the wardrobe, the necklace to the ender chest, the
   Mineral Talisman to a backpack and no active pet, MF Gems lists four swaps (helmet restores the Divan set bonus: +161.6 Mining
   Fortune, +2 Pristine; Bal with Quick Claw; necklace; talisman) with their storage locations.
+
+## Other upgrades and progression
+
+Added 2026-10-27. The Upgrades tab's **View** toggle switches between Purchases (unchanged) and **Other & progress**:
+three cards computed by `OtherUpgrades.of` on the analysis worker (no new endpoint; `/stats` gains `petLevel`). Gains use the
+same rate model and baseline as the Purchases list (`MethodComparison.gain` on the automatic stats, Type Stats overrides
+included; the drop multiplier when no rate can be computed).
+
+**Can't check: skip if you already have it.** Permanent bonuses the profile API never reports, or whose key has never been
+observed; a missing field is never treated as proof the bonus is absent, and none of them is counted in the stat ledger
+(they are its "Not in the API" rows). Each shows its effect, the Coflnet buy quote for the whole amount (unknown stays
+"Price unknown") and the rate gain of the full bonus in the selected method; bonuses that change nothing there are counted
+as hidden. Sources (wiki pages fetched 2026-10-27 through the wiki API, <https://hypixelskyblock.minecraft.wiki/w/...>):
+- Dwarven O's Gemstone Grahams / Ore Oats / Block Bran / Metallic Minis (item pages): +2 Gemstone / Ore / Block / Dwarven
+  Metal Fortune for each of the first 5 eaten (+10). Bought as 5 x the bazaar quote (IDs `DWARVEN_OS_*`). Drops: Crystal
+  Nucleus 0.47% (Grahams), Dwarven Mines Mining Events (Oats), Scatha 10% (Bran), Umber/Tungsten 0.31% and Vanguard 3.41%
+  corpses (Minis).
+- Gold Box (Hideonsun Shard, Common): +5 to +50 Ore Fortune; level 10 = 96 shards (`SHARD_HIDEONSUN`, cumulative Common
+  table above). Mining Cat's "Hideosun" is this shard. Attributes are in the API (`attributes.stacks`), but `gold_box` has never
+  been observed (the owner's profile lists 84 attribute keys without it), so it stays unchecked.
+- Royal Riches (Nilbog Shard, Epic, Hunting 15): +5 to +50 Mining Speed and +2.5 to +25 Ore Fortune in the Mines of Divan;
+  level 10 = 32 shards (`SHARD_NILBOG`). Listed only for methods whose usual zone is the Crystal Hollows (Coal, Gold, Grotto,
+  Obsidian); the gain assumes the player mines in the Mines of Divan, which the engine has no zone for.
+- Dwarven Expertise (Essence Shops/Fossil): +2 Dwarven Metal Fortune per level on Mining Islands, 5,500 Fossil Essence for
+  levels 1-10 (`ESSENCE_FOSSIL`). The perk key is not identified, so the level is not read and the price assumes level 0.
+- Left out after checking: Refined Dark Cacao Truffle (the checklist's "Dark Cocoa Truffles") gives Cocoa Beans Fortune, a
+  farming stat; Chilled Pristine Potato is a 1-hour buff (+0.1 Pristine in the Glacite Mineshafts), not permanent; Reaper
+  Pepper is read from the API (stat ledger).
+
+**Progress you have to grind.** Ranked by gain alone (coin cost is not part of the ranking; the right column says
+"Grinding"); gains that cannot be modelled say "not modelled" and sort last. Each entry shows the gain, the requirement, the
+distance from the current value and how to get it:
+- HOTM perk levels and unlocks, Mining skill and collections (`ProfileUpgrades`, rules above): per chain the nearest level that
+  powder, tokens, XP or collection items must pay for (or that needs a higher HOTM tier), with the powder still needed and the
+  unspent amount, tokens, or XP/items left. Levels the balances already cover stay on Purchases as free.
+- Pet level: the evaluated pet with its pet item at level 100 minus now (`StatBreakdown.petStats`), XP still needed from the
+  pet level table (NEU `constants/pets.json`, `Loadout.petExp`). Fixture: Legendary Bal 97 -> 100 needs 4,452,467 more XP
+  (20,900,763 of 25,353,230) for +5 Mining Fortune, +2 Mining Speed (+0.09 Pristine in the Magma Fields): +0.76% MF Gems,
+  +0.25% Coal. Mining Cat's Coal page lists +3 Fortune and +0.15% for the same step; not tuned (different pet stat rule or baseline).
+- Compact (wiki Compact): a stacking enchantment, tiers I-X at 0 / 100 / 500 / 1,500 / 5,000 / 15,000 / 50,000 / 150,000 /
+  500,000 / 1,000,000 blocks mined (`compact_blocks` on the tool), +1 Mining Wisdom per tier and 0.25 / 0.27 / 0.29 / 0.31 /
+  0.33 / 0.36 / 0.40 / 0.44 / 0.50 / 0.57% enchanted item chance. Compact I costs 4,000 Bits (Elizabeth) or the Bazaar. The
+  chance does not work on Gemstones (wiki trivia), so gem methods show +0%; for other methods the gain is "not modelled",
+  because the wiki does not say how the enchanted item roll combines with Fortune and Spread. Fixture: DR-X655 Compact 9 with
+  809,548 blocks, 190,452 to X. Mining Cat shows +0.58% for Compact X on Coal; not copied.
+- Forge-only items: catalog items with a forge recipe (`mining-recipes.json`) and no Coflnet buy quote that beat the owned item
+  of their slot, with the recipe's HOTM tier, inputs owned or missing, forge time and the missing materials' price (shown,
+  not ranked). A Power accessory is valued with Perfect Jade, Amber and Topaz in its slots at its rarity, accessory gems at half
+  stats. Fixture: Relic of Power (Epic) +11.5 Mining Fortune, +23 Mining Speed, +1 Pristine over no Power accessory: +6.3% MF
+  Gems, +7.4% Grotto; forged from Artifact of Power + Perfect Plate + 32 Glacite Amalgamation, 8 h, HOTM 10. Mining Cat lists
+  +15 Fortune / +30 Speed with Perfect Jade and Amber; the checklist says full Perfect gems raise its rarity. Neither is verified,
+  so the Epic values stand.
+
+**Guide stage** (`OtherUpgrades.stage`): the profile is placed on the supplied checklist
+(docs/references/PROGRESSION-CHECKLIST.md) from its stage headings only, using items the API shows anywhere: End game = HOTM 10,
+Pendant of Divan and a DR-X655 or Divan's Drill; Mid game = all four Divan pieces and a DR-X655 or Divan's Drill; Early game =
+all four Divan pieces, a DR-X555 or better, or HOTM 7; otherwise "Before the checklist". The card lists that stage's next
+checklist items (expandable), marking "(you own one)" only where the API shows the item. It is orientation, not a fixed
+order, and the checklist's unticked cells are not profile facts; personalized steps are the ranked lists. Fixture: Mid game
+(HOTM 10, Divan armor, DR-X655).

@@ -164,6 +164,7 @@ public final class OtherUpgrades {
                 ? String.format(Locale.ROOT, "Compact I: +1 Mining Wisdom, %.2f%% enchanted item chance; up to X: +10, %.2f%%", COMPACT_CHANCE[0], COMPACT_CHANCE[9])
                 : String.format(Locale.ROOT, "Compact %d -> X: +%d Mining Wisdom, enchanted item chance %.2f%% -> %.2f%%", level, 10 - level, COMPACT_CHANCE[level - 1], COMPACT_CHANCE[9]);
         String distance = level == 0 ? "Not on " + tool.name
+                : level == 9 ? String.format(Locale.ROOT, "%,.0f more blocks for Compact X (%,.0f mined)", Math.max(0, COMPACT_BLOCKS[9] - blocks), blocks)
                 : String.format(Locale.ROOT, "%,.0f more blocks for Compact %d, %,.0f for X (%,.0f mined)", Math.max(0, COMPACT_BLOCKS[level] - blocks), level + 1,
                         Math.max(0, COMPACT_BLOCKS[9] - blocks), blocks);
         String note = m.gems() ? "The enchanted item chance does not work on Gemstones (wiki), so only Wisdom changes here."

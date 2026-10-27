@@ -40,6 +40,11 @@ Bal level 97 to 100 (+3 Fortune, pet XP, +0.15%).
 
 Do not treat missing API fields as proof that uncheckable consumables are absent.
 
+Our Other & progress view (2026-10-27, fixture, Coal): Ore Oats x5 +0.51% (Mining Cat +0.52%), Gold Box X +2.5% (+2.6%),
+Bal 97 -> 100 +0.25% with +5 Fortune / +2 Speed from our pet table (Mining Cat +3 Fortune, +0.15%), Compact X "not modelled"
+(Mining Cat +0.58%), Relic of Power +11.5 Fortune / +23 Speed at Epic (Mining Cat +15 / +30). Differences documented in
+CALCULATIONS.md, not tuned.
+
 ## Grotto progression
 
 Image: [grotto-progression.png](miningcat/grotto-progression.png). Visible first upgrades:

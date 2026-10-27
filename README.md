@@ -37,7 +37,10 @@ table), recombobulation, Divan's Powder Coating, better base items and full mini
 pets or a Quick Claw, essence perks, attribute shards and HOTM perk levels and unlocks, the Blue Cheese
 omelette, and Mining skill/collection tiers (powder, tokens, XP and collections shown as grinding), using owned
 materials and balances before buying. Craftable or forgeable items use the cheaper of buying and crafting, and
-cards show the net cost after selling what an upgrade replaces when a sale quote exists. Gem methods rank
+cards show the net cost after selling what an upgrade replaces when a sale quote exists. The Upgrades tab's Other & progress
+view lists bonuses the API can't show (Dwarven O's cereals, Gold Box, Royal Riches, Dwarven Expertise: skip what you
+already have), progress to grind ranked by rate gain (HOTM, skill, collections, pet level, Compact, forge-only items such
+as the Relic of Power) and the profile's early/mid/end guide stage for orientation. Gem methods rank
 upgrades by their Flawless/hour gain, other methods by drops, with a step-by-step plan. Unknown
 prices remain unknown. Rates for non-gem methods still need further implementation. Method stats are computed automatically from
 the profile using the best gear and tool you own for the method (Gear tab; you can switch to your
