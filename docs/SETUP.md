@@ -62,7 +62,8 @@ Do not put your key into Minecraft chat, a tracked file, a screenshot, or a GitH
 
 The service is local-only at `http://localhost:18475`. Do not expose it to the internet.
 It answers the same endpoints as the hosted API (`/health`, `/uuid`, `/profile`, `/prices`, `/resale`, and
-`POST /checklist` for the website's guide checklist); an older
+`POST /checklist` for the website's guide checklist, which fetches the profile itself unless the request carries it as
+`data`); an older
 companion that still has `/stats` makes the mod say "The companion is older than the mod. Restart it."
 
 ## Hosted API (owner)

@@ -10,8 +10,11 @@ mod -> https://api.skyprogression.dev (Worker) -> https://relay.skyprogression.d
 ```
 
 In relay mode (`SKYPROGRESSION_RELAY_SECRET` set) the companion answers only `/health`, `/profile`, `/uuid` (names
-cached for a day) and `POST /checklist` (the website's guide checklist: the engine checks a guide's requirements against a
-profile; bodies up to 256 KB), all but `/health` only when the request carries the secret in `X-Relay-Secret`. Everything else answers 404. It fetches no prices.
+cached for a day) and `POST /checklist` (the website's guide checklist), all but `/health` only when the request carries
+the secret in `X-Relay-Secret`. For `/checklist` the Worker sends the player's profiles response it already has (its
+cache, the relay's `/profile`, or its own key as a fallback) together with the guide's requirements; the relay only runs
+the engine on that body and never calls Hypixel for a checklist (bodies up to 16.25 MB; a request without the profile is
+refused with 400). Everything else answers 404. It fetches no prices.
 
 Tested target: Oracle Cloud Always Free `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB) with Ubuntu 24.04. Any small Linux VM
 with a fixed IP works the same way.

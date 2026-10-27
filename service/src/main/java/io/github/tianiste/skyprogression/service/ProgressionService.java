@@ -221,15 +221,20 @@ public final class ProgressionService {
         });
         return c;
     }
-    /** Largest accepted /checklist body (a guide's requirements are about 10-40 KB). */
-    private static final int MAX_CHECKLIST_BYTES = 256 * 1024;
+    /**
+     * Largest accepted /checklist body: a guide's requirements (about 10-40 KB, at most Checklist.MAX_REQUIREMENTS entries)
+     * plus, from the hosted API, the player's raw profiles response (usually 0.2-2 MB; the API caps it at 16 MB).
+     */
+    private static final int MAX_CHECKLIST_BYTES = 16 * 1024 * 1024 + 256 * 1024;
     /** Parsed copies of the latest profile bodies, so several guides for one player parse the body once. */
     private final Map<Cached, JsonObject> parsed = Collections.synchronizedMap(new LinkedHashMap<>(4, .75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<Cached, JsonObject> eldest) { return size() > 3; }
     });
     /**
-     * POST /checklist {"uuid" or "ign", "profile" (id or name; empty = selected), "requirements": [...]}: the guide's
-     * requirements checked against that profile, with the player's profile list and when the data was fetched.
+     * POST /checklist {"uuid" or "ign", "profile" (id or name; empty = selected), "requirements": [...], "data"?, "fetchedAt"?}:
+     * the guide's requirements checked against that profile, with the player's profile list and when the data was fetched.
+     * "data" is the raw v2/skyblock/profiles response: the hosted API sends the copy it fetched (relay mode requires it, so
+     * the relay never calls Hypixel for a checklist); without it the local companion fetches the profile itself.
      */
     private Map<String, Object> checklist(HttpExchange x) throws Exception {
         String length = x.getRequestHeaders().getFirst("Content-Length");
@@ -242,10 +247,25 @@ public final class ProgressionService {
         JsonElement requirements = request.get("requirements");
         if (requirements == null || !requirements.isJsonArray()) throw new LookupException(400, "requirements must be an array");
         String uuid = string(request.get("uuid"), "").replace("-", "").toLowerCase(Locale.ROOT), player = string(request.get("ign"), "");
-        if (uuid.isEmpty()) { Map<String, String> found = uuid(player); uuid = found.get("id"); player = found.get("name"); }
+        JsonElement data = request.get("data");
+        if (data != null && !data.isJsonObject()) throw new LookupException(400, "data must be the profiles response object");
+        if (data == null && RELAY_SECRET != null) throw new LookupException(400, "data is required: the relay does not fetch profiles for a checklist");
+        if (uuid.isEmpty()) {
+            if (data != null) throw new LookupException(400, "uuid is required with data");
+            Map<String, String> found = uuid(player); uuid = found.get("id"); player = found.get("name");
+        }
         if (!uuid.matches("[a-f0-9]{32}")) throw new LookupException(400, "uuid must be 32 hex characters");
-        Cached c = cachedProfile(uuid, false);
-        JsonObject root = parsed.computeIfAbsent(c, ignored -> JsonParser.parseString(new String(c.body, StandardCharsets.UTF_8)).getAsJsonObject());
+        JsonObject root;
+        String fetchedAt;
+        if (data != null) {
+            root = data.getAsJsonObject();
+            String at = string(request.get("fetchedAt"), "");
+            try { fetchedAt = Instant.parse(at).toString(); } catch (RuntimeException e) { fetchedAt = Instant.now().toString(); }
+        } else {
+            Cached c = cachedProfile(uuid, false);
+            root = parsed.computeIfAbsent(c, ignored -> JsonParser.parseString(new String(c.body, StandardCharsets.UTF_8)).getAsJsonObject());
+            fetchedAt = c.time.toString();
+        }
         JsonElement list = root.get("profiles");
         if (list == null || !list.isJsonArray()) throw new LookupException(404, "This player has no SkyBlock profiles");
         String wanted = string(request.get("profile"), "");
@@ -281,7 +301,7 @@ public final class ProgressionService {
         out.put("uuid", uuid);
         out.put("profile", choices.get(index));
         out.put("profiles", choices);
-        out.put("fetchedAt", c.time.toString());
+        out.put("fetchedAt", fetchedAt);
         out.put("api", report.api());
         out.put("results", report.results());
         return out;
