@@ -22,7 +22,8 @@ being skipped and the Worker's own key is rejected, it asks the relay at once (s
 both. `/uuid` asks the relay when Mojang refuses the Worker (older relay's "Unknown endpoint" -> 502, not "not found").
 Deployed 2026-10-27: `/health` ok (relay true, 334 prices), `/profile` 200 (206 KB, 0.25 s); VM relay updated to the
 0.4.0 companion the same day (deploy/relay/README.md "Updating the relay"; SSH key `~/.ssh/ssh-key-2026-10-27.key`):
-`/uuid` via the API now resolves names (Debotes, Technoblade; unknown name -> 404 `not_found`). **Owner next:** test 0.4.0
+`/uuid` via the API now resolves names (Debotes, Technoblade; unknown name -> 404 `not_found`). **Owner in-game check (2026-10-27): 0.4.0 works** with
+the default hosted backend. Earlier note: test 0.4.0
 in game (Load with the default config, the update notice once a newer release exists).
 
 **Deployed (2026-10-27):** the owner deployed the Worker at <https://skyprogression-api.tian-istenic34.workers.dev>;
