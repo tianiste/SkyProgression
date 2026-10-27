@@ -5,7 +5,7 @@ personalized optimal order. All rows originally said FALSE; these indicate neith
 Debotes's ownership nor implementation status. Checkboxes below mean research/coverage
 review, not player completion. Verify item names, shard amounts, requirements, effects,
 pet interactions and current costs before encoding rules. Preserve the original wording
-where it matters; spelling is lightly normalized. Track actual development in PROGRESS.md.
+where it matters; spelling is lightly normalized. Track actual development in the changelog and issues.
 
 ## Beginning: clean Divan armor, clean DR-X555, HOTM 7
 

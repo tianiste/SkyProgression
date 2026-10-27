@@ -10,3 +10,7 @@ run/
 *.log
 local.properties
 service-data/
+
+# Local working notes (kept on disk, not published)
+AGENTS.md
+PROGRESS.md
