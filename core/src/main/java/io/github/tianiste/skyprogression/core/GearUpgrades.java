@@ -305,6 +305,7 @@ public final class GearUpgrades {
         for(Reforges.Reforge r:Reforges.all())if(r.stone()!=null)ids.add(r.stone());
         ids.addAll(PetUpgrades.priceIds());
         ids.addAll(ProfileUpgrades.priceIds());
+        ids.addAll(OtherUpgrades.priceIds());
         ids.addAll(Recipes.inputIds());
         ids.addAll(MethodRates.priceIds());
         for(String type:List.of("JADE","AMBER","TOPAZ"))for(String quality:List.of("FLAWLESS","PERFECT"))ids.add(quality+"_"+type+"_GEM");

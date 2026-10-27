@@ -33,6 +33,8 @@ public final class Recipes {
         } catch (IOException e) { throw new UncheckedIOException(e); }
         return out;
     }
+    /** The item's crafting or forge recipe, or null when it has none. */
+    static Recipe recipe(String id) { return RECIPES.get(id); }
     /** coins: cheapest known way to get the items (null when neither path is known); detail explains the choice. */
     public record Path(Double coins, String detail) {}
     public static Set<String> inputIds() {
@@ -75,7 +77,7 @@ public final class Recipes {
                 ? new Path(craft, String.format(Locale.ROOT, "Cheaper to %s (%,.0f vs %,.0f to buy): %s.", how, craft, buy, recipe))
                 : new Path(buy, String.format(Locale.ROOT, "Cheaper to buy (%,.0f vs %,.0f to %s).", buy, craft, how));
     }
-    private static String duration(long seconds) {
+    static String duration(long seconds) {
         if (seconds >= 3600) return String.format(Locale.ROOT, "%.1f h", seconds / 3600.0).replace(".0 h", " h");
         if (seconds >= 60) return seconds / 60 + " min";
         return seconds + " s";

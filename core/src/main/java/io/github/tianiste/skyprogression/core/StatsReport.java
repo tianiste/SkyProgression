@@ -27,6 +27,8 @@ public final class StatsReport {
     /** Counted stats of the evaluated pet (empty without a pet, null when not catalogued) and the pet alternatives. */
     public Map<Stat, Double> petStats;
     public List<PetUpgrades.Option> petOptions = new ArrayList<>();
+    /** Levelling the evaluated pet to 100 with its item (null at level 100, without a pet, or when not catalogued). */
+    public PetLevel petLevel;
     /** Essence perk, attribute and HOTM perk levels as upgrade options, with balances (see ProfileUpgrades). */
     public ProfileUpgrades.State profileUpgrades;
     public List<Ledger> stats = new ArrayList<>();
@@ -35,6 +37,8 @@ public final class StatsReport {
     public Map<String, Price> resale = new HashMap<>();
 
     public record Tool(String key, String name, String location) {}
+    /** The evaluated pet now and at level 100: XP held and needed (pet level table), and its counted stats there. */
+    public record PetLevel(String label, int level, double exp, double expAtMax, Map<Stat, Double> statsAtMax) {}
     public static final class Ledger {
         public Stat stat;
         public double flat, multiplier = 1, total;
@@ -90,6 +94,11 @@ public final class StatsReport {
         if (main.petsKnown) {
             r.petStats = StatBreakdown.petStats(main.pet, context, drill);
             if (r.petStats != null) r.petOptions.addAll(PetUpgrades.options(owned, main.pet, context, drill));
+            Loadout.Pet pet = main.pet;
+            if (r.petStats != null && pet != null && pet.level() < 100) {
+                Map<Stat, Double> max = StatBreakdown.petStats(new Loadout.Pet(pet.type(), pet.tier(), pet.exp(), 100, pet.heldItem(), pet.active()), context, drill);
+                if (max != null) r.petLevel = new PetLevel(pet.label(), pet.level(), pet.exp(), Loadout.petExp(100, pet.tier()), max);
+            }
         }
         for (Stat stat : StatBreakdown.SUPPORTED) {
             Breakdown b = StatBreakdown.compute(member, main, context, stat);

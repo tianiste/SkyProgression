@@ -28,6 +28,9 @@ public final class ProgressionScreen extends Screen {
     private String statGroup="Method";
     /** Upgrades tab: false ranks by rate gain with the step-by-step plan; true ranks the focused stat's cheapest points. */
     private boolean byStat;
+    /** Upgrades tab: false shows purchasable upgrades; true shows bonuses the API can't check, grinding and the guide stage. */
+    private boolean otherView;
+    private OtherUpgrades.Report other;
     /** Gear tab: key of the clicked loadout slot (empty = none); keys of expanded lines. */
     private String slot="";
     private final Set<String> expanded=new HashSet<>();
@@ -170,6 +173,8 @@ public final class ProgressionScreen extends Screen {
     }
     private List<Control> upgradeControls(){
         List<Control> list=new ArrayList<>();
+        list.add(new Control(otherView?"View: Other & progress":"View: Purchases",otherView,true,()->{otherView=!otherView;scroll=0;refresh();}));
+        if(otherView)return list;
         list.add(new Control(byStat?"Rank: "+stat.label+" points":"Rank: rate gain",byStat,true,()->{byStat=!byStat;scroll=0;refresh();}));
         if(byStat)list.add(new Control("Stat: "+stat.label+" v",false,true,this::selectStat));
         list.add(new Control("Price: "+data.priceMode.label,true,true,this::cyclePrice));
@@ -226,13 +231,13 @@ public final class ProgressionScreen extends Screen {
     private static final int PLAN_STEPS=12;
     private void analyze(){
         int generation=++analysisGeneration;if(analysis!=null)analysis.cancel(true);
-        Profile p=data.profile();overview=List.of();upgrades=List.of();plan=List.of();bestRow=null;bestGains=new IdentityHashMap<>();
+        Profile p=data.profile();overview=List.of();upgrades=List.of();plan=List.of();other=null;bestRow=null;bestGains=new IdentityHashMap<>();
         boolean needed=tab==HOME||tab==UPGRADES||tab==MORE;
-        if(p==null||!data.ready||!p.inventoryEnabled||!needed){calculating=false;buildCards();return;}
+        if(p==null||!data.ready||!needed||!p.inventoryEnabled&&!(tab==UPGRADES&&otherView)){calculating=false;buildCards();return;}
         calculating=true;buildCards();
-        var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;boolean focused=byStat;
+        var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;boolean focused=byStat,others=tab==UPGRADES&&otherView;
         var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
-        boolean ranks=selectedTab==UPGRADES,plans=selectedTab==HOME||selectedTab==UPGRADES&&!focused;
+        boolean ranks=selectedTab==UPGRADES&&!others,plans=selectedTab==HOME||ranks&&!focused;
         var rows=ranks&&!focused?data.comparisonRows():List.<MethodComparison.Row>of();
         var best=rows.isEmpty()||rows.getFirst().coinsPerHour()==null?null:rows.getFirst();
         var bestStats=best==null?null:data.comparisonStats(best.method());
@@ -240,15 +245,16 @@ public final class ProgressionScreen extends Screen {
         double bestEfficiency=best==null?0:data.inputs(best.method()).efficiency;
         StatsReport report=data.stats(method);var basis=report==null?new ProgressionEngine.RateBasis(data.inputs(method).efficiency,null)
                 :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions,report.profileUpgrades,report.resale);
-        boolean statsReady=data.hasStats(method);
+        boolean statsReady=data.hasStats(method);double efficiency=data.inputs(method).efficiency;
         analysis=ClientData.WORK.submit(()->{
             try {
                 var base=selectedTab==MORE?data.engine.overview(p,selectedMethod,selectedStat):List.<Overview>of();
                 var ranked=ranks&&(focused||statsReady)?data.engine.upgrades(p,selectedMethod,focused?selectedStat:null,effective,quotes,basis):List.<Upgrade>of();
                 var steps=plans&&statsReady?data.engine.plan(p,selectedMethod,effective,quotes,basis,PLAN_STEPS):List.<ProgressionEngine.Step>of();
+                var extra=others&&statsReady?OtherUpgrades.of(data.engine,p,selectedMethod,report,effective,efficiency,quotes,basis):null;
                 Map<Upgrade,Double> gains=new IdentityHashMap<>();
                 if(best!=null&&bestStats!=null&&best.method()!=selectedMethod)for(var u:ranked){Double g=MethodComparison.gain(best.method(),bestStats,bestEfficiency,bestEntry.ability,u.delta(),u.cooldownFactor());if(g!=null)gains.put(u,g);}
-                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;upgrades=ranked;plan=steps;bestRow=best;bestGains=gains;calculating=false;buildCards();});
+                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;upgrades=ranked;plan=steps;other=extra;bestRow=best;bestGains=gains;calculating=false;buildCards();});
             }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
         });
     }
@@ -618,6 +624,7 @@ public final class ProgressionScreen extends Screen {
     }
     private String costText(Upgrade u){return u.cost()==null?("GRIND".equals(u.item().category)?"Grinding":"Price unknown"):u.cost()==0?"Free":coins(u.cost());}
     private void upgradeCards(Profile p){
+        if(otherView){otherCards(p);return;}
         boolean focused=byStat;
         if(!p.inventoryEnabled){card("Inventory unavailable",RED,0).line("Gear recommendations are paused. Enable Inventory API in SkyBlock Settings, then reload after the profile cache expires.",TEXT);return;}
         if(calculating){card("Calculating upgrades...",CYAN,0).line("You can switch tabs or close this screen while calculations run.",MUTED);return;}
@@ -661,6 +668,62 @@ public final class ProgressionScreen extends Screen {
             c.add(new Entry(upgradeIcon(u),"#"+rank+"  "+u.item().name,u.blocked().isEmpty()?TEXT:RED,!u.blocked().isEmpty()?u.blocked():!changes.isEmpty()?changes:u.current()!=null?"Replaces: "+u.current().name:"",!u.blocked().isEmpty()?RED:CYAN,
                     gain,GREEN,u.owned()?"Owned":costText(u),u.owned()?GREEN:u.cost()==null?MUTED:TEXT,upgradeTip(u,focused),null));
         }
+    }
+
+    /** Upgrades, other view: the guide stage, bonuses the API can't check, and progress to grind, each ranked by rate gain here. */
+    private void otherCards(Profile p){
+        if(calculating){card("Calculating...",CYAN,0).line("You can switch tabs or close this screen while calculations run.",MUTED);return;}
+        if(!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Gains use your automatic "+method.label+" stats. Type Stats adds or overrides values.",TEXT);return;}
+        var r=other;if(r==null){card("Nothing to show",MUTED,0).line("Load your profile for bonuses and grinding steps.",MUTED);return;}
+        String model=r.rated()?"Gain: rate gain in "+method.label+" ("+MethodRates.unit(method,ability())+"), the same model as Purchases.":"Gain: drop multiplier (rate unavailable for these stats).";
+        var s=r.stage();
+        Card stage=card("Guide stage: "+s.name(),PURPLE,FULL);
+        stage.tip="Placed on the supplied early / mid / end mining checklist from its stage headings only (HOTM tier, Divan armor, drill, Pendant), for orientation.\nIt is not a fixed optimal order, and its unticked rows say nothing about your profile. Your next steps are the ranked lists below and on Purchases.";
+        stage.line("From: "+String.join(", ",s.because()),TEXT).line(s.next(),MUTED);
+        String key="stage:"+s.name();boolean open=expanded.contains(key);
+        stage.add(new Text((open?"- ":"+ ")+"Checklist items ("+s.nextItems().size()+")",CYAN,"\"(you own one)\" means the API shows that item somewhere; nothing else is checked.",()->toggle(key)));
+        if(open)for(String item:s.nextItems())stage.line("  "+item,item.endsWith("(you own one)")?GREEN:MUTED);
+
+        Card head=card("Can't check: skip if you already have it",CYAN,FULL);head.right=r.unchecked().size()+" bonuses";
+        head.tip="Permanent bonuses the profile API never shows (or whose key has never been observed). A missing field is not proof you lack them.\nPrice: Coflnet buy quote for the whole amount; unknown stays unknown.\n"+model;
+        if(r.unchecked().isEmpty())head.line("No such bonus changes "+method.label+".",MUTED);
+        else if(r.hidden()>0)head.line(r.hidden()+" other bonus"+(r.hidden()>1?"es don't":" doesn't")+" change "+method.label+".",MUTED);
+        int n=0;
+        for(var e:r.unchecked()){n++;
+            Card c=card("",CYAN,n%2==1?0:1);
+            c.add(new Entry(otherIcon(e),e.name(),TEXT,e.effect(),MUTED,"+"+fmt(e.gain())+"%",GREEN,e.cost()==null?"Price unknown":coins(e.cost()),e.cost()==null?MUTED:TEXT,otherTip(e,model),null));
+        }
+        if(n%2==1)card("",CYAN,1).line("Can't check: skip any you already have.",MUTED);
+
+        Card grind=card("Progress you have to grind",GREEN,FULL);grind.right="by rate gain";
+        grind.tip="HOTM perks, tokens and tiers, Mining skill, collections, pet levels, Compact and forge-only items. Ranked by the gain alone: coins are not part of the ranking.\n"+model;
+        if(!p.inventoryEnabled)grind.line("Inventory API off: Compact and forge-only items need your gear.",RED);
+        if(r.grinding().isEmpty())grind.line("Nothing to grind that changes "+method.label+".",MUTED);
+        n=0;
+        for(var e:r.grinding()){n++;
+            Card c=card("",GREEN,n%2==1?0:1);
+            c.add(new Entry(otherIcon(e),"#"+n+"  "+e.name(),TEXT,e.distance(),e.distance().equals("Ready")?GREEN:CYAN,e.gain()==null?"not modelled":"+"+fmt(e.gain())+"%",e.gain()==null?MUTED:GREEN,
+                    "Grinding",MUTED,otherTip(e,model),null));
+        }
+    }
+    private ItemStack otherIcon(OtherUpgrades.Entry e){
+        String id=e.id().startsWith("forge:")?e.id().substring(6):e.id();
+        return icon(id,switch(e.group()){case "Skill","Collection"->"HOTM";default->e.group();});
+    }
+    private String otherTip(OtherUpgrades.Entry e,String model){
+        StringJoiner tip=new StringJoiner("\n");
+        tip.add(e.name());
+        if(!e.effect().isEmpty())tip.add("Effect: "+e.effect());
+        tip.add(e.gain()==null?"Gain: not modelled":"Gain: +"+fmt(e.gain())+"% in "+method.label);
+        if(!e.requirement().isEmpty())tip.add("Needs: "+e.requirement());
+        if(!e.distance().isEmpty())tip.add(e.distance());
+        if(!e.how().isEmpty())tip.add("How: "+e.how());
+        boolean forge=e.id().startsWith("forge:");
+        if(e.cost()!=null)tip.add((forge?"Missing materials: ":"Price: ")+coins(e.cost()));
+        else if(forge)tip.add("Missing materials: price unknown");
+        if(!e.note().isEmpty())tip.add(e.note());
+        tip.add(model);
+        return tip.toString();
     }
 
     // Methods

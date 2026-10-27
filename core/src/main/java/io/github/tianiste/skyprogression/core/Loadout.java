@@ -252,4 +252,12 @@ public final class Loadout {
         }
         return level;
     }
+    /** Total pet XP from level 1 to reach the level at this rarity (same table and offsets as petLevel). */
+    static synchronized double petExp(int level, String tier) {
+        petLevel(0, tier);
+        int offset = petOffsets.getOrDefault(tier, 0);
+        double total = 0;
+        for (int i = offset; i < offset + level - 1 && i < petLevels.length; i++) total += petLevels[i];
+        return total;
+    }
 }
