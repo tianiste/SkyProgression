@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (rest of the stat model). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (GUI redesign). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -113,6 +113,14 @@ fix them later; do not block on the in-game test. Order:
    to storage, Held tool, Price, God Potion, Refresh, the hint, and the old-companion message. Then roadmap 4's remaining
    "Other Upgrades/progression" view. Open: a measured session for the End Stone/Cobble/Obsidian guide gaps; Maniac Miner's Fortune rule;
    Fungus/Harena Fortuna in the stat ledger; Bazaar tax and NPC sale prices in coins/hour.
+   **GUI redesign (2026-10-27, in-game test pending):** four icon tabs (Home, Gear, Upgrades, Methods) plus a More page
+   behind the settings button replace the eight text tabs; nothing was removed (map in docs/DESIGN.md "Interface layout").
+   Engine, companion and numbers unchanged. Owner should check in game with `build/libs/skyprogression-0.3.0.jar`: top
+   bar at full and narrow widths (the second row below 860 px), Home stat bars and their tooltips, Rate now and Best next
+   upgrade tiles, chart clicks, Gear slot grid (gold tool outline, cyan pieces to fetch, click detail), stat bars by category
+   and the "+ N situational..." expansion, Upgrades plan/list cards and tooltips, Rank toggle, Methods rate card and
+   assumptions, More page (Type Stats, Demo, gear audit), keys R/F1/1-4/PgUp/PgDn, the big rate number's scaling, short
+   screens, Demo, loading, error and old-companion messages.
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
    prerequisites (HOTM tier/tokens, recipe unlocks), mutual exclusions and prices, valued by each method's model, with a
    greedy sequential plan. Remaining: recursive recipes, Core of the Mountain levels for tokens, scrolls, pet-item carry-over.
@@ -424,6 +432,13 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-27 (GUI redesign): `ProgressionScreen` rewritten around typed card rows (Text, Meter, Split, Legend, Pair,
+Entry, Slots, Big, Bar) laid out on content change; tabs HOME 0, GEAR 1, UPGRADES 2, METHODS 3, MORE 4 (F1). Gear merges
+Breakdown and Start with (one Tool choice, Refresh reloads both); Upgrades has the old Stats tab as "Rank: <stat> points";
+Methods merges Rates and Compare; More holds Type Stats, stat focus, Demo, the old Overview and Other cards. Analysis runs
+the plan on Home and Upgrades, the gear audit on More. `Theme` gains `IconTab`, PURPLE and DIM. Verified: `./gradlew build
+:service:installDist`; not seen in game. Open: owner's visual check (list in "Resume here").
 
 2026-10-27 (rest of the stat model): `Stat` gains MINING_WISDOM, BREAKING_POWER, PICKAXE_ABILITY_COOLDOWN, HEAT_RESISTANCE and
 four powder stats (appended, so Type Stats keeps its first ten); `Stat.percent`. `StatBreakdown.SUPPORTED` = all stats,

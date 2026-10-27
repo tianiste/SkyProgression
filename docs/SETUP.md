@@ -42,33 +42,29 @@ this development companion is designed for the project owner's machine.
 
 ## Using the tabs
 
-- **Overview:** HOTM, mining level and collection progress, plus the selected stat's best
-  owned base item per slot, catalog target and remaining points.
-- **Upgrades:** choose a method. Mining Fortune/Speed, the Gemstone/Ore/Dwarven Metal/Block Fortunes, both
-  Spreads and Pristine come from the loaded profile automatically; override any of them (or enter Cold
-  Resistance) in **Type Stats**. Blank fields stay automatic or unknown.
-  Ranks supported gear upgrades and base-item alternatives by purchase cost per estimated 1% more drops.
-- **Stats:** ranks supported gear upgrades and base-item alternatives by purchase cost per point of the selected stat.
-- **Breakdown:** automatic Mining Fortune and Mining Speed itemized by source (counted, situational,
-  missing, temporary, not in the API). By default it uses the best gear and tool you own for the method,
-  listed with where each piece is stored; **Gear** switches to what you wear now, and **Tool** picks a
-  specific tool. Choose the zone; God Potion is assumed on and can be switched off. Refresh retries.
-- **Start with:** which of your own gear to use for the method before buying anything: the best owned armor,
-  equipment, tool, pet (with its pet item), the accessories that add the method's stats and the HOTM tree, each with
-  where it is stored (worn, inventory, wardrobe slot, ender chest page, backpack, Loadouts set, pets menu). The swap list
-  shows only what differs from what you wear, each with its stat and rate change (items and coins per hour at the
-  **Price** mode), largest gain first, plus the total before and after and the best method for the gear you wear now
-  and for your best owned gear. The API does not show the held tool: pick it with **Held tool** (shared with Breakdown)
-  to see a tool swap. Zone and God Potion follow the Breakdown tab. Needs the companion's `/start` (restart an older companion).
-- **Rates:** the automatic rate for the method (ticks, ability uptime, items per hour or per the method's window)
-  with coins per hour at both Coflnet figures (instant-sell and sell offer, labelled, with the quote time). The
-  manual scenario next to it takes active blocks per second, base drops, efficiency, a sale price and optionally
-  your own Coleweight per item. Inputs are saved per profile/method.
-- **Compare:** every method ranked by coins per hour, each with its own best owned gear and tool in its usual zone
-  (that method's Type Stats values and efficiency apply). **Price** cycles instant-sell / sell offer / NPC sell, **God Potion**
-  toggles the assumption, **Pick method** or a click on a card selects the method. A missing price stays unknown
-  and sorts last. The Upgrades tab then also shows each upgrade's coins per hour here and in the best method.
-- **Other:** known profile milestones plus a checklist of bonuses not modeled automatically.
+The top bar always holds your username (Load), the profile and the method. Hover bars, rows and card titles for
+details; lines starting with + expand on click.
+
+- **Home:** your stats for the method as bars (current vs the best attainable with this gear; hover for the top
+  sources), the current rate with coins per hour, the best next upgrade (first step of the plan) and every method's
+  coins per hour as a bar chart (click a method to select it).
+- **Gear:** which of your own gear to use before buying anything. The loadout is a grid of item slots (the tool
+  outlined gold, pieces to fetch cyan); click one for where it is stored and its swap. The status line says whether
+  you already wear the best you own, otherwise how many swaps and the rate change; each swap is listed with its gain.
+  Next to it, one card per stat with a bar split by source (Gear, HOTM, Skill, Pet, other), the top sources (check
+  mark when maxed) and one expandable line for situational, temporary, missing and not-in-API sources. Controls:
+  **Stats** group, **Gear** best owned/equipped, **Tool** (the tool you hold; the API does not show it), **Zone**, **God
+  Potion**, **Price**, **Refresh**. Needs the companion's `/stats` and `/start` (restart an older companion).
+- **Upgrades:** the step-by-step plan as numbered cards, then every upgrade ranked by rate gain (or drops), each with
+  its icon, gain and cost; hover for replaced item, net cost after resale, before/after rate and its value in the best
+  method. **Rank** switches to the cheapest points of one stat (pick it with **Stat**). Mining stats come from the
+  loaded profile automatically; **Type Stats** overrides any of them (blank stays automatic or unknown).
+- **Methods:** the coins per hour chart (**Price** cycles instant-sell / sell offer / NPC sell, **God Potion**, **Pick
+  method**, **Refresh**), then the selected method's rate: items per hour or per its window, coins per hour at each
+  price, efficiency, ticks, the next speed threshold, tool and zone, with assumptions on an expandable line. Also
+  "Same change, different value" (+50 Fortune / +100 Speed per method) and the manual Type Stats scenario.
+- **More** (gear button or F1): Type Stats, stat focus, Demo, HOTM and skill progress, powder, the gear audit for the
+  focused stat, profile notes and help.
 
 Use the mouse wheel, Page Up/Down or footer arrows to scroll results. Selectors have search fields. Nothing purchases items, equips gear, or mines for you.
 
@@ -102,7 +98,7 @@ Supply measured active blocks/sec to account for speed. Spread assumes enough ex
 blocks. Gems use rough-equivalent units; match the price and Coleweight units to them.
 Shafting estimates Glacite, not an entire mixed mineshaft. MF Gems uses the gem inputs you enter.
 No automatic Coleweight coefficient is invented (none could be verified; see CALCULATIONS.md): enter one or the
-result stays unavailable. The automatic rate cards and the Compare tab use the rate models in CALCULATIONS.md.
+result stays unavailable. The Home rate tile and the Methods tab use the rate models in CALCULATIONS.md.
 
 ## Troubleshooting
 
@@ -138,8 +134,8 @@ Builds and unit tests are automated. In-game validation is deliberately left to 
 
 - Open /sp at your usual GUI scale, then try a larger GUI scale. Panels should stack
   on narrow windows; content stays inside its scrollable area.
-- Demo > Overview shows gold/cyan progress cards and gear icons. Stats shows ranked
-  cards and a cost comparison. Selectors filter as you type.
+- Demo > More shows the gear audit with item icons; Upgrades shows ranked icon cards
+  with tooltips. Selectors filter as you type.
 - Type Stats accepts comma-separated numbers; Apply saves in the background. Cancel
   discards edits that have not been applied.
 - Load with the companion stopped: the screen should remain interactive and report

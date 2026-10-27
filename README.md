@@ -23,8 +23,9 @@ Not affiliated with or endorsed by Hypixel or Mojang.
 
 ## Stitch interface (0.3.0)
 
-The native Stitch-inspired interface has Overview, Upgrades, Stats, Breakdown, Start with, Rates, Compare and Other tabs, method/stat/profile
-selectors, progress bars and a clearly labeled offline demo. A local companion service
+The native Stitch-inspired interface has four icon tabs (Home, Gear, Upgrades, Methods) and a More page, with
+profile/method selectors always in the top bar, stat bars, item icons, a coins/hour method chart, hover details and a
+clearly labeled offline demo. A local companion service
 loads Hypixel profiles and Coflnet price quotes. Inventory lookups and price requests
 run off the Minecraft render thread and are cached.
 
@@ -39,7 +40,7 @@ materials and balances before buying. Craftable or forgeable items use the cheap
 cards show the net cost after selling what an upgrade replaces when a sale quote exists. Gem methods rank
 upgrades by their Flawless/hour gain, other methods by drops, with a step-by-step plan. Unknown
 prices remain unknown. Rates for non-gem methods still need further implementation. Method stats are computed automatically from
-the profile using the best gear and tool you own for the method (Breakdown tab; you can switch to your
+the profile using the best gear and tool you own for the method (Gear tab; you can switch to your
 equipped gear or a specific tool); Type Stats overrides them.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API
 key for Demo. Real profile lookup requires your own registered Hypixel application key
@@ -63,10 +64,10 @@ price, requirement and inventory error cases. In-game testing is left to the pro
 
 ## Interface and responsiveness (0.3.0)
 
-Dark framed panels, gold tabs, cyan stats, gear icons, progress cards, independent cost
-comparisons, searchable selectors and a two-column Type Stats form adapt the supplied
-Stitch designs. Smaller GUI sizes stack content into one column. Use the mouse wheel,
-Page Up/Down or footer arrows to scroll; R reloads and F1 opens help when not typing.
+Dark framed panels, icon tabs, item icons, stat bars split by source, a method bar chart, details in hover
+tooltips, searchable selectors and a two-column Type Stats form adapt the supplied Stitch designs (layout in
+docs/DESIGN.md). Smaller GUI sizes stack content into one column. Use the mouse wheel, Page Up/Down or footer
+arrows to scroll; R reloads, 1-4 switch tabs and F1 opens the More page when not typing.
 
 Catalog/settings loading, HTTP client initialization, profile/price fetches, analysis,
 and settings writes run off the game thread. Requests have response-size limits and

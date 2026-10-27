@@ -1,3 +1,38 @@
+# Interface layout (2026-10-27 redesign)
+
+The main screen has four icon tabs and a More page. Owner decisions (2026-10-27): fewer tabs, item icons where an
+item is meant, stat bars, a method bar chart, one short line per card with details in hover tooltips or expandable
+lines, and the existing flat palette (no blur).
+
+- **Top bar:** "SkyProgression", the Home / Gear / Upgrades / Methods tabs (icon plus label; icon only when narrow),
+  then username + Load, profile picker and method picker, the settings button (More page) and X. Below 860 px the
+  username, profile and method controls move to a second row. Tab-specific controls sit in one compact row under it
+  and wrap into more rows when narrow. Keys: R reload, F1 More page, 1-4 tabs, PgUp/PgDn scroll, ESC close.
+- **Home:** "Your stats for <method>" with one bar per `MiningMethod.relevantStats` stat (current vs
+  `Ledger.attainable`, or `attainableKnown` when unknown; hover lists the top sources; click opens Gear); a "Rate now"
+  tile (big number, unit, coins/hour line); a "Best next upgrade" tile (first step of the plan); and the
+  "Coins / hour by method" bar chart (best method cyan, selected gold, click selects the method).
+- **Gear** (old Start with + Breakdown): "Use this loadout" as an item-slot grid (tool outlined gold, pieces to fetch
+  cyan, worn gray), a status line ("Wearing the best you own" or the swap count and rate change), the clicked slot's
+  detail (name, storage, swap) and the swaps as icon rows. "Stats use" holds the evaluated gear, notes and the
+  best-method hint in tooltips. Each stat card has one bar split by source category (Gear gold, HOTM cyan, Skill
+  green, Pet purple, others muted) over the attainable total, a legend, the top four sources (check mark when maxed,
+  "+ N more" expands) and one collapsed line for situational, temporary, missing and not-in-API sources.
+- **Upgrades:** the step-by-step plan as numbered icon cards (gain green, cost right), then every ranked upgrade in
+  the same card style; the model, assumptions, cost efficiency and resale notes are tooltips. "Rank: rate gain" /
+  "Rank: <stat> points" replaces the old Stats tab.
+- **Methods** (old Rates + Compare): the bar chart, then the selected method's rate card (big number, coins at each
+  price, efficiency, ticks, next threshold, tool and zone, expandable assumptions), "Same change, different value"
+  and the manual Type Stats scenario.
+- **More** (settings button, F1): Type Stats, stat focus, Demo; HOTM/skill meters, powder, the gear audit for the
+  focused stat (old Overview), profile progression and notes, help, manual checks and Inventory API help.
+
+Rows are typed (text, meter, stacked bar, legend, label/value pair, icon entry, slot grid, big number, bar-chart
+row). Layout runs only when content changes: it wraps text, fits labels, splits tooltips and positions slots and
+legend chips. Rendering draws only visible cards and rows. Wide screens use two columns (full-width cards span both,
+stat cards fill the shorter column); narrow screens stack them; screens under 300 px tall drop optional cards (the
+Home chart, "Stats use", the manual scenario).
+
 # Stitch adaptation and responsiveness review
 
 Source project: SkyProgression Mod GUI Design, 9906348672596825476.
