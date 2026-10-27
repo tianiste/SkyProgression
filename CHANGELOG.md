@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Session tracker on the Methods tab: measures your real collection / hour and coins / hour for the selected method and shows
+  them next to the model, with active time, elapsed time and uptime. Counts inventory pickups, the [Sacks] chat summaries and
+  Pristine procs (compacted items count as their base items). Starts on the first gain, pauses after 60 s idle, keeps
+  running with /sp closed, optional HUD line, and Save session writes it to config/skyprogression-sessions.json. Read only.
+
 ## 0.4.1 - 2026-10-27
 
 ### Minecraft versions

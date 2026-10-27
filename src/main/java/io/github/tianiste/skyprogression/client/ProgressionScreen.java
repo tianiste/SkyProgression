@@ -22,7 +22,7 @@ import static io.github.tianiste.skyprogression.client.Theme.*;
  */
 public final class ProgressionScreen extends Screen {
     private final ClientData data=ClientData.INSTANCE;
-    private MiningMethod method=MiningMethod.MF_GEMS;
+    private MiningMethod method=ClientData.INSTANCE.method;
     private Stat stat=Stat.MINING_FORTUNE;
     /** Gear tab stat group: "Method" (the method's stats plus the focused one), "All", or a StatBreakdown.GROUPS key. */
     private String statGroup="Method";
@@ -99,6 +99,7 @@ public final class ProgressionScreen extends Screen {
     }
     @Override protected void init(){
         String typed=username!=null?username.getValue():data.player.isEmpty()?minecraft.getUser().getName():data.player;
+        data.method=method;
         clearWidgets();span=Math.min(960,width-16);left=(width-span)/2;top=Math.max(4,(height-620)/2);bottom=height-top;
         wide=span>=600;
         int y=top+6;boolean labels=span>=460,oneRow=span>=860;
@@ -150,8 +151,12 @@ public final class ProgressionScreen extends Screen {
     @Override public void tick(){
         // Load the typed player once per opening, as soon as the catalog is ready; a kept profile or Demo is left as is.
         if(!autoLoadTried&&data.ready&&data.report==null&&!data.loading&&!data.demo&&username!=null){autoLoadTried=true;data.load(username.getValue(),minecraft::execute,this::refresh);}
-        if(lastRevision!=data.revision)refresh();
+        if(lastRevision!=data.revision){refresh();return;}
+        // The session card changes without a revision: rebuild the cards (not the widgets) when it changed, or each second while it runs.
+        if(tab==HOME||tab==METHODS){var t=data.tracker;long second=System.currentTimeMillis()/1000;
+            if(t.version()!=trackerVersion||t.state()==SessionTracker.State.RUNNING&&second!=trackerSecond){trackerVersion=t.version();trackerSecond=second;buildCards();}}
     }
+    private int trackerVersion=-1;private long trackerSecond;
     void refresh(){if(Compat.screen(minecraft)==this)init();}
     private void typeStats(){Compat.setScreen(minecraft,new InputsScreen(this,data.inputs(method),method));}
     private void persist(){data.save(minecraft::execute,ignored->{});}
@@ -182,8 +187,14 @@ public final class ProgressionScreen extends Screen {
         return list;
     }
     private List<Control> methodControls(){
-        boolean live=live();
-        return List.of(new Control("Price: "+data.priceMode.label,true,true,this::cyclePrice),
+        boolean live=live();var t=data.tracker;boolean running=t.state()==SessionTracker.State.RUNNING||t.state()==SessionTracker.State.PAUSED;
+        return List.of(new Control(running?"Session: Stop":t.state()==SessionTracker.State.STOPPED?"Session: Resume":"Session: Start",running,true,
+                        ()->{long now=System.currentTimeMillis();if(running)t.stop(now);else{t.use(method);t.start(now);}sessionNote="";refresh();}),
+                new Control("Reset session",false,!t.empty(),()->{t.reset();t.use(method);sessionNote="";refresh();}),
+                new Control("Save session",false,t.state()==SessionTracker.State.STOPPED,this::saveSession),
+                new Control("Auto-start: "+(t.autoStart?"On":"Off"),t.autoStart,true,()->{t.autoStart=!t.autoStart;refresh();}),
+                new Control("HUD: "+(data.trackerHud?"On":"Off"),data.trackerHud,true,()->{data.trackerHud=!data.trackerHud;refresh();}),
+                new Control("Price: "+data.priceMode.label,true,true,this::cyclePrice),
                 new Control("God Potion: "+(data.compareGodPotion?"On":"Off"),data.compareGodPotion,live,()->{data.compareGodPotion=!data.compareGodPotion;scroll=0;refresh();}),
                 new Control("Pick method v",false,!data.comparisonRows().isEmpty(),this::pickRanked),
                 new Control(data.compareLoading()?"Loading...":"Refresh",false,live&&!data.compareLoading(),()->{data.refreshCompare();data.loadPrices(minecraft::execute,this::refresh);refresh();}));
@@ -301,6 +312,7 @@ public final class ProgressionScreen extends Screen {
         statsCard();
         rateTile();
         nextUpgradeTile(p);
+        if(!data.tracker.empty())sessionCard(true);
         methodChart(true);
         updateNotice();
     }
@@ -396,6 +408,86 @@ public final class ProgressionScreen extends Screen {
             c.add(new Bar(productIcon(m),(selected?"» ":"")+m.label,selected?GOLD:TEXT,row.totalCoinsPerHour()==null?"?":compact(row.totalCoinsPerHour()),
                     row.totalCoinsPerHour()==null?0:row.totalCoinsPerHour()/Math.max(1,top),isBest?CYAN:selected?GOLD:DIM,tip,()->{method=m;slot="";refresh();}));
         }
+    }
+
+    // Session tracker (Methods; a short tile on Home while a session exists)
+    private String sessionNote="";
+    private void sessionCard(boolean home){
+        var t=data.tracker;long now=System.currentTimeMillis();MiningMethod m=t.method();
+        String state=switch(t.state()){case READY->"not started";case RUNNING->"running";case PAUSED->"idle, paused";case STOPPED->"stopped";};
+        Card c=card(home?"Session: "+m.label:"Session tracker | "+m.label,CYAN,home?1:FULL);c.icon=productIcon(m);c.right=state;c.rightColor=t.state()==SessionTracker.State.RUNNING?GREEN:MUTED;
+        String unit=MethodComparison.itemName(m);
+        c.tip="Measures what you really mine and compares it with the model.\nCounted: items picked up into your inventory, the [Sacks] chat summaries (their hover lists the items) and Pristine procs. "
+                +"Compacted forms count as their base items (Enchanted = 160, blocks and cubes = 160 Enchanted, gems 80 per tier).\n"
+                +"Starts by itself on the first "+unit+" gain (Auto-start), pauses after "+(t.idleMs/1000)+" s without one (trackerIdleSeconds in config/skyprogression.json); the active time ends at the last gain.\n"
+                +"Keeps running with /sp closed. Read only: it never clicks, mines or sends anything.";
+        if(t.empty()){
+            c.line(t.autoStart?"Starts when you mine "+unit+", or press Session: Start.":"Press Session: Start, then mine.",TEXT);
+            if(!home)c.line("Counts pickups, [Sacks] summaries and Pristine procs; compares with the model below.",MUTED);
+            return;
+        }
+        if(m!=method)c.line("Tracking "+m.label+" (selected: "+method.label+"). Reset to track "+method.label+".",GOLD);
+        var x=t.measure(now,data.prices,data.priceMode);var p=data.predicted(m);
+        long elapsed=t.elapsedMs(now),active=t.activeMs(now);
+        String measured=Double.isFinite(x.productPerHour())?fmt(Math.round(x.productPerHour()*100)/100.0):"-";
+        boolean modelKnown=p!=null&&p.perHour()!=null;
+        String model=!modelKnown?"unknown":(MethodComparison.lowerBound(m)?"≥":"")+fmt(Math.round(p.perHour()*100)/100.0);
+        String modelTip=!modelKnown?"The model needs your stats (Load or Type Stats)"+(MethodRates.supported(m)?".":"; this method has no rate model."):
+                "Model at "+fmt(p.efficiency())+"% efficiency, with your current stats, tool and zone (same as Rate now).";
+        c.add(new Pair(unit+" / hour, measured",MUTED,measured,CYAN,"Counted "+fmt(Math.round(x.product()*1000)/1000.0)+" "+unit+" over "+SessionWatcher.clock(active)+" active time.",null));
+        c.add(new Pair(unit+" / hour, model",MUTED,model,TEXT,modelTip,null));
+        if(modelKnown&&p.perHour()>0&&Double.isFinite(x.productPerHour())){
+            double ratio=x.productPerHour()/p.perHour();
+            c.add(new Pair("Measured / model",MUTED,fmt(Math.round(ratio*1000)/10.0)+"%",ratio>=.9&&ratio<=1.1?GREEN:GOLD,
+                    "The model gives this rate at about "+fmt(Math.round(p.efficiency()*ratio*10)/10.0)+"% efficiency (share of the active time spent breaking blocks; above 100% means the model is too low).",null));
+        }
+        String coinsMeasured=x.coinsPerHour()==null?(x.activeHours()>0&&x.product()>0?"no price":"-"):(x.atLeast()?"≥ ":"")+coins(x.coinsPerHour());
+        c.add(new Pair("Coins / hour, measured",MUTED,coinsMeasured,x.coinsPerHour()==null?MUTED:GOLD,
+                data.priceMode.label+" price of every counted item"+(x.unpriced().isEmpty()?".":"; no price: "+String.join(", ",x.unpriced())+" (left out)."),null));
+        if(!home)c.add(new Pair("Coins / hour, model",MUTED,p==null||p.coinsPerHour()==null?"unknown":coins(p.coinsPerHour()),TEXT,
+                "Model product plus its modelled secondary drops at the "+data.priceMode.label+" price. The measurement also counts drops the model leaves out (such as Hard Stone on gem routes).",null));
+        c.add(new Pair("Active / elapsed",MUTED,SessionWatcher.clock(active)+" / "+SessionWatcher.clock(elapsed)+(elapsed>0?"  ("+Math.round(100.0*active/elapsed)+"% uptime)":""),TEXT,
+                "Active: time mining, from the first gain (back-dated by a sack summary's window) to the last one before an idle pause.",null));
+        if(home)return;
+        if(m.gems())c.add(new Pair("Pristine procs",MUTED,t.pristineProcs()+" ("+fmt(t.pristineFlawed())+" Flawed)"+(x.activeHours()>0?", "+fmt(Math.round(t.pristineProcs()/x.activeHours()))+" / hour":""),TEXT,
+                "From PRISTINE! chat messages. Their Flawed gems arrive through the inventory or sacks and are counted there, not twice.",null));
+        StringJoiner counted=new StringJoiner("\n");
+        t.raw().forEach((id,n)->{var item=t.byId(id);counted.add(fmt(n)+" x "+(item==null?id:item.name()));});
+        var src=t.bySource();long inv=src.getOrDefault(SessionTracker.Source.INVENTORY,0L),sack=src.getOrDefault(SessionTracker.Source.SACK,0L);
+        if(inv+sack>0)counted.add("Base items: "+Math.round(100.0*sack/(inv+sack))+"% from sack summaries, "+Math.round(100.0*inv/(inv+sack))+"% from the inventory");
+        for(var f:x.families())c.add(new Pair((f.main()?"":"+ ")+f.name(),MUTED,fmt(Math.round(f.amount()*1000)/1000.0)+(f.coinsEach()==null?" (no price)":""),f.main()?TEXT:MUTED,counted.toString(),null));
+        if(x.families().isEmpty())c.line("Nothing counted yet.",MUTED);
+        if(!sessionNote.isEmpty())c.line(sessionNote,sessionNote.startsWith("Saved")?GREEN:sessionNote.startsWith("Saving")?MUTED:RED);
+    }
+    /** Writes the stopped session with its measured and model values and the stats it was compared with (off the game thread). */
+    private void saveSession(){
+        var t=data.tracker;long now=System.currentTimeMillis();MiningMethod m=t.method();
+        var x=t.measure(now,data.prices,data.priceMode);var p=data.predicted(m);
+        var json=new com.google.gson.JsonObject();
+        json.addProperty("method",m.name());json.addProperty("savedAt",java.time.Instant.ofEpochMilli(now).toString());
+        json.addProperty("startedAt",java.time.Instant.ofEpochMilli(t.startedAt()).toString());
+        json.addProperty("elapsedSeconds",t.elapsedMs(now)/1000.0);json.addProperty("activeSeconds",t.activeMs(now)/1000.0);json.addProperty("idleSeconds",t.idleMs/1000.0);
+        json.addProperty("mod",net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("skyprogression").map(c->c.getMetadata().getVersion().getFriendlyString()).orElse(""));
+        var counts=new com.google.gson.JsonObject();t.raw().forEach(counts::addProperty);json.add("counts",counts);
+        var sources=new com.google.gson.JsonObject();t.bySource().forEach((k,v)->sources.addProperty(k.name().toLowerCase(Locale.ROOT),v));json.add("baseItemsBySource",sources);
+        json.addProperty("pristineProcs",t.pristineProcs());json.addProperty("pristineFlawed",t.pristineFlawed());
+        var measured=new com.google.gson.JsonObject();measured.addProperty("unit",MethodComparison.itemName(m));measured.addProperty("product",x.product());
+        if(Double.isFinite(x.productPerHour()))measured.addProperty("productPerHour",x.productPerHour());
+        if(x.coinsPerHour()!=null)measured.addProperty("coinsPerHour",x.coinsPerHour());
+        measured.addProperty("coinsAtLeast",x.atLeast());var unpriced=new com.google.gson.JsonArray();x.unpriced().forEach(unpriced::add);measured.add("unpriced",unpriced);
+        json.add("measured",measured);
+        var model=new com.google.gson.JsonObject();
+        if(p!=null){if(p.perHour()!=null)model.addProperty("productPerHour",p.perHour());if(p.coinsPerHour()!=null)model.addProperty("coinsPerHour",p.coinsPerHour());model.addProperty("efficiency",p.efficiency());}
+        model.addProperty("priceMode",data.priceMode.name());model.addProperty("model",MethodComparison.model(m));json.add("model",model);
+        var stats=new com.google.gson.JsonObject();data.effective(m).forEach((s,v)->stats.addProperty(s.name(),v));
+        var snapshot=new com.google.gson.JsonObject();snapshot.add("stats",stats);
+        var typed=new com.google.gson.JsonArray();data.inputs(m).stats.keySet().forEach(s->typed.add(s.name()));snapshot.add("typedStats",typed);
+        Profile pr=data.profile();StatsReport r=data.stats(m);StatContext.Zone z=data.zone(m);
+        snapshot.addProperty("player",pr==null?"":pr.player);snapshot.addProperty("profileId",pr==null?"":pr.id);snapshot.addProperty("demo",data.demo);
+        snapshot.addProperty("profileFetchedAt",r==null?"":r.fetchedAt);snapshot.addProperty("tool",r==null?"":r.tool);snapshot.addProperty("zone",z==null?"":z.name());
+        snapshot.addProperty("ability",r==null||r.ability==null?"":abilityText(r.ability));json.add("snapshot",snapshot);
+        sessionNote="Saving...";buildCards();
+        data.saveSession(json,minecraft::execute,n->{sessionNote=n<0?"Could not save the session.":"Saved as session "+n+" in config/skyprogression-sessions.json.";if(Compat.screen(minecraft)==this)buildCards();});
     }
 
     // Gear
@@ -733,6 +825,7 @@ public final class ProgressionScreen extends Screen {
 
     // Methods
     private void methodCards(){
+        sessionCard(false);
         methodChart(false);
         rateDetail();
         sameChangeCard();

@@ -48,6 +48,14 @@ final class ClientData {
     String startKey = "", startPending = "", startError = "";
     MethodComparison.PriceMode priceMode = MethodComparison.PriceMode.INSTANT_SELL;
     boolean compareGodPotion = true;
+    /** Method selected in /sp; kept while the screen is closed, so the session tracker follows it. */
+    MiningMethod method = MiningMethod.MF_GEMS;
+    /** Measured session of the selected method (fed by SessionWatcher on the game thread); hud shows its one-line summary. */
+    final SessionTracker tracker = new SessionTracker(method);
+    boolean trackerHud;
+    private final Path sessions = FabricLoader.getInstance().getConfigDir().resolve("skyprogression-sessions.json");
+    /** trackerIdleSeconds from config/skyprogression.json; 0 = the default. */
+    private volatile long configIdleMs;
     final Map<String, Inputs> inputs = new HashMap<>();
     private HttpClient http;
     /** Newer release tag from GitHub ("" = none known); checked once per launch, never downloaded. */
@@ -98,7 +106,7 @@ final class ClientData {
                 try{base=readBackend();}catch(Exception e){warning="config/skyprogression.json has an invalid backend URL; using "+base+".";}
                 Set<String> ids=new HashSet<>();items.forEach(i->ids.add(i.id));
                 String notice=warning,chosen=base;
-                dispatch.accept(()->{catalog=items;catalogIds=ids;engine=new ProgressionEngine(items);http=client;backend=chosen;saved.forEach(inputs::putIfAbsent);ready=true;initializing=false;message=notice.isEmpty()?"Load your player, or try the offline Demo.":notice;revision++;changed.run();checkForUpdate(client,dispatch,changed);});
+                dispatch.accept(()->{if(configIdleMs>0)tracker.idleMs=configIdleMs;catalog=items;catalogIds=ids;engine=new ProgressionEngine(items);http=client;backend=chosen;saved.forEach(inputs::putIfAbsent);ready=true;initializing=false;message=notice.isEmpty()?"Load your player, or try the offline Demo.":notice;revision++;changed.run();checkForUpdate(client,dispatch,changed);});
             }catch(Exception e){dispatch.accept(()->{initializing=false;initializationFailed=true;message="Could not initialize SkyProgression. Restart Minecraft to retry.";revision++;changed.run();});}
         });
     }
@@ -151,6 +159,8 @@ final class ClientData {
         byte[] bytes;try(var stream=Files.newInputStream(config)){bytes=stream.readNBytes(64*1024+1);}
         if(bytes.length>64*1024)throw new IllegalArgumentException("Config too large");
         JsonElement root=JsonParser.parseString(new String(bytes,java.nio.charset.StandardCharsets.UTF_8));
+        JsonElement idle=ProfileParser.at(root,"trackerIdleSeconds");
+        if(idle!=null&&idle.isJsonPrimitive()&&idle.getAsJsonPrimitive().isNumber()){double seconds=idle.getAsDouble();if(seconds>=10&&seconds<=3600)configIdleMs=(long)(seconds*1000);}
         String value=ProfileParser.string(ProfileParser.at(root,"backend"),"").strip();
         if(value.isEmpty())return fallback;
         while(value.endsWith("/"))value=value.substring(0,value.length()-1);
@@ -352,6 +362,54 @@ final class ClientData {
         String fetchedAt=response.headers().firstValue("X-Fetched-At").orElse(java.time.Instant.now().toString());
         try{return new PlayerData(name,uuid,response.body(),fetchedAt);}
         catch(IllegalArgumentException|JsonParseException e){throw new IllegalStateException("Hypixel could not return this profile.");}
+    }
+    /**
+     * The model's rate for the method with the current stats, efficiency, tool ability and zone: product per hour (as on Rate now) and
+     * coins per hour with the modelled secondary drops (null = unknown). Null when the rate cannot be computed. Cached per revision.
+     */
+    record Prediction(Double perHour,Double coinsPerHour,double efficiency) {}
+    private Prediction prediction;private int predictionRevision=-1;private MiningMethod predictionMethod;private MethodComparison.PriceMode predictionMode;
+    Prediction predicted(MiningMethod m){
+        if(predictionRevision==revision&&predictionMethod==m&&predictionMode==priceMode)return prediction;
+        Prediction p=null;
+        var e=effective(m);double efficiency=inputs(m).efficiency;
+        if(!e.isEmpty()&&MethodRates.supported(m))try{
+            StatsReport r=stats(m);var ability=r==null?null:r.ability;StatContext.Zone z=zone(m);
+            double main=MethodRates.perHour(m,e,efficiency,ability,z);
+            Double each=MethodComparison.coinsPerItem(prices,m,priceMode);
+            Double coins=null;
+            if(each!=null&&Double.isFinite(main)){double sum=main*each;
+                for(var d:MethodRates.secondary(m,e,efficiency,ability,z)){var v=MethodComparison.value(d,prices,priceMode);if(v.coinsPerHour()!=null)sum+=v.coinsPerHour();}
+                coins=sum;}
+            p=new Prediction(Double.isFinite(main)?main:null,coins,efficiency);
+        }catch(IllegalArgumentException ignored){/* No rate with these stats. */}
+        prediction=p;predictionRevision=revision;predictionMethod=m;predictionMode=priceMode;return p;
+    }
+    /**
+     * Appends a finished session to config/skyprogression-sessions.json on the disk worker (read, append, write a temporary file,
+     * move); complete gets the number of saved sessions, or -1 when it failed.
+     */
+    void saveSession(JsonObject session,Consumer<Runnable> dispatch,Consumer<Integer> complete){
+        DISK.submit(()->{
+            int count=-1;
+            try{
+                JsonArray all=new JsonArray();
+                if(Files.exists(sessions))try(var stream=Files.newInputStream(sessions)){
+                    byte[] bytes=stream.readNBytes(8*1024*1024+1);
+                    if(bytes.length>8*1024*1024)throw new IllegalStateException("Session file too large");
+                    JsonElement old=JsonParser.parseString(new String(bytes,java.nio.charset.StandardCharsets.UTF_8));
+                    // Never overwrite a file that is not a list of sessions.
+                    if(!old.isJsonArray())throw new IllegalStateException("Not a session list");
+                    all=old.getAsJsonArray();
+                }
+                all.add(session);
+                Files.createDirectories(sessions.getParent());
+                Path temporary=sessions.resolveSibling(sessions.getFileName()+".tmp");
+                Files.writeString(temporary,new GsonBuilder().setPrettyPrinting().create().toJson(all));
+                Files.move(temporary,sessions,StandardCopyOption.REPLACE_EXISTING);count=all.size();
+            }catch(Exception ignored){}
+            int saved=count;dispatch.accept(()->complete.accept(saved));
+        });
     }
     void save(Consumer<Runnable> dispatch,Consumer<Boolean> complete) {
         Map<String,Inputs> snapshot=new HashMap<>();inputs.forEach((key,value)->snapshot.put(key,value.copy()));
