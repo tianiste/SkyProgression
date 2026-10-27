@@ -43,3 +43,11 @@ tasks.register('extractNeu', JavaExec) {
     mainClass = 'io.github.tianiste.skyprogression.core.NeuExtractor'
     workingDir = rootProject.projectDir
 }
+
+tasks.register('exportPriceIds', JavaExec) {
+    description = 'Writes the price IDs the mod reads, for the hosted price bundle (pass -PpriceIdsOut=<file>).'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.tianiste.skyprogression.core.PriceIdsExporter'
+    workingDir = rootProject.projectDir
+    args = [project.findProperty('priceIdsOut') ?: 'build/price-ids.json']
+}

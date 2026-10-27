@@ -13,11 +13,15 @@ import java.util.concurrent.*;
 import static io.github.tianiste.skyprogression.core.Model.*;
 import static io.github.tianiste.skyprogression.core.ProfileParser.*;
 
-/** Local application backend. The Hypixel application key never goes into the mod or a response. */
+/**
+ * Local data backend for the mod, with the same endpoints as the hosted SkyProgression API: raw profiles, a price
+ * bundle and resale quotes. All calculations run in the mod. The Hypixel key never goes into the mod or a response.
+ */
 public final class ProgressionService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
     private final String apiKey = readApiKey();
-    private final Map<String, Cached> reports = new ConcurrentHashMap<>();
+    private final Map<String, Cached> profiles = new ConcurrentHashMap<>();
+    private final Map<String, Timed<String>> names = new ConcurrentHashMap<>();
     private final Object profileLock = new Object();
     private volatile Map<String, Price> quotes = Map.of();
     private volatile Instant quotedAt = Instant.EPOCH;
@@ -25,13 +29,10 @@ public final class ProgressionService {
     private final ExecutorService background = Executors.newFixedThreadPool(3, Thread.ofPlatform().daemon().name("SkyProgression refresh").factory());
     private final Set<String> refreshing = ConcurrentHashMap.newKeySet();
     private final java.util.concurrent.atomic.AtomicBoolean pricesRefreshing = new java.util.concurrent.atomic.AtomicBoolean();
-    private final Map<Resale.Query, CompletableFuture<Price>> quoting = new ConcurrentHashMap<>();
-    /** How long /stats waits for missing sale quotes before answering without them (they keep loading into the cache). */
-    private static final long RESALE_WAIT_MS = 1500;
     /** The mod connects to 18475; SKYPROGRESSION_PORT is only for running a second copy during development. */
     private static final int PORT = Integer.parseInt(Objects.requireNonNullElse(System.getenv("SKYPROGRESSION_PORT"), "18475"));
-    /** Parsed report plus the raw payload, which the stat ledger reads; owned items are decoded once per profile. */
-    private record Cached(Instant time, Report report, JsonObject raw, String uuid, Map<String, Loadout.Owned> owned) {}
+    /** Raw Hypixel profiles response of one player, passed through to the mod unparsed. */
+    private record Cached(Instant time, byte[] body) {}
     private static String readApiKey() {
         String configured = System.getenv("HYPIXEL_API_KEY");
         if (configured != null && !configured.isBlank()) return configured;
@@ -67,16 +68,11 @@ public final class ProgressionService {
                 send(x, 403, Map.of("error", "Local mod access only")); return;
             }
             switch (x.getRequestURI().getPath()) {
-                case "/health" -> send(x, 200, Map.of("ready", apiKey != null && !apiKey.isBlank()));
-                case "/report" -> {
-                    String query = Objects.toString(x.getRequestURI().getRawQuery(), "");
-                    if (!query.matches("ign=[A-Za-z0-9_]{1,16}")) { send(x, 400, Map.of("error", "Enter a valid Minecraft name")); return; }
-                    send(x, 200, report(query.substring(4)));
-                }
-                case "/stats" -> send(x, 200, stats(query(x)));
-                case "/compare" -> send(x, 200, compare(query(x)));
-                case "/start" -> send(x, 200, start(query(x)));
-                case "/prices" -> send(x, 200, prices());
+                case "/health" -> send(x, 200, Map.of("ok", true, "ready", apiKey != null && !apiKey.isBlank()));
+                case "/uuid" -> send(x, 200, uuid(query(x).getOrDefault("name", "")));
+                case "/profile" -> profile(x, query(x));
+                case "/prices" -> send(x, 200, bundle());
+                case "/resale" -> send(x, 200, Collections.singletonMap("price", resale(query(x))));
                 default -> send(x, 404, Map.of("error", "Unknown endpoint"));
             }
         } catch (LookupException e) { send(x, e.status, Map.of("error", e.getMessage())); }
@@ -103,102 +99,9 @@ public final class ProgressionService {
         }
         return values;
     }
-    /** Mining Fortune / Speed ledger for one profile: best owned gear and tool by default, or what is worn. */
-    private StatsReport stats(Map<String, String> q) throws Exception {
-        String ign = q.getOrDefault("ign", ""), profileId = q.getOrDefault("profile", ""), tool = q.getOrDefault("tool", "");
-        String zone = q.getOrDefault("zone", ""), target = q.getOrDefault("target", "");
-        if (!ign.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
-        if (!profileId.matches("[a-fA-F0-9-]{0,40}") || !tool.matches("[A-Za-z0-9_:#. -]{0,80}")) throw new LookupException(400, "Invalid profile or tool");
-        StatContext context;
-        MiningMethod method;
-        try {
-            method = MiningMethod.valueOf(q.getOrDefault("method", "MF_GEMS"));
-            context = new StatContext(zone.isEmpty() ? null : StatContext.Zone.valueOf(zone), target.isEmpty() ? null : StatContext.Target.valueOf(target),
-                    !"false".equals(q.get("god")));
-        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, zone or block target"); }
-        Member m = member(ign, profileId);
-        StatsReport result = StatsReport.of(m.member, m.owned, method, tool, !"equipped".equals(q.get("gear")), context, mayorPerks());
-        result.player = ign; result.profileId = m.id; result.profile = m.name;
-        result.fetchedAt = m.fetchedAt;
-        result.resalePending = !resale(result.resaleQueries, result.resale);
-        return result;
-    }
-    /** Best owned loadout for one method, where each piece is stored, and the swaps from what is worn now. */
-    private StartWith.Report start(Map<String, String> q) throws Exception {
-        String ign = q.getOrDefault("ign", ""), profileId = q.getOrDefault("profile", ""), tool = q.getOrDefault("tool", "");
-        String zone = q.getOrDefault("zone", ""), target = q.getOrDefault("target", "");
-        if (!ign.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
-        if (!profileId.matches("[a-fA-F0-9-]{0,40}") || !tool.matches("[A-Za-z0-9_:#. -]{0,80}")) throw new LookupException(400, "Invalid profile or tool");
-        StatContext context;
-        MiningMethod method;
-        try {
-            method = MiningMethod.valueOf(q.getOrDefault("method", "MF_GEMS"));
-            context = new StatContext(zone.isEmpty() ? null : StatContext.Zone.valueOf(zone), target.isEmpty() ? null : StatContext.Target.valueOf(target),
-                    !"false".equals(q.get("god")));
-        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, zone or block target"); }
-        Member m = member(ign, profileId);
-        StartWith.Report result = StartWith.of(m.member, m.owned, method, tool, context);
-        result.player = ign; result.profileId = m.id; result.profile = m.name; result.fetchedAt = m.fetchedAt;
-        return result;
-    }
-    /** Every rated method's automatic totals with its best owned gear, best tool and usual zone, for the method comparison. */
-    private MethodComparison.Report compare(Map<String, String> q) throws Exception {
-        String ign = q.getOrDefault("ign", ""), profileId = q.getOrDefault("profile", "");
-        if (!ign.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
-        if (!profileId.matches("[a-fA-F0-9-]{0,40}")) throw new LookupException(400, "Invalid profile");
-        Member m = member(ign, profileId);
-        MethodComparison.Report result = MethodComparison.of(m.member, m.owned, !"false".equals(q.get("god")));
-        result.player = ign; result.profileId = m.id; result.profile = m.name; result.fetchedAt = m.fetchedAt;
-        return result;
-    }
-    private record Member(JsonObject member, Loadout.Owned owned, String id, String name, String fetchedAt) {}
-    private Member member(String ign, String profileId) throws Exception {
-        Cached cached = fetchOrStale(ign);
-        JsonObject entry = null;
-        for (JsonElement p : cached.raw.getAsJsonArray("profiles")) {
-            boolean match = profileId.isEmpty() ? "true".equals(string(at(p, "selected"), "false")) : profileId.equals(string(at(p, "profile_id"), ""));
-            if (match && at(p, "members", cached.uuid).isJsonObject()) { entry = p.getAsJsonObject(); break; }
-        }
-        if (entry == null) throw new LookupException(404, "Profile not found for " + ign);
-        JsonObject member = at(entry, "members", cached.uuid).getAsJsonObject();
-        String id = string(at(entry, "profile_id"), "");
-        Loadout.Owned owned = cached.owned.computeIfAbsent(id, ignored -> Loadout.read(member));
-        return new Member(member, owned, id, string(at(entry, "cute_name"), "Profile"), cached.report.fetchedAt);
-    }
-    private Report report(String ign) throws Exception { return fetch(ign).report; }
     private record Timed<T>(Instant time, T value) {}
     private final Map<String, Timed<Price>> copyQuotes = new ConcurrentHashMap<>();
     private final Map<String, Timed<Map<String, List<String>>>> filterOptions = new ConcurrentHashMap<>();
-    private volatile Set<String> catalogIds;
-    /**
-     * Modifier-aware sale quotes for the evaluated copies: Coflnet's lowest BIN with the copy's rarity, recombobulation,
-     * reforge, coating and drill parts (pets: rarity, level, pet item). Only filters Coflnet lists for that item are
-     * used, matched case-insensitively; the quote names the filters used and left out. No listing means no quote.
-     * Waits at most {@link #RESALE_WAIT_MS} in total; quotes still loading finish into the cache. Returns false then.
-     */
-    private boolean resale(Map<String, Resale.Query> queries, Map<String, Price> out) throws Exception {
-        if (catalogIds == null) { Set<String> ids = new HashSet<>(); Catalog.load().forEach(i -> ids.add(i.id)); catalogIds = ids; }
-        Map<String, CompletableFuture<Price>> jobs = new LinkedHashMap<>();
-        for (var e : queries.entrySet()) {
-            Resale.Query q = e.getValue();
-            if (!q.tag().matches("[A-Z0-9_]{1,64}") || !q.tag().startsWith("PET_") && !catalogIds.contains(q.tag())) continue;
-            // One lookup per query at a time, shared by concurrent requests.
-            jobs.put(e.getKey(), quoting.computeIfAbsent(q, key -> CompletableFuture.supplyAsync(() -> {
-                try { return copyQuote(key); }
-                catch (Exception ignored) { return null; /* No quote: the upgrade says there is no sale price. */ }
-                finally { quoting.remove(key); }
-            }, background)));
-        }
-        long deadline = System.nanoTime() + RESALE_WAIT_MS * 1_000_000;
-        boolean complete = true;
-        for (var e : jobs.entrySet()) {
-            try {
-                Price p = e.getValue().get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
-                if (p != null) out.put(e.getKey(), p);
-            } catch (TimeoutException late) { complete = false; }
-        }
-        return complete;
-    }
     private Price copyQuote(Resale.Query q) throws Exception {
         Map<String, List<String>> options = filterOptions(q.tag());
         StringJoiner query = new StringJoiner("&"), used = new StringJoiner(", "), dropped = new StringJoiner(", ");
@@ -248,43 +151,80 @@ public final class ProgressionService {
         filterOptions.put(tag, new Timed<>(Instant.now(), out));
         return out;
     }
-    /** Fresh profile for an explicit Load: refetches when the cached copy is older than five minutes. */
-    private Cached fetch(String ign) throws Exception {
-        synchronized (profileLock) { return fetchLocked(ign); }
+    /** Minecraft name to UUID (Mojang), cached for a day. */
+    private Map<String, String> uuid(String name) throws Exception {
+        if (!name.matches("[A-Za-z0-9_]{1,16}")) throw new LookupException(400, "Enter a valid Minecraft name");
+        String key = name.toLowerCase(Locale.ROOT);
+        Timed<String> hit = names.get(key);
+        if (hit == null || !hit.time().plusSeconds(86400).isAfter(Instant.now())) {
+            JsonObject identity = get("https://api.mojang.com/users/profiles/minecraft/" + name, false);
+            String id = string(identity.get("id"), "").toLowerCase(Locale.ROOT);
+            if (!id.matches("[a-f0-9]{32}")) throw new LookupException(404, "Minecraft player not found");
+            if (names.size() > 500) names.clear();
+            hit = new Timed<>(Instant.now(), id + ":" + string(identity.get("name"), name));
+            names.put(key, hit);
+        }
+        int colon = hit.value().indexOf(':');
+        return Map.of("id", hit.value().substring(0, colon), "name", hit.value().substring(colon + 1));
     }
     /**
-     * Profile for /stats, /compare and /start: a cached copy is returned at once, and an expired one is refreshed in
-     * the background so the next request gets the new data. Only the first lookup of a player waits for Hypixel.
+     * Raw Hypixel profiles response, passed through unparsed with X-Fetched-At. A copy younger than five minutes is reused;
+     * an older one is returned at once while a background refresh runs, unless fresh=1 (the mod's explicit Load).
      */
-    private Cached fetchOrStale(String ign) throws Exception {
-        String name = ign.toLowerCase(Locale.ROOT);
-        Cached old = reports.get(name);
-        if (old == null) return fetch(ign);
-        if (!fresh(old) && refreshing.add(name)) background.submit(() -> {
-            try { fetch(ign); } catch (Exception ignored) { /* Keep the cached copy; the next request retries. */ }
-            finally { refreshing.remove(name); }
+    private void profile(HttpExchange x, Map<String, String> q) throws Exception {
+        String uuid = q.getOrDefault("uuid", "").replace("-", "").toLowerCase(Locale.ROOT);
+        if (!uuid.matches("[a-f0-9]{32}")) throw new LookupException(400, "uuid must be 32 hex characters");
+        Cached c = profiles.get(uuid);
+        if (c == null || "1".equals(q.get("fresh")) && !fresh(c)) c = fetchProfile(uuid);
+        else if (!fresh(c) && refreshing.add(uuid)) background.submit(() -> {
+            try { fetchProfile(uuid); } catch (Exception ignored) { /* Keep the cached copy; the next request retries. */ }
+            finally { refreshing.remove(uuid); }
         });
-        return old;
+        x.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+        x.getResponseHeaders().set("Cache-Control", "no-store");
+        x.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
+        x.getResponseHeaders().set("X-Fetched-At", c.time.toString());
+        x.sendResponseHeaders(200, c.body.length);
+        x.getResponseBody().write(c.body);
     }
     private static boolean fresh(Cached c) { return c.time.plusSeconds(300).isAfter(Instant.now()); }
-    private Cached fetchLocked(String ign) throws Exception {
-        if (apiKey == null || apiKey.isBlank()) throw new LookupException(503, "Set HYPIXEL_API_KEY for the companion service, then restart it. Never enter an API key into Minecraft chat.");
-        String name = ign.toLowerCase(Locale.ROOT);
-        Cached old = reports.get(name);
-        if (old != null && fresh(old)) return old;
-        JsonObject identity = get("https://api.mojang.com/users/profiles/minecraft/" + ign, false);
-        String uuid = string(identity.get("id"), "");
-        if (!uuid.matches("[a-fA-F0-9]{32}")) throw new LookupException(404, "Minecraft player not found");
-        JsonObject data = get("https://api.hypixel.net/v2/skyblock/profiles?uuid=" + uuid, true);
-        if (!"true".equals(string(data.get("success"), "false"))) throw new LookupException(502, "Hypixel could not return this profile");
-        Report result = new Report(); result.profiles = ProfileParser.parse(data, uuid, ign);
-        if (result.profiles.isEmpty()) throw new LookupException(404, "No SkyBlock profiles found for " + ign);
-        result.fetchedAt = Instant.now().toString();
-        // Raw payloads are several megabytes each, so only a few players are kept.
-        if (reports.size() >= 8) reports.clear();
-        Cached fresh = new Cached(Instant.now(), result, data, uuid, new ConcurrentHashMap<>());
-        reports.put(name, fresh);
-        return fresh;
+    private Cached fetchProfile(String uuid) throws Exception {
+        synchronized (profileLock) {
+            if (apiKey == null || apiKey.isBlank()) throw new LookupException(503, "Set HYPIXEL_API_KEY for the companion service, then restart it. Never enter an API key into Minecraft chat.");
+            Cached old = profiles.get(uuid);
+            if (old != null && fresh(old)) return old;
+            byte[] body = getBytes("https://api.hypixel.net/v2/skyblock/profiles?uuid=" + uuid, true);
+            // Raw payloads can be several megabytes each, so only a few players are kept.
+            if (profiles.size() >= 8) profiles.clear();
+            Cached fresh = new Cached(Instant.now(), body);
+            profiles.put(uuid, fresh);
+            return fresh;
+        }
+    }
+    /** Modifier-aware sale quote for one copy (filters as /resale query parameters); null when there is no listing. */
+    private Price resale(Map<String, String> q) throws Exception {
+        String tag = q.getOrDefault("tag", "");
+        if (!tag.matches("[A-Z0-9_]{1,64}")) throw new LookupException(400, "Invalid item tag");
+        Map<String, String> filters = new LinkedHashMap<>();
+        for (var e : q.entrySet()) {
+            if (e.getKey().equals("tag")) continue;
+            if (!RESALE_FILTERS.contains(e.getKey()) || !e.getValue().matches("[A-Za-z0-9_ ]{0,40}")) throw new LookupException(400, "Invalid filter");
+            filters.put(e.getKey(), e.getValue());
+        }
+        try { return copyQuote(new Resale.Query(tag, filters)); }
+        catch (LookupException e) { if (e.status == 404) return null; throw e; }
+    }
+    private static final Set<String> RESALE_FILTERS = Set.of("Rarity", "Recombobulated", "Reforge", "PowderCoating", "DrillPartEngine", "DrillPartFuelTank",
+            "DrillPartUpgradeModule", "PetLevel", "PetItem");
+    /** Same shape as the hosted API's /prices: every quote plus the current mayor perks (null while unknown). */
+    private Map<String, Object> bundle() throws Exception {
+        Map<String, Price> current = prices();
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("updatedAt", quotedAt.toString());
+        out.put("prices", current);
+        out.put("mayor", mayorPerks());
+        out.put("complete", true);
+        return out;
     }
     /** Price quotes: after the first load, expired quotes are served while a background refresh replaces them. */
     private Map<String, Price> prices() throws Exception {
@@ -295,7 +235,7 @@ public final class ProgressionService {
         });
         return quotes;
     }
-    /** Own lock: a price refresh (~300 quotes) must not hold up /stats, which reads the mayor perks. */
+    /** Own lock: a price refresh (~300 quotes) must not hold up profile lookups or the mayor perks. */
     private final Object priceLock = new Object();
     private Map<String, Price> refreshPrices() throws Exception {
         synchronized (priceLock) { return refreshPricesLocked(); }
@@ -382,7 +322,10 @@ public final class ProgressionService {
         return p;
     }
     private JsonObject get(String url, boolean authenticated) throws Exception {
-        var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(12))
+        return JsonParser.parseString(new String(getBytes(url, authenticated), StandardCharsets.UTF_8)).getAsJsonObject();
+    }
+    private byte[] getBytes(String url, boolean authenticated) throws Exception {
+        var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(15))
                 .header("User-Agent", "SkyProgression/0.1.0 (github.com/tianiste/SkyProgression)")
                 .header("Accept", "application/json");
         if (authenticated) request.header("API-Key", apiKey);
@@ -395,7 +338,7 @@ public final class ProgressionService {
             if (status != 200) throw new IOException("Remote service returned " + status);
             byte[] bytes = body.readNBytes(16 * 1024 * 1024 + 1);
             if (bytes.length > 16 * 1024 * 1024) throw new IOException("Response too large");
-            return JsonParser.parseString(new String(bytes, StandardCharsets.UTF_8)).getAsJsonObject();
+            return bytes;
         }
     }
     private static final class LookupException extends Exception {

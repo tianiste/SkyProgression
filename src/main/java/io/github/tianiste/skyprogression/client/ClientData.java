@@ -17,6 +17,9 @@ final class ClientData {
     static final ClientData INSTANCE = new ClientData();
     static final ExecutorService WORK = Executors.newVirtualThreadPerTaskExecutor();
     private static final ExecutorService DISK = Executors.newSingleThreadExecutor(Thread.ofPlatform().daemon().name("SkyProgression settings").factory());
+    /** Hosted SkyProgression API (Cloudflare Worker); empty until it is deployed, then the local companion is the default. */
+    static final String HOSTED_BACKEND = "";
+    static final String COMPANION_BACKEND = "http://localhost:18475";
     List<Item> catalog = List.of();
     ProgressionEngine engine;
     Report report;
@@ -26,21 +29,36 @@ final class ClientData {
     boolean loading, demo, ready, initializing, initializationFailed;
     private int generation;
     private Future<?> lookup, priceRequest, statsRequest, compareRequest, startRequest;
-    /** Automatic stat ledger for {@link #statsKey}; requested lazily from the companion's /stats endpoint. */
+    /** Backend base URL: the hosted API or the local companion (config/skyprogression.json "backend"). */
+    String backend = HOSTED_BACKEND.isEmpty() ? COMPANION_BACKEND : HOSTED_BACKEND;
+    /** Decoded profiles of the loaded player; the reports below are calculated from it on worker threads. */
+    private volatile PlayerData playerData;
+    private boolean profileRefreshing;
+    /** Current mayor and minister perks from the price bundle; null while unknown. */
+    private volatile List<StatBreakdown.MayorPerk> mayor;
+    /** Automatic stat ledger for {@link #statsKey}, calculated in the mod from the loaded profile. */
     StatsReport stats;
     String statsKey = "", statsPending = "", statsError = "";
     Map<String, Price> prices = new HashMap<>();
-    /** Every method's automatic totals for the method comparison; requested from the companion's /compare endpoint. */
+    /** Every method's automatic totals for the method comparison. */
     MethodComparison.Report comparison;
     String compareKey = "", comparePending = "", compareError = "";
-    /** Best owned loadout and swaps for {@link #startKey}; requested from the companion's /start endpoint. */
+    /** Best owned loadout and swaps for {@link #startKey}. */
     StartWith.Report start;
     String startKey = "", startPending = "", startError = "";
     MethodComparison.PriceMode priceMode = MethodComparison.PriceMode.INSTANT_SELL;
     boolean compareGodPotion = true;
     final Map<String, Inputs> inputs = new HashMap<>();
     private HttpClient http;
+    private Set<String> catalogIds = Set.of();
     private final Path file = FabricLoader.getInstance().getConfigDir().resolve("skyprogression-inputs.json");
+    private final Path config = FabricLoader.getInstance().getConfigDir().resolve("skyprogression.json");
+    /** How long the report waits for missing sale quotes before showing without them (they keep loading). */
+    private static final long RESALE_WAIT_MS = 1500;
+    private record Quote(long at, Price price) {}
+    private final Map<Resale.Query, Quote> quotes = new ConcurrentHashMap<>();
+    private final Map<Resale.Query, CompletableFuture<Price>> quoting = new ConcurrentHashMap<>();
+    private final Semaphore quoteSlots = new Semaphore(4);
     static final class Inputs {
         /** Manual values; a stat absent here uses the automatic total when one exists. */
         Map<Stat, Double> stats = new EnumMap<>(Stat.class);
@@ -63,7 +81,7 @@ final class ClientData {
         initializing=true;message="Preparing SkyProgression...";
         WORK.submit(()->{
             try {
-                var items=Catalog.load();Icons.load();var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+                var items=Catalog.load();Icons.load();var client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
                 Map<String,Inputs> saved=new HashMap<>();String warning="";
                 try {
                     if(Files.exists(file))try(var stream=Files.newInputStream(file)) {
@@ -73,11 +91,35 @@ final class ClientData {
                         if(parsed!=null)parsed.forEach((key,value)->{if(value!=null&&value.stats!=null&&value.stats.values().stream().allMatch(v->v!=null&&Double.isFinite(v)&&v>=0))saved.put(key,value);});
                     }
                 }catch(Exception e){warning="Saved inputs could not be read. Re-enter them in Type Stats.";}
-                String notice=warning;
-                dispatch.accept(()->{catalog=items;engine=new ProgressionEngine(items);http=client;saved.forEach(inputs::putIfAbsent);ready=true;initializing=false;message=notice.isEmpty()?"Load your player, or try the offline Demo.":notice;revision++;changed.run();});
+                String base=backend;
+                try{base=readBackend();}catch(Exception e){warning="config/skyprogression.json has an invalid backend URL; using "+base+".";}
+                Set<String> ids=new HashSet<>();items.forEach(i->ids.add(i.id));
+                String notice=warning,chosen=base;
+                dispatch.accept(()->{catalog=items;catalogIds=ids;engine=new ProgressionEngine(items);http=client;backend=chosen;saved.forEach(inputs::putIfAbsent);ready=true;initializing=false;message=notice.isEmpty()?"Load your player, or try the offline Demo.":notice;revision++;changed.run();});
             }catch(Exception e){dispatch.accept(()->{initializing=false;initializationFailed=true;message="Could not initialize SkyProgression. Restart Minecraft to retry.";revision++;changed.run();});}
         });
     }
+    /** "backend" from config/skyprogression.json (empty = default); the file is created with an empty value when missing. */
+    private String readBackend() throws Exception {
+        String fallback=HOSTED_BACKEND.isEmpty()?COMPANION_BACKEND:HOSTED_BACKEND;
+        if(!Files.exists(config)){
+            Files.createDirectories(config.getParent());
+            Files.writeString(config,"{\n  \"backend\": \"\"\n}\n");
+            return fallback;
+        }
+        byte[] bytes;try(var stream=Files.newInputStream(config)){bytes=stream.readNBytes(64*1024+1);}
+        if(bytes.length>64*1024)throw new IllegalArgumentException("Config too large");
+        JsonElement root=JsonParser.parseString(new String(bytes,java.nio.charset.StandardCharsets.UTF_8));
+        String value=ProfileParser.string(ProfileParser.at(root,"backend"),"").strip();
+        if(value.isEmpty())return fallback;
+        while(value.endsWith("/"))value=value.substring(0,value.length()-1);
+        if(!value.matches("https?://[A-Za-z0-9.\\-\\[\\]:]+(/[A-Za-z0-9._~\\-/]*)?"))throw new IllegalArgumentException("Invalid backend URL");
+        return value;
+    }
+    /** True when the backend is this machine (the companion), for messages. */
+    boolean localBackend(){return backend.matches("http://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:\\d+)?(/.*)?");}
+    private String backendName(){return localBackend()?"the local companion":"the SkyProgression API";}
+    private String unreachable(){return "Could not reach "+backendName()+". "+(localBackend()?"Start the companion, then try again.":"Check your connection, then try again.");}
     Profile profile() { return report == null || report.profiles.isEmpty() ? null : report.profiles.get(Math.clamp(profileIndex, 0, report.profiles.size()-1)); }
     Inputs inputs(MiningMethod method) {
         Profile p = profile(); String key = (demo ? "demo" : p == null ? "none" : p.id) + ":" + method.name();
@@ -88,6 +130,7 @@ final class ClientData {
         if(z==null||z.isEmpty())return method.defaultZone();
         try{return z.equals("-")?null:StatContext.Zone.valueOf(z);}catch(IllegalArgumentException e){return method.defaultZone();}
     }
+    // Keys name every selection a report depends on; a report is shown only while its key matches the current selections.
     private String statsQuery(MiningMethod method) {
         Profile p=profile();if(p==null||demo)return "";
         Inputs i=inputs(method);StatContext.Zone z=zone(method);
@@ -107,13 +150,16 @@ final class ClientData {
     void ensureStart(MiningMethod method,Consumer<Runnable> dispatch,Runnable changed) {
         String key=startQuery(method);
         if(!ready||loading||key.isEmpty()||key.equals(startKey)||key.equals(startPending))return;
+        PlayerData d=playerData;if(d==null)return;
+        refreshProfileIfStale(dispatch);
         if(startRequest!=null)startRequest.cancel(true);
         startPending=key;startError="";int requestGeneration=generation;
+        String profileId=profile().id,tool=inputs(method).tool==null?"":inputs(method).tool;StatContext context=new StatContext(zone(method),method.target(),inputs(method).godPotion);
         startRequest=WORK.submit(()->{
             StartWith.Report result=null;String error="";
-            try{result=Catalog.GSON.fromJson(fetch(key,45),StartWith.Report.class);if(result==null||result.current==null||result.bestOwned==null)throw new IllegalStateException("Empty start-with report");}
-            catch(IllegalStateException e){error="Unknown endpoint".equals(e.getMessage())?"The companion is older than the mod. Restart it to use Start with.":e.getMessage();}
-            catch(Exception e){error="Companion unavailable or timed out. Start with needs the companion.";}
+            try{result=d.start(profileId,method,tool,context);}
+            catch(NoSuchElementException e){error=e.getMessage();}
+            catch(Exception e){error="Could not work out the best owned loadout for this profile.";}
             StartWith.Report loaded=result;String failure=error;
             dispatch.accept(()->{
                 if(requestGeneration!=generation||!key.equals(startPending))return;
@@ -134,36 +180,73 @@ final class ClientData {
     boolean statsLoading(MiningMethod method){String key=statsQuery(method);return !key.isEmpty()&&key.equals(statsPending);}
     String statsError(MiningMethod method){String key=statsQuery(method);return !key.isEmpty()&&key.equals(statsKey)?statsError:"";}
     boolean hasStats(MiningMethod method){return inputs(method).confirmed||stats(method)!=null;}
-    /** Requests the ledger when the selections changed; safe to call on every screen rebuild. */
+    /** Calculates the ledger when the selections changed; safe to call on every screen rebuild. */
     void ensureStats(MiningMethod method,Consumer<Runnable> dispatch,Runnable changed) {
         String key=statsQuery(method);
         if(!ready||loading||key.isEmpty()||key.equals(statsKey)||key.equals(statsPending))return;
+        PlayerData d=playerData;if(d==null)return;
+        refreshProfileIfStale(dispatch);
         if(statsRequest!=null)statsRequest.cancel(true);
         statsPending=key;statsError="";int requestGeneration=generation;
+        Inputs i=inputs(method);String profileId=profile().id,tool=i.tool==null?"":i.tool;boolean best=!i.equippedGear;
+        StatContext context=new StatContext(zone(method),method.target(),i.godPotion);List<StatBreakdown.MayorPerk> perks=mayor;String base=backend;
         statsRequest=WORK.submit(()->{
-            StatsReport result=null;String error="";
-            try{result=Catalog.GSON.fromJson(fetch(key,30),StatsReport.class);if(result==null||result.stats==null)throw new IllegalStateException("Empty stat breakdown");}
-            catch(IllegalStateException e){error=e.getMessage();}
-            catch(Exception e){error="Companion unavailable or timed out. Automatic stats need the companion.";}
-            StatsReport loaded=result;String failure=error;
+            StatsReport result=null;String error="";Map<String,CompletableFuture<Price>> late=Map.of();
+            try{result=d.stats(profileId,method,tool,best,context,perks);late=resale(base,result.resaleQueries,result.resale);result.resalePending=!late.isEmpty();}
+            catch(NoSuchElementException e){error=e.getMessage();}
+            catch(Exception e){error="Could not calculate the stat breakdown for this profile.";}
+            StatsReport loaded=result;String failure=error;Map<String,CompletableFuture<Price>> pending=late;
             dispatch.accept(()->{
                 if(requestGeneration!=generation||!key.equals(statsPending))return;
                 statsPending="";statsKey=key;stats=loaded;statsError=failure;revision++;changed.run();
-                if(loaded!=null&&loaded.resalePending)refreshResale(key,requestGeneration,2,dispatch,changed);
+                if(loaded!=null&&!pending.isEmpty())completeResale(loaded,pending,dispatch,changed);
             });
         });
     }
-    /** The companion answered before every sale quote arrived: ask again shortly and swap in the completed report. */
-    private void refreshResale(String key,int requestGeneration,int attempts,Consumer<Runnable> dispatch,Runnable changed) {
-        statsRequest=WORK.submit(()->{
-            StatsReport result;
-            try{Thread.sleep(2500);result=Catalog.GSON.fromJson(fetch(key,30),StatsReport.class);}
-            catch(Exception e){return;}
-            if(result==null||result.stats==null)return;
+    /**
+     * Sale quotes for the evaluated copies (modifier-aware lowest BIN through the backend). Waits at most
+     * {@link #RESALE_WAIT_MS} in total; returns the lookups still running, which keep filling the quote cache.
+     */
+    private Map<String,CompletableFuture<Price>> resale(String base,Map<String,Resale.Query> queries,Map<String,Price> out) {
+        Map<String,CompletableFuture<Price>> jobs=new LinkedHashMap<>();
+        for(var e:queries.entrySet()){
+            Resale.Query q=e.getValue();
+            if(!q.tag().matches("[A-Z0-9_]{1,64}")||!q.tag().startsWith("PET_")&&!catalogIds.contains(q.tag()))continue;
+            Quote hit=quotes.get(q);
+            if(hit!=null&&System.currentTimeMillis()-hit.at()<900_000){if(hit.price()!=null)out.put(e.getKey(),hit.price());continue;}
+            jobs.put(e.getKey(),quoting.computeIfAbsent(q,key->CompletableFuture.supplyAsync(()->quote(base,key),WORK).whenComplete((p,t)->quoting.remove(key))));
+        }
+        long deadline=System.nanoTime()+RESALE_WAIT_MS*1_000_000;
+        Map<String,CompletableFuture<Price>> late=new LinkedHashMap<>();
+        for(var e:jobs.entrySet()){
+            try{Price p=e.getValue().get(Math.max(0,deadline-System.nanoTime()),TimeUnit.NANOSECONDS);if(p!=null)out.put(e.getKey(),p);}
+            catch(TimeoutException t){late.put(e.getKey(),e.getValue());}
+            catch(Exception ignored){/* No quote: the upgrade says there is no sale price. */}
+        }
+        return late;
+    }
+    private Price quote(String base,Resale.Query q) {
+        StringBuilder url=new StringBuilder(base).append("/resale?tag=").append(q.tag());
+        q.filters().forEach((name,value)->url.append('&').append(enc(name)).append('=').append(enc(value)));
+        Price price=null;
+        try{
+            quoteSlots.acquire();
+            try{JsonElement json=fetch(url.toString(),20,256*1024).getAsJsonObject().get("price");if(json!=null&&json.isJsonObject())price=Catalog.GSON.fromJson(json,Price.class);}
+            finally{quoteSlots.release();}
+            quotes.put(q,new Quote(System.currentTimeMillis(),price));
+        }catch(Exception ignored){/* Unknown this time; asked again on the next report. */}
+        return price;
+    }
+    /** Swaps the late sale quotes into the shown report once they have all arrived. */
+    private void completeResale(StatsReport report,Map<String,CompletableFuture<Price>> pending,Consumer<Runnable> dispatch,Runnable changed) {
+        CompletableFuture.allOf(pending.values().toArray(CompletableFuture[]::new)).orTimeout(45,TimeUnit.SECONDS).whenComplete((ignored,t)->{
+            Map<String,Price> found=new HashMap<>();
+            pending.forEach((key,job)->{Price p=job.getNow(null);if(p!=null)found.put(key,p);});
             dispatch.accept(()->{
-                if(requestGeneration!=generation||!key.equals(statsKey)||!statsPending.isEmpty())return;
-                stats=result;revision++;changed.run();
-                if(result.resalePending&&attempts>1)refreshResale(key,requestGeneration,attempts-1,dispatch,changed);
+                if(stats!=report)return;
+                // A new map, so a calculation still reading the old one is not disturbed.
+                Map<String,Price> merged=new HashMap<>(report.resale);merged.putAll(found);
+                report.resale=merged;report.resalePending=false;revision++;changed.run();
             });
         });
     }
@@ -188,13 +271,16 @@ final class ClientData {
     void ensureCompare(Consumer<Runnable> dispatch,Runnable changed) {
         String key=compareQuery();
         if(!ready||loading||key.isEmpty()||key.equals(compareKey)||key.equals(comparePending))return;
+        PlayerData d=playerData;if(d==null)return;
+        refreshProfileIfStale(dispatch);
         if(compareRequest!=null)compareRequest.cancel(true);
         comparePending=key;compareError="";int requestGeneration=generation;
+        String profileId=profile().id;boolean god=compareGodPotion;
         compareRequest=WORK.submit(()->{
             MethodComparison.Report result=null;String error="";
-            try{result=Catalog.GSON.fromJson(fetch(key,45),MethodComparison.Report.class);if(result==null||result.methods==null)throw new IllegalStateException("Empty method comparison");}
-            catch(IllegalStateException e){error=e.getMessage();}
-            catch(Exception e){error="Companion unavailable or timed out. The method comparison needs the companion.";}
+            try{result=d.compare(profileId,god);}
+            catch(NoSuchElementException e){error=e.getMessage();}
+            catch(Exception e){error="Could not compare methods for this profile.";}
             MethodComparison.Report loaded=result;String failure=error;
             dispatch.accept(()->{
                 if(requestGeneration!=generation||!key.equals(comparePending))return;
@@ -204,6 +290,28 @@ final class ClientData {
     }
     void refreshCompare(){compareKey="";comparePending="";comparison=null;compareError="";if(compareRequest!=null)compareRequest.cancel(true);revision++;}
     void refreshStats(){statsKey="";statsPending="";stats=null;statsError="";if(statsRequest!=null)statsRequest.cancel(true);revision++;}
+    /**
+     * Profiles older than five minutes are refetched in the background; the reports keep using the decoded copy until the
+     * new one arrives, and the next calculation uses it (an explicit Load always waits for fresh data).
+     */
+    private void refreshProfileIfStale(Consumer<Runnable> dispatch) {
+        PlayerData d=playerData;
+        if(d==null||profileRefreshing||System.currentTimeMillis()-d.fetchedAtMillis<300_000)return;
+        profileRefreshing=true;int requestGeneration=generation;String base=backend;
+        WORK.submit(()->{
+            PlayerData fresh=null;
+            try{fresh=fetchProfile(base,d.player,d.uuid,false);}catch(Exception ignored){/* Keep the decoded copy; retried on a later calculation. */}
+            PlayerData loaded=fresh;
+            dispatch.accept(()->{profileRefreshing=false;if(loaded!=null&&requestGeneration==generation&&playerData==d)playerData=loaded;});
+        });
+    }
+    private PlayerData fetchProfile(String base,String name,String uuid,boolean fresh) throws Exception {
+        var response=BoundedHttp.get(http,URI.create(base+"/profile?uuid="+uuid+(fresh?"&fresh=1":"")),Duration.ofSeconds(40),24L*1024*1024);
+        if(response.statusCode()!=200)throw new IllegalStateException(errorMessage(response));
+        String fetchedAt=response.headers().firstValue("X-Fetched-At").orElse(java.time.Instant.now().toString());
+        try{return new PlayerData(name,uuid,response.body(),fetchedAt);}
+        catch(IllegalArgumentException|JsonParseException e){throw new IllegalStateException("Hypixel could not return this profile.");}
+    }
     void save(Consumer<Runnable> dispatch,Consumer<Boolean> complete) {
         Map<String,Inputs> snapshot=new HashMap<>();inputs.forEach((key,value)->snapshot.put(key,value.copy()));
         DISK.submit(()->{
@@ -218,7 +326,7 @@ final class ClientData {
         });
     }
     void cancel() {
-        generation++;revision++;loading=false;
+        generation++;revision++;loading=false;profileRefreshing=false;
         if(lookup!=null)lookup.cancel(true);
         if(priceRequest!=null)priceRequest.cancel(true);
         if(statsRequest!=null)statsRequest.cancel(true);
@@ -232,49 +340,71 @@ final class ClientData {
     void load(String ign, Consumer<Runnable> dispatch, Runnable changed) {
         if(!ready||loading)return;
         if(!ign.matches("[A-Za-z0-9_]{1,16}")){message="Enter a valid Minecraft username.";revision++;changed.run();return;}
-        cancel();int requestGeneration=generation;
-        loading=true;message="Loading "+ign+"...";report=null;demo=false;prices=new HashMap<>();revision++;changed.run();
+        cancel();int requestGeneration=generation;String base=backend;
+        loading=true;message="Loading "+ign+"...";report=null;playerData=null;demo=false;prices=new HashMap<>();revision++;changed.run();
         lookup=WORK.submit(()->{
             try {
-                JsonObject json=fetch("/report?ign="+ign,25).getAsJsonObject();
-                String failure=ProfileParser.string(ProfileParser.at(json,"error"),"");if(!failure.isBlank())throw new IllegalStateException(failure);
-                Report r=Catalog.GSON.fromJson(json,Report.class);
-                if(r==null||r.profiles==null||r.profiles.isEmpty())throw new IllegalStateException("No profiles found");
+                JsonObject identity=fetch(base+"/uuid?name="+ign,15,64*1024).getAsJsonObject();
+                String uuid=ProfileParser.string(identity.get("id"),"");
+                if(!uuid.matches("[0-9a-fA-F]{32}"))throw new IllegalStateException("Minecraft player not found.");
+                PlayerData d=fetchProfile(base,ProfileParser.string(identity.get("name"),ign),uuid,true);
+                if(d.report.profiles.isEmpty())throw new IllegalStateException("No SkyBlock profiles found for "+ign+".");
+                // Decode the selected profile's items now, so the first report does not wait for it.
+                try{d.member("");}catch(Exception ignored){}
                 dispatch.accept(()->{
                     if(requestGeneration!=generation)return;
-                    loading=false;report=r;player=ign;profileIndex=0;
-                    for(int n=0;n<r.profiles.size();n++)if(r.profiles.get(n).selected)profileIndex=n;
+                    loading=false;playerData=d;report=d.report;player=ign;profileIndex=0;
+                    for(int n=0;n<d.report.profiles.size();n++)if(d.report.profiles.get(n).selected)profileIndex=n;
                     message="Profile loaded. Prices loading...";loadPrices(dispatch,changed);revision++;changed.run();
                 });
             }catch(Exception e){dispatch.accept(()->{
                 if(requestGeneration!=generation)return;
-                loading=false;message=e instanceof IllegalStateException&&e.getMessage()!=null&&!e.getMessage().isBlank()?e.getMessage():"Companion unavailable or timed out. Start it, then Load again. Demo works offline.";revision++;changed.run();
+                loading=false;message=(e instanceof IllegalStateException&&e.getMessage()!=null&&!e.getMessage().isBlank()?e.getMessage():unreachable())+" Demo works offline.";revision++;changed.run();
             });}
         });
     }
     void loadPrices(Consumer<Runnable> dispatch,Runnable changed) {
-        int requestGeneration=generation;
+        int requestGeneration=generation;String base=backend;
         priceRequest=WORK.submit(()->{
-            Map<String,Price> quotes;
-            try {quotes=Catalog.GSON.fromJson(fetch("/prices",90),new TypeToken<Map<String,Price>>(){}.getType());}
-            catch(Exception e){quotes=Map.of();}
-            Map<String,Price> result=quotes==null?Map.of():quotes;
+            Map<String,Price> loaded=Map.of();List<StatBreakdown.MayorPerk> perks=null;boolean complete=false;String error="";
+            try {
+                JsonObject bundle=fetch(base+"/prices",60,8*1024*1024).getAsJsonObject();
+                Map<String,Price> parsed=Catalog.GSON.fromJson(bundle.get("prices"),new TypeToken<Map<String,Price>>(){}.getType());
+                if(parsed!=null)loaded=parsed;
+                JsonElement m=bundle.get("mayor");
+                if(m!=null&&m.isJsonArray())perks=List.copyOf(Catalog.GSON.<List<StatBreakdown.MayorPerk>>fromJson(m,new TypeToken<List<StatBreakdown.MayorPerk>>(){}.getType()));
+                complete=!bundle.has("complete")||bundle.get("complete").getAsBoolean();
+            }catch(IllegalStateException e){error=e.getMessage();}
+            catch(Exception e){error=unreachable();}
+            Map<String,Price> result=loaded;List<StatBreakdown.MayorPerk> mayorPerks=perks;boolean full=complete;String failure=error;
             dispatch.accept(()->{
                 if(demo||requestGeneration!=generation)return;
-                prices=result;message=result.isEmpty()?"Prices unavailable. Costs remain unknown.":"Loaded "+result.size()+" price quotes. Socket fees included; no resale credit.";revision++;changed.run();
+                prices=result;
+                // The ledger lists the mayor's temporary perks: recalculate it once they are known.
+                if(mayor==null&&mayorPerks!=null){mayor=mayorPerks;refreshStats();}else if(mayorPerks!=null)mayor=mayorPerks;
+                message=result.isEmpty()?"Prices unavailable"+(failure.isEmpty()?"":" ("+failure+")")+". Costs remain unknown."
+                        :"Loaded "+result.size()+" price quotes"+(full?"":" (the server is still filling in the rest)")+". Socket fees included.";
+                revision++;changed.run();
             });
         });
     }
-    private JsonElement fetch(String path,int timeout) throws Exception {
-        var response=BoundedHttp.get(http,URI.create("http://localhost:18475"+path),Duration.ofSeconds(timeout),4*1024*1024);
-        JsonElement json=JsonParser.parseString(response.body());
-        if(response.statusCode()!=200)throw new IllegalStateException(ProfileParser.string(ProfileParser.at(json,"error"),"Service error"));
-        return json;
+    /** GET a JSON answer from the backend; a non-200 answer becomes an IllegalStateException with a readable message. */
+    private JsonElement fetch(String url,int timeout,long maxBytes) throws Exception {
+        var response=BoundedHttp.get(http,URI.create(url),Duration.ofSeconds(timeout),maxBytes);
+        if(response.statusCode()!=200)throw new IllegalStateException(errorMessage(response));
+        return JsonParser.parseString(response.body());
+    }
+    private String errorMessage(HttpResponse<String> response) {
+        String error="";
+        try{error=ProfileParser.string(ProfileParser.at(JsonParser.parseString(response.body()),"error"),"");}catch(Exception ignored){}
+        if(response.statusCode()==404&&"Unknown endpoint".equals(error))return "The companion is older than the mod. Restart it.";
+        if(!error.isBlank())return error;
+        return response.statusCode()==429?"Rate limited. Wait a minute, then try again.":backendName().substring(0,1).toUpperCase(Locale.ROOT)+backendName().substring(1)+" answered with error "+response.statusCode()+".";
     }
     void demo() {
         if (!ready) return;
         cancel();
-        demo = true; profileIndex = 0; report = new Report();
+        demo = true; profileIndex = 0; report = new Report(); playerData = null;
         Profile p = new Profile(); p.player = "Demo"; p.name = "Example only"; p.id = "demo"; p.inventoryEnabled = true; p.hotm = 7;
         for (String id : List.of("DIVAN_HELMET","DIVAN_CHESTPLATE","DIVAN_LEGGINGS","DIVAN_BOOTS","TITANIUM_DRILL_4","MINERAL_TALISMAN","MITHRIL_NECKLACE")) p.owned.put(id,1);
         p.enchantingLevel = 30; p.milestones.add(new Milestone("Heart of the Mountain",7,10,"tiers")); p.milestones.add(new Milestone("Mining skill",48,60,"levels")); p.progress.put("mithril powder (unspent)",480000.0); p.progress.put("gemstone powder (unspent)",620000.0); p.progress.put("glacite powder (unspent)",110000.0);

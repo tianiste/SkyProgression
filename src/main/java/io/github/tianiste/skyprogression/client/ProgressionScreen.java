@@ -122,7 +122,7 @@ public final class ProgressionScreen extends Screen {
             button(method.label+" v",x+w+4,rowY,rest-w-4,false,this::selectMethod);
         }
         username=new EditBox(font,nameX,rowY,nameWidth,20,Component.literal("Minecraft username"));
-        username.setMaxLength(16);username.setValue(typed);username.setTextColor(CYAN);username.setTooltip(Tooltip.create(Component.literal("Minecraft username. Load (or R) reads it from the companion.")));addRenderableWidget(username);
+        username.setMaxLength(16);username.setValue(typed);username.setTextColor(CYAN);username.setTooltip(Tooltip.create(Component.literal("Minecraft username. Load (or R) reads the profile from the SkyProgression API or your local companion.")));addRenderableWidget(username);
         button(data.loading?"Stop":"Load",nameX+nameWidth+4,rowY,44,false,()->{if(data.loading){data.cancel();refresh();}else data.load(username.getValue(),minecraft::execute,this::refresh);}).active=data.ready;
         y=rowY+26;
         y=controls(y,switch(tab){case GEAR->gearControls();case UPGRADES->upgradeControls();case METHODS->methodControls();case MORE->moreControls();default->List.of();});
@@ -269,7 +269,7 @@ public final class ProgressionScreen extends Screen {
             Card c=card(data.loading?"Loading your profile...":"Your next mining upgrade",GOLD,0);
             c.line("Choose a method and see what to improve next.",TEXT).line("Type your username at the top and press Load.",CYAN);
             c.add(new Text("Or try the offline Demo (example data)",GOLD,"Example ownership and prices, not your real profile.",()->{data.demo();scroll=0;refresh();}));
-            card("Connect your profile",CYAN,1).line("Start the local companion, then press Load.",TEXT,"Your application key stays in the companion.")
+            card("Connect your profile",CYAN,1).line(data.localBackend()?"Start the local companion, then press Load.":"Press Load: profiles come from the SkyProgression API.",TEXT,"Backend: "+data.backend+"\nChange it in config/skyprogression.json (\"backend\").")
                     .line("Enable Inventory API in SkyBlock Settings for gear advice.",MUTED,"SkyBlock Menu > Settings > API Settings > Inventory API: ON.");
         }else switch(tab){case HOME->homeCards(p);case GEAR->gearCards();case UPGRADES->upgradeCards(p);case METHODS->methodCards();default->moreCards(p);}
         layoutCards();
@@ -378,7 +378,7 @@ public final class ProgressionScreen extends Screen {
         if(data.demo){c.line("Demo has no API data. Load your player to compare methods.",MUTED);return;}
         var rows=data.comparisonRows();var r=data.comparison();
         if(r==null||rows.isEmpty()){String error=data.compareError();
-            if(!error.isEmpty())c.line(error,RED,"Refresh on the Methods tab retries.");else c.line("Comparing methods in the companion...",MUTED);return;}
+            if(!error.isEmpty())c.line(error,RED,"Refresh on the Methods tab retries.");else c.line("Comparing methods...",MUTED);return;}
         c.tip+="\nProfile data from "+r.fetchedAt+(r.godPotion?", God Potion assumed.":", no God Potion.");
         double top=rows.stream().filter(x->x.totalCoinsPerHour()!=null).mapToDouble(MethodComparison.Row::totalCoinsPerHour).max().orElse(1);
         var best=rows.stream().filter(x->x.totalCoinsPerHour()!=null).findFirst().orElse(null);
@@ -420,7 +420,7 @@ public final class ProgressionScreen extends Screen {
         StartWith.Report r=data.start(method);
         Card c=card("Use this loadout",GOLD,0);
         if(r==null){String error=data.startError(method);
-            c.line(!error.isEmpty()?error:"Finding your best owned gear...",error.isEmpty()?MUTED:RED,error.isEmpty()?"Comparing what you own with what you wear, in the companion.":"Press Refresh to retry.");
+            c.line(!error.isEmpty()?error:"Finding your best owned gear...",error.isEmpty()?MUTED:RED,error.isEmpty()?"Comparing what you own with what you wear.":"Press Refresh to retry.");
             return;}
         var i=data.inputs(method);double eff=i.efficiency;Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
         Double before=rateOf(r.current,eff),after=rateOf(r.bestOwned,eff);
@@ -511,14 +511,14 @@ public final class ProgressionScreen extends Screen {
         StatsReport r=data.stats(method);
         if(r==null){String error=data.statsError(method);
             if(!error.isEmpty())card("Stat breakdown unavailable",RED,1).line(error,TEXT).line("Press Refresh to retry. Manual values in Type Stats still work.",MUTED);
-            else card("Calculating stat breakdown...",CYAN,1).line("Loading from the companion.",MUTED);
+            else card("Calculating stat breakdown...",CYAN,1).line("Calculating from your profile.",MUTED);
             return;}
         // Method: only the method's stats (plus the focused one); the rest still feed Upgrades and Rates.
         List<Stat> shown=statGroup.equals("All")?Arrays.asList(Stat.values()):StatBreakdown.GROUPS.getOrDefault(statGroup,method.relevantStats());
         boolean byMethod=statGroup.equals("Method");
         var ledgers=new ArrayList<>(r.stats.stream().filter(l->shown.contains(l.stat)||byMethod&&l.stat==stat).toList());
         ledgers.sort(Comparator.comparing(l->byMethod&&l.stat!=stat&&!method.relevantStats().contains(l.stat)));
-        if(ledgers.isEmpty())card("No stats in this group",MUTED,1).line("Restart the companion: an older companion does not send the new stats.",TEXT);
+        if(ledgers.isEmpty())card("No stats in this group",MUTED,1).line("This profile has no stats in this group.",TEXT);
         for(var l:ledgers)statCard(r,l);
     }
     private static String bucket(String category){
