@@ -54,4 +54,5 @@ temporary bonuses (in-game tooltip showed 2,248 Fortune). Gold uses a different 
   session (blocks mined per minute at a known speed).
 - Where does spreadEff 0.8 come from (missing neighbor blocks?), and does it vary by method?
 - Per-method instamine caps for Cobble/End Stone/Mycelium/Red Sand from guide rates.
-- Gold's baseline loadout; how Maniac Miner's +500 enters Coal.
+- Gold's baseline loadout. Maniac Miner is now modelled from the wiki table (docs/CALCULATIONS.md "Rates: pickaxe abilities, Heat
+  and Cold"); whether Mining Cat values it the same way is unchecked.

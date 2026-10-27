@@ -92,9 +92,10 @@ one recipe level deep; net cost subtracts a replaced item's sale quote (lowest m
 modifiers, or Coflnet's sell value) only when one exists. Unknown prices stay unknown. HOTM and Prismatic's Enchanting
 requirement are checked; other requirements and soulbinding need manual checks.
 Ironman/Bingo missing materials are flagged for gathering.
-Rates are scenario estimates, not Mining Cat's exact formulas. Speed thresholds, mining
-abilities, cooldowns, fuel costs, taxes, route density and mineshaft loot are not modeled.
-Supply measured active blocks/sec to account for speed. Spread assumes enough extra
+Automatic rates are our own model, not Mining Cat's formulas: tick thresholds, Mining Speed Boost or
+Maniac Miner, cooldowns, Heat and Cold, and secondary drops (Hard Stone on Coal, other grotto gems,
+mineshaft corpse loot) are modelled as described in CALCULATIONS.md; fuel costs, taxes and route density
+are not. The manual scenario ignores all of these: supply measured active blocks/sec to account for speed. Spread assumes enough extra
 blocks. Gems use rough-equivalent units; match the price and Coleweight units to them.
 Shafting estimates Glacite, not an entire mixed mineshaft. MF Gems uses the gem inputs you enter.
 No automatic Coleweight coefficient is invented (none could be verified; see CALCULATIONS.md): enter one or the

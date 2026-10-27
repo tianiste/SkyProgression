@@ -302,10 +302,9 @@ Temporary buffs (owner decision 2026-10-26: listed, never counted):
 Rates: Mining Speed Boost uptime now uses the cooldown ledger, 120 s (wiki, every level) x product(1 - counted reductions),
 via `StatBreakdown.effectiveAbility` (Breakdown, Compare, Start with, Upgrades). The DR-X655 and a Golden Pickaxe without a
 tank both show `Cooldown: 108s` (= 120 x 0.9, the attribute), so the lore leaves out the fuel tank; the ledger gives 103.68 s.
-Fixture effect: MF Gems 12.04 -> 12.14 Flawless/h, Grotto 6.72 -> 6.80, Tungsten +1%, Coal +0.1%. Glacite methods (Umber,
-Tungsten, Shafting) state the Cold rule (Mining Speed loss (Cold - Cold Resistance) / 2 % above Cold Resistance, wiki Cold
-Resistance) but apply no loss: how much Cold builds up during a session is unknown. Wisdom, Heat Resistance, Breaking Power
-(beyond the existing tool requirement) and powder have no rate use yet and are only shown.
+Fixture effect: MF Gems 12.04 -> 12.14 Flawless/h, Grotto 6.72 -> 6.80, Tungsten +1%, Coal +0.1%. Since 2026-10-27 Heat Resistance
+(Magma Fields) and Cold Resistance (Glacite Tunnels and Mineshafts) feed the rates through the wiki Heat and Cold build-up ("Rates:
+pickaxe abilities, Heat and Cold"). Wisdom, Breaking Power (beyond the existing tool requirement) and powder have no rate use yet.
 
 Attainable maximum (`Breakdown.attainable`, `StatsReport.Ledger.attainable/attainableKnown/unknownMaxima`):
 - Each row shows current / its source's own maximum, or "maxed" with a check mark. The maximum keeps the source: the same
@@ -553,8 +552,8 @@ only for Obsidian, Shafting/metals and Coal).
   assumed to apply to all counted Mining Speed. Reference values (wiki Mining Speed Boost,
   <https://hypixelskyblock.minecraft.wiki/w/Mining_Speed_Boost>): level 1/2/3 = +200/250/300% for 10/15/20 s,
   120 s cooldown, reductions multiply. The fixture's lore shows 108 s = 120 x 0.9 (Pickaxe Cooldown 10);
-  since 2026-10-27 the rates use the cooldown ledger instead (103.68 s with the tank; see "Stat breakdown: other stats"). Maniac Miner is
-  not modelled (no speed boost).
+  since 2026-10-27 the rates use the cooldown ledger instead (103.68 s with the tank; see "Stat breakdown: other stats"). Maniac Miner and
+  the Magma Fields Heat: "Rates: pickaxe abilities, Heat and Cold".
 - Blocks / hour = 3600 x efficiency x 20 x (uptime / boosted ticks + (1 - uptime) / ticks) x (1 + Gemstone
   Spread / 100). Every spread block is assumed to be another gemstone; travel time is part of the efficiency.
 - Rough per block = 4 x (1 + 0.79 x Pristine) x (1 + (Mining Fortune + Gemstone Fortune) / 100), with 4 the
@@ -587,7 +586,8 @@ Not validated against a measured session yet.
   "32000 Mining Speed required to mine Japer in 4 Ticks" with Mining Speed Boost level 2. The tick-threshold
   guide lists it as "> 32000", consistent with our rounding (exactly 32,000 = 4.5, which rounds up to 5 ticks).
 - All mining time is assumed to be on Jasper with the ability used on Jasper (the guide recommends routing so).
-  Unknown and not modelled: the share of time spent on the surrounding Breaking Power 7 gems, grotto size and
+  The surrounding Breaking Power 7 gems are a secondary drop at the guide's ratio ("Rates: secondary drops"). Unknown and not modelled:
+  their share of mining time, grotto size and
   griefed veins, the Magma Fields share of a partly Magma Fields grotto, ping and TPS. These lower the real
   Jasper rate; they belong in the efficiency until measured.
 
@@ -617,8 +617,8 @@ are part of the efficiency, so the 30-minute value is half the hourly rate.
   takes 4x longer"). This is a route estimate, not a mechanic; whether it is a share of blocks or of time is not stated.
   We read it as blocks. Average ticks per block = 0.92 x ground ticks + 0.08 x airborne ticks.
 - Mining Speed Boost from the tool lore, as for gems: blocks / second = 20 x (uptime / boosted average ticks +
-  (1 - uptime) / average ticks). Maniac Miner (the Coal guide's Blue Cheese swap drill) is not modelled: its effect
-  (Fortune per mana spent) has no verified rule here yet, so it is listed as not modelled.
+  (1 - uptime) / average ticks). Maniac Miner (the Coal guide's Blue Cheese swap drill) is modelled when it is the tool's ability, and
+  listed as the alternative otherwise ("Rates: pickaxe abilities, Heat and Cold"; fixture +3.3% over Mining Speed Boost).
 - Blocks / hour = 3600 x efficiency x blocks / second x (1 + Mining Spread / 100). The wiki Mining Spread page says Spread
   mines adjacent blocks; it does not say whether only blocks of the same type. We assume each Spread block is Coal Ore.
 - Coal per block = 1 x (1 + (Mining Fortune + Ore Fortune) / 100) (wiki Mining Fortune: every 100 is one more set of drops,
@@ -686,7 +686,8 @@ Metals), default efficiency 65%, all blocks mined on the ground (airborne share 
   Sandstone 3 (wiki). The share of each block in a vein is unknown, and the wiki states no base drop for Glacite. The rate
   is shown per 1 base drop and labelled so; upgrade gains are ratios and do not depend on it. Coins are not an
   exact income for that reason: Tungsten and Umber coins are a lower bound (see "Coins per hour across methods").
-- Shafting is modelled as Glacite mining only: mineshaft spawns, corpses and mineshaft gemstones are not counted.
+- Cold applies in both zones (wiki Cold; "Rates: pickaxe abilities, Heat and Cold"). Shafting adds Frozen Corpse loot from the mineshafts
+  its Glacite spawns ("Rates: secondary drops"); mineshaft gemstones are not counted. Hard Stone: amount unknown.
 - No guide rate was supplied for these methods (`METHOD-GUIDES.md`, "Missing guides").
 
 Fixture (Debotes, best owned gear, DR-X655, 65%): Glacite Tunnels, Mining Speed 7,255 (23 ticks, 7 during the ability),
@@ -708,11 +709,12 @@ Fortune 1,767 + Dwarven Metal 5, Spread 300: about 200,700 Tungsten or Umber / h
 - End Stone: strength 30, instamine above 30 x 30 = 900 (wiki; guide 901). Cobblestone: strength 20, above 600 (wiki;
   guide 601). Both drop 1 block (vanilla drop), take Mining Fortune + Block Fortune and default to 82.5%. Above the
   instamine speed, Mining Speed adds nothing (1 tick per block, 20 per second while breaking).
-- Maniac Miner, which both guides use (Blue Cheese on the main drill), is not modelled (no verified rule for its Fortune).
+- Maniac Miner, which both guides use (Blue Cheese on the main drill), is modelled from the wiki table ("Rates: pickaxe abilities, Heat
+  and Cold"); with the fixture's level 2 instead of Mining Speed Boost it adds 6.9% on End Stone and Cobblestone.
 
 Guide check: End Stone guide 11-16M / hour, Cobblestone guide 13-16M / hour (owner-supplied `service-data/guides/`).
 An assumed hypermax (Fortune + Block Fortune about 2,750, Spread 400) gives about 8.5M / hour at 82.5%, well below both
-guides. Unexplained; candidates are Maniac Miner's Fortune, higher Spread (full Glossy Mineral set) or a block rate above
+guides. Unexplained; Maniac Miner (level 3: about +6%) closes only a small part. Other candidates are higher Spread (full Glossy Mineral set) or a block rate above
 our 20 blocks per second x efficiency. Not tuned.
 
 Fixture (Debotes, best owned gear, DR-X655): Gold (Crystal Hollows default context, 65%): Mining Speed 7,250 (4 ticks,
@@ -731,12 +733,108 @@ and Titanium armor set bonuses) no longer count for them; the fixture wears neit
   so no instamine threshold is known. The blocks are assumed instamined (1 tick); the owner confirmed (2026-10-26) that
   20 blocks per second is doable on Mycelium, Red Sand, End Stone and Cobblestone. Mining Speed therefore has no value here.
 - Not counted: the Crimson Essence perks Fungus Fortuna / Harena Fortuna the guide lists (not in our stat ledger yet),
-  Maniac Miner, and the guide's "W and A/D" movement (+2.3%, part of the efficiency).
+  and the guide's "W and A/D" movement (+2.3%, part of the efficiency). Maniac Miner counts when it is the tool's ability.
 
 Guide check (Mycelium/Red Sand guide, owner-supplied: Mycelium 4.6M / hour, Red Sand 4.8M / hour, "max fortune is 1522
 including block fortune"): with Fortune 1,522 and Spread 400 the model gives 59,400 x 5 x 16.22 = about 4.8M / hour at
 82.5%, matching the guide. Fixture (Crimson Isle as "other" zone): Fortune 1,429.5 + Block 115, Spread 300: about
 3.9M / hour.
+
+## Rates: pickaxe abilities, Heat and Cold
+
+Added 2026-10-27. Applies to every `MethodRates` model, so the Rates tab, Compare, Start with and the Upgrades ranking all use it.
+
+Maniac Miner (wiki Maniac Miner, <https://hypixelskyblock.minecraft.wiki/w/Maniac_Miner>, last edited 23 Oct 2026):
+- Effect: +1 Breaking Power and a stack of +5 / +10 / +15 Mining Fortune per block broken (levels 1-3) for 25 / 30 / 35 s,
+  capped at 500 Mining Fortune in total; 20 Mana per block broken. Every pickaxe ability has a 120 s cooldown (wiki Mining Speed
+  Boost table) and the same cooldown reductions, so Maniac Miner uses the Pickaxe Ability Cooldown ledger as Mining Speed Boost does.
+- Which tools: all mining tools (Drill, Pickaxe, Gemstone Gauntlet), activated with right click (wiki). Only one pickaxe ability is
+  selected at a time (wiki Mining Speed Boost: "only one can be selected at a time"), so the rate uses the ability on the tool's lore
+  and never stacks the two.
+- Level: read from the lore (`+N Mining Fortune per block broken for Ns`, pattern assumed; no Maniac Miner lore has been observed yet),
+  else level 1 + 1 at Core of the Mountain 2 + 1 with a Blue Cheese Goblin Omelette on the tool, at most 3 (wiki Mining Speed Boost
+  "Upgrading" and the Blue Cheese omelette's +1 ability level).
+- Rate: uptime = duration / cooldown, used on cooldown. Mining Speed and ticks are unchanged. Blocks mined per use = duration x
+  efficiency x mined blocks per second; block i gets min(500, x (i - 1)) (the stack is assumed to apply from the next block), so the
+  average stack per use is computed exactly; blocks broken while it is active get that average on top of their Fortune, and the
+  other blocks none. Fortune is linear in drops, so drops = base x (1 + (Fortune + type Fortune + uptime x average) / 100).
+- Assumed (not documented): only the mined block adds a stack, not its Spread blocks (Spread blocks still get the Fortune); Mana is
+  enough for the whole duration (the wiki says each block consumes 20 Mana but not what happens without Mana; the card shows the Mana
+  one use needs). Not modelled: the level-3 cap bug (+510) and the Blue Cheese +10 over the cap (wiki Bugs), the Breaking Power +1
+  (only matters for blocks one tier above the tool), and the guides' swap drill (Maniac Miner duration is kept when swapping away from
+  a Blue Cheese drill, the stacks are not; wiki).
+- Alternative: every rate card lists the other ability at the same level and cooldown (Mining Speed Boost level n <-> Maniac Miner
+  level n) with the rate change, same gear and stats. Fixture (65% / 82.5%, God Potion): Coal +3.3%, Gold and Obsidian +5.4% (their
+  4-tick soft cap means Mining Speed Boost adds nothing), End Stone / Cobblestone +6.9%; MF Gems -18.3%, MF Ruby -12.8%, MF Topaz
+  -25.2%, Grotto -26.3%, Tungsten / Umber -25.7%, Shafting -26%. The Magma Fields guide says to test both for 30 minutes; this is the
+  model's version of that test.
+
+Heat (wiki Heat, <https://hypixelskyblock.minecraft.wiki/w/Heat>, last edited 19 Oct 2026; wiki Heat Resistance, edited 28 Aug 2026):
+- Heat rises by +0.1 every Heat Tick at Y 64 and below in the Crystal Hollows (the Magma Fields at Y 63 and below), +0.2 in Khazad-dum,
+  +1 while on fire; one Heat Tick every 1 x (1 + 0.01 x Heat Resistance) seconds. At 90 the player is set on fire, at 100 takes
+  increasing true damage. Crystal Hollows water removes 5 per second, a Water Bottle 10, changing worlds or dying resets it.
+  Heat depletes by 1 per second elsewhere; it does not deplete while gaining (otherwise it could never build), which is how we read it.
+- Model (Magma Fields zone, so MF Gems / Ruby / Topaz and a Grotto with the zone picker on Magma Fields): mine until 90 Heat, then
+  cool to 0 in water: build = 90 / 0.1 x (1 + Heat Resistance / 100) s, cooling = 90 / 5 = 18 s; share of mining time kept =
+  build / (build + cooling). Fixture Heat Resistance 204.5: 45.7 min of mining per 18 s, 99.3% kept (MF Gems 12.14 -> 12.06
+  Flawless / hour). Without Heat Resistance: 15 min per 18 s, 98.0% kept. Each Heat Resistance point therefore has a small, real
+  value in the Upgrades ranking of Magma Fields methods (+10 at 204.5 is about +0.02%).
+- Unknown, left out with a label: the walk to water (route dependent); whether players hold heat near 95 for the Heated reforge (the
+  Magma Fields guide says so; the Heated bonus is not in the ledger). Not modelled: Heat Armor's full immunity, the Tungsten Regulator
+  and Bal's Dispersion.
+- Crystal Hollows zone (Coal, Gold, Grotto, Obsidian by default): Heat only builds at Y 64 and below; how much of a route is that deep
+  is unknown, so no Heat loss is applied and the card says so.
+
+Cold (wiki Cold, <https://hypixelskyblock.minecraft.wiki/w/Cold>, last edited 23 Oct 2026; wiki Cold Resistance; wiki Glacite Mineshafts):
+- In the Glacite Tunnels and Mineshafts Cold falls by 1 every 5 x (1 + 0.01 x Cold Resistance) / (1 + Cold Vulnerability) seconds.
+  Cold Vulnerability is +0.25 in a Glacite Mineshaft, applied every 150 s from entry (so the build-up speeds up). Every Cold below
+  minus your Cold Resistance cuts Mining Speed by 0.5%. Warnings at -25 / -50 / -75 / -90 (FROSTBITE), death at -100. The Dwarven
+  Base Camp and changing worlds reset Cold to 0; a Portable Campfire adds +50 (5-minute cooldown).
+- Model (Glacite Tunnels: Tungsten, Umber; Glacite Mineshafts: Shafting): mine from 0 to -90 Cold, then reset at the Base Camp
+  (leaving the shaft for Shafting). The rate is averaged over the time spent at each Cold level, with Mining Speed x (1 - 0.005 x
+  max(0, Cold - Cold Resistance)) through the full tick model (so a speed loss only costs where it crosses a tick threshold).
+  Fixture Cold Resistance 5.4: -90 after 7.9 min in the tunnels (6.5 min in a shaft), 81.5% of the rate kept on Tungsten / Umber
+  (about 202,700 -> 165,300 per base drop / hour), 82.4% on Shafting (about 192,700 -> 158,800). Cold Resistance at or above 90
+  removes the loss; every point below that has value in Upgrades and Compare.
+- Unknown, left out with a label: the reset trip's time and where a player really stops (we use the documented -90 warning; earlier
+  resets lose less speed but cost more trips). Not modelled: Portable Campfires, the Tungsten Regulator, mob hits, water.
+
+## Rates: secondary drops
+
+`MethodRates.secondary` (amount per hour, contents to price, source) and `MethodComparison.value` (coins in the Price mode). Shown on
+the Rates tab card ("+ name", amount, coins, source in the tooltip, "Total coins / hour") and in each Compare tooltip; Compare ranks
+by the total (main product + known secondary coins). Upgrades still rank by the main product's rate: the Coal and Grotto secondary
+drops scale with it, mineshaft loot follows blocks, not Fortune.
+- Hard Stone, Coal: about 0.69 Hard Stone per Coal, the Coal guide's midpoints (3-6M Hard Stone to 4-9M Coal per hour). This is the
+  only source for the route's Hard Stone share; it is a route estimate, not a mechanic. The wiki Hard Stone page gives strength 50
+  (instamine 1,500, airborne 7,500, matching the guide's 7,501), Breaking Power 4 and NPC 1 coin, but no base drop or Fortune type.
+  Fixture: about 2.70M Hard Stone / hour. Coflnet had no instant-sell figure for `HARD_STONE` (sell -1 on 2026-10-27), so its coins
+  are unknown at instant-sell; NPC sell values it at 1 coin.
+- Hard Stone, gem and metal methods (MF Gems / Ruby / Topaz, Grotto, Tungsten, Umber, Shafting, Gold): amount unknown (no source for
+  how much Hard Stone those routes break); listed as "amount unknown, not counted".
+- Other grotto gems, Grotto: about 0.26 Breaking Power 7 Flawless per Flawless Jasper, the Fairy Grotto guide's Mansion ratio (3.1 per
+  12; Palace 4.6 per 11), which the guide explains as mining the Breaking Power 7 gems around a grotto. The mix is unknown, so each one
+  is valued at the cheapest of Flawless Amber, Sapphire, Jade and Amethyst (unknown if any of them has no price; NPC sell = Rough NPC
+  x 512,000). Fixture: 1.76 / hour, about 3.1M coins / hour at instant-sell (Sapphire 1.79M), Grotto total 30.4M -> 33.5M.
+- Frozen Corpse loot, Shafting: mineshafts / hour from the pity counter (wiki Glacite Mineshafts: counter 2,000, minus each block's Block
+  Quality, Glacite 4, halved for Spread blocks, plus a 0.05% chance per block), assuming the modelled Glacite is mined in the Glacite
+  Tunnels where blocks count. 1-3 corpses per shaft (average 2); Lapis 50% (no key, 3-6 rolls), Umber 25% and Tungsten 25% (one key
+  each, 4-7 rolls) (wiki Frozen Corpse). Expected items per corpse = rolls x weight / total weight x amount from the wiki loot tables
+  (Lapis 48 rows, Umber/Tungsten 37 rows, `MethodRates.LAPIS_LOOT` / `METAL_LOOT`; Frostbitten Dye left out, under 0.001% per roll).
+  Keys are a cost at the Coflnet buy quote in every mode. A corpse whose fully priced loot is worth less than its key counts 0 (left
+  unopened); when some loot is unpriced and the priced part is below the key, the value is unknown. Fixture: about 12.8 shafts / hour,
+  12.8 Lapis corpses worth about 177k each (2.27M / hour); Umber/Tungsten corpses are unknown because the five Crystals have no
+  Coflnet quote and the priced loot (about 2.0M) is below the key (about 2.7-2.9M). Shafting total 1.1M -> 3.4M coins / hour.
+  Not counted: Surveyor, Vanguard corpses (Fairy shafts, Skeleton Key), extra-corpse chances, Glacite Powder and HOTM XP, mineshaft
+  gemstones, time spent inside the shaft (part of the efficiency).
+- Unpriced contents are left out and the value is marked "at least"; an amount that is unknown stays "amount unknown", a price that is
+  unknown stays "coins unknown"; neither is shown as 0.
+
+Change against the guide reference rates (not tuned): MF Gems' estimated hypermax drops about 0.5% for Heat (19.6 -> about 19.5 Amber /
+hour at 60%, guide 20.1). Grotto, Coal, Obsidian, Gold, End Stone, Cobblestone, Mycelium and Red Sand rates are unchanged with their
+default abilities (no Heat in the Crystal Hollows zone); the guides' Maniac Miner setups for End Stone / Cobblestone would add about 6-7%
+(fixture +6.9%), so the 8.5M hypermax vs the guides' 11-16M gap stays mostly unexplained. Coal's guide Hard Stone (3-6M) is now counted
+through its own ratio, by construction. The Grotto's other gems match the guide's ratio by construction.
 
 ## Coins per hour across methods
 
@@ -767,8 +865,8 @@ including block fortune"): with Fortune 1,522 and Spread 400 the model gives 59,
   Red Sand (`SAND:1`) 5. Fixture at NPC sell: MF Ruby about 21.3M / hour, Red Sand and Mycelium 19.5M, MF Gems 18.5M,
   Gold 16.6M, End Stone 9.4M; Glacite, Mycelium, Red Sand and Gold Ingot sell higher to an NPC than instant-sell.
 - Priced product: the Flawless gem for gem methods (Rough converted at 512,000 Rough per Flawless, as in the rate model);
-  the block product otherwise (`MethodRates.Block.product`). Only drops the rate model covers are counted: no Hard Stone on
-  Coal (guide 3-6M / hour), no other grotto gems (guide 3.1-4.6 Flawless / hour), no mineshaft loot. Tungsten and Umber are
+  the block product otherwise (`MethodRates.Block.product`). Secondary drops (Coal's Hard Stone, the Grotto's other gems, Shafting's
+  corpse loot) add their known coins to the total, which Compare ranks by ("Rates: secondary drops"). Tungsten and Umber are
   shown as "at least": the rate counts 1 base drop while vein blocks drop 1-3 (wiki; mix unknown). Glacite's base drop is
   assumed 1 (not on the wiki). Gold uses the average base drop 6.
 - Value windows (Mining Cat developer's notes, MININGCAT.md) normalized to one hour: Coal is valued per 30 minutes with two

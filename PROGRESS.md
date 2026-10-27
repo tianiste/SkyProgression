@@ -1,6 +1,6 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (Other & progress view). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (Heat, Cold, Maniac Miner, secondary drops). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
@@ -132,6 +132,24 @@ fix them later; do not block on the in-game test. Order:
    and progression". **Next:** owner restarts the companion (new `/stats` field) and checks the view in game: the View toggle,
    the stage card and its expandable list, the bonus and grinding cards and tooltips (effect, distance, how, notes), MF Gems vs
    Coal vs Tungsten (different bonuses), Demo and Inventory-API-off messages.
+   **Owner in-game check (2026-10-27):** the Other & progress view and the faster stats loading (cached profiles and prices
+   served while refreshing) are good.
+   **Heat, Cold, Maniac Miner, secondary drops (`8c80f41`, in-game test pending):** rules and sources in CALCULATIONS.md "Rates: pickaxe
+   abilities, Heat and Cold" and "Rates: secondary drops". Heat (Magma Fields): mine to 90, cool 18 s in water, kept = build /
+   (build + 18 s) with build = 900 x (1 + Heat Resistance / 100) s; fixture 99.3% (MF Gems 12.14 -> 12.06). Cold (Glacite Tunnels,
+   Mineshafts with rising Cold Vulnerability): mine 0 to -90, Mining Speed -0.5% per Cold beyond Cold Resistance through the tick
+   model; fixture 81.5% Tungsten/Umber (~202.7k -> 165.3k per base drop), 82.4% Shafting. Heat/Cold Resistance are now rate stats
+   (Compare, Start with) and gain value in Upgrades. Crystal Hollows zone: Heat only below Y 64, share unknown, not applied (labelled).
+   Maniac Miner: wiki levels (+5/10/15 Fortune per block, 25/30/35 s, cap 500, 120 s with the cooldown ledger), level from lore or
+   1 + Core of the Mountain 2 + Blue Cheese; every card lists the other ability at the same level (fixture: Coal +3.3%, End Stone/
+   Cobble +6.9%, MF Gems -18.3%). Secondary drops on the Rates card and Compare tooltips, Compare ranks by the total: Coal Hard Stone
+   at the Coal guide's 0.69 per Coal (route estimate; instant-sell price unknown), Grotto other BP7 Flawless at the guide's 3.1/12
+   (cheapest of four; fixture +3.1M/h), Shafting Frozen Corpse loot from the wiki tables and pity counter (~12.8 shafts/h, Lapis
+   2.27M/h; Umber/Tungsten corpses unknown: Crystals unpriced and priced loot below the key). Hard Stone on gem/metal routes:
+   amount unknown. **Next:** owner restarts the companion (new rate stats in `/compare`) and checks the Methods rate card (Heat /
+   Cold line, "+" secondary rows and tooltips, Total coins, the "instead" assumption), Compare totals and order, MF Gems vs Grotto with
+   the zone on Magma Fields, Tungsten upgrades now showing Cold Resistance value, and a Maniac Miner tool if one is owned (the lore
+   pattern is assumed).
 3. **Implemented, in-game test pending.** Upgrade coverage: one shared list with real deltas from the current state,
    prerequisites (HOTM tier/tokens, recipe unlocks), mutual exclusions and prices, valued by each method's model, with a
    greedy sequential plan. Remaining: recursive recipes, Core of the Mountain levels for tokens, scrolls, pet-item carry-over.
@@ -356,7 +374,7 @@ Recent milestones:
   *Partial:* level from XP; Bal/Scatha/Mithril Golem/Silverfish stats and Quick Claw.
 - [ ] Model gem/ore/block/dwarven Fortune, Speed, both Spreads, Pristine and Cold
   Resistance with conditions; keep uncheckable sources explicit.
-  *Partial (`d567858`, `2fbfa62`):* all of these, Cold Resistance included; Cold is not applied to Glacite rates (unknown Cold build-up).
+  *Partial (`d567858`, `2fbfa62`):* all of these, Cold Resistance included; Heat and Cold Resistance feed the rates since `8c80f41`.
 - [ ] Full current/max breakdown with compatible, attainable targets; do not sum
   mutually exclusive maxima or call a base-item bar a maxed account.
   *Partial (`3544f5c`):* per-source and per-stat attainable with this loadout; gear stat-line maxima (reforge, gems,
@@ -368,10 +386,11 @@ Recent milestones:
   check 2026-10-27 works; not validated against a measured session).
 - [x] Coal, Gold, Umber, Shafting, Obsidian, Tungsten, Red Sand, Mycelium, End Stone,
   Cobblestone: correct blocks, gear constraints, bonuses and default efficiency (same status; guide gaps documented).
-- [ ] Speed breakpoints/instant mining, abilities/cooldown uptime, spread availability,
-  heat/cold, drops and Pristine effects. Document simplified route assumptions.
-  *Partial:* tick thresholds, instamine, airborne share, Mining Speed Boost uptime (cooldown ledger since `8014139`), Spread and
-  Pristine are modelled; heat/cold (Cold rule stated, not applied), Maniac Miner and secondary drops (Hard Stone, other grotto gems, mineshaft loot) are not.
+- [x] Speed breakpoints/instant mining, abilities/cooldown uptime, spread availability,
+  heat/cold, drops and Pristine effects. Document simplified route assumptions (`8c80f41`; in-game test pending).
+  Tick thresholds, instamine, airborne share, Mining Speed Boost and Maniac Miner uptime (cooldown ledger), Spread, Pristine, Heat
+  (Magma Fields), Cold (Glacite Tunnels/Mineshafts) and secondary drops (Coal Hard Stone, grotto gems, corpse loot). Still unknown and
+  labelled: Heat below Y 64 in the Crystal Hollows zone, reset/water trip time, Hard Stone on gem/metal routes, Crystal prices.
 - [x] Automatically sourced coins/hour; correct units, price source/time and explicit rate assumptions; manual scenario
   kept (`c4a67e6`, `4cf9fb0`; in-game test pending). Coleweight coefficients could not be verified: documented as unknown.
 - [x] Show equal gear deltas producing different value in different methods (Upgrades cross-method line, Compare
@@ -452,6 +471,18 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-27 (Heat, Cold, Maniac Miner, secondary drops): `MethodRates` refactor: private `Core` evaluation (`blockCore`, `gemCore`), `rateAt`
+(rate as a function of a Mining Speed factor), `exposure` (Heat/Cold kept share), `Ability.fortunePerBlock`/`maniac()`/`level()`/
+`withCooldown`, `speedBoost`/`maniacMiner`/`alternative`, zone overloads of `perHour`/`blocks`/`gems` (default = the method's usual
+zone; the Rates tab passes the picked zone, Upgrades and Compare use the usual zone), `GemRate.kept`/`BlockRate.kept`, `Drop`,
+`secondary`, `shaftsPerHour`, `loot`, `DROP_IDS`. `MethodComparison`: `DropValue`, `value`, `coinsFor`, `Row.secondary`/
+`totalCoinsPerHour`, rank by total. `StatBreakdown.RATE_STATS` adds Heat/Cold Resistance; `effectiveAbility` handles Maniac Miner.
+Verification: `./gradlew build :service:installDist` passes (existing tests, none added); scratch runner on the fixture with live
+Coflnet quotes for the 49 new IDs (numbers above); GitHub Actions Build succeeded for `8c80f41`. Not checked in game. Sources: wiki
+Heat (19 Oct 2026), Heat Resistance, Cold (23 Oct 2026), Maniac Miner (23 Oct 2026), Mining Speed Boost, Hard Stone, Frozen Corpse,
+Glacite Mineshafts; official items resource for the loot IDs. Open: Maniac Miner lore wording, Mana limits, Heat share below Y 64,
+reset trip time, Crystal prices (AH only?), key crafting cost, Vanguard corpses, Surveyor.
 
 2026-10-27 (Other & progress view): new core `OtherUpgrades` (Entry/Stage/Report, `of`, `stage`, `priceIds`), `StatsReport.petLevel`
 (`PetLevel`, `Loadout.petExp`), `Recipes.recipe`/`duration` package access, new price IDs (cereals, SHARD_HIDEONSUN, SHARD_NILBOG,
