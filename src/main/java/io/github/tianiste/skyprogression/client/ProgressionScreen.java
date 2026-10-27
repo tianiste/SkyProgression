@@ -152,8 +152,8 @@ public final class ProgressionScreen extends Screen {
         if(!autoLoadTried&&data.ready&&data.report==null&&!data.loading&&!data.demo&&username!=null){autoLoadTried=true;data.load(username.getValue(),minecraft::execute,this::refresh);}
         if(lastRevision!=data.revision)refresh();
     }
-    void refresh(){if(minecraft.screen==this)init();}
-    private void typeStats(){minecraft.setScreen(new InputsScreen(this,data.inputs(method),method));}
+    void refresh(){if(Compat.screen(minecraft)==this)init();}
+    private void typeStats(){Compat.setScreen(minecraft,new InputsScreen(this,data.inputs(method),method));}
     private void persist(){data.save(minecraft::execute,ignored->{});}
     private boolean live(){return data.profile()!=null&&!data.demo;}
     private void cyclePrice(){var modes=MethodComparison.PriceMode.values();data.priceMode=modes[(data.priceMode.ordinal()+1)%modes.length];refresh();}
@@ -196,12 +196,12 @@ public final class ProgressionScreen extends Screen {
     private void selectGroup(){
         List<String> groups=new ArrayList<>();groups.add("Method");groups.addAll(StatBreakdown.GROUPS.keySet());groups.add("All");
         List<String> labels=groups.stream().map(g->g.equals("Method")?"Method: stats that change "+method.label+" rates":g.equals("All")?"All stats":g+": "+String.join(", ",StatBreakdown.GROUPS.get(g).stream().map(s->s.label).toList())).toList();
-        minecraft.setScreen(new ChoiceScreen(this,"Stat group",labels,n->{statGroup=groups.get(n);scroll=0;}));
+        Compat.setScreen(minecraft,new ChoiceScreen(this,"Stat group",labels,n->{statGroup=groups.get(n);scroll=0;}));
     }
     private void pickRanked(){
         var rows=data.comparisonRows();int n=0;List<String> labels=new ArrayList<>();
         for(var r:rows)labels.add((++n)+". "+r.method().label+" - "+(r.totalCoinsPerHour()==null?"coins unknown":compact(r.totalCoinsPerHour())+" coins / hour"));
-        minecraft.setScreen(new ChoiceScreen(this,"Methods by coins / hour",labels,i->{method=rows.get(i).method();scroll=0;}));
+        Compat.setScreen(minecraft,new ChoiceScreen(this,"Methods by coins / hour",labels,i->{method=rows.get(i).method();scroll=0;}));
     }
     /** Tool list of the last ledger for this profile; it does not change with the selections. */
     private List<StatsReport.Tool> tools(){Profile p=data.profile();return data.stats!=null&&p!=null&&data.stats.profileId.equals(p.id)?data.stats.tools:List.of();}
@@ -215,17 +215,17 @@ public final class ProgressionScreen extends Screen {
         var list=tools();List<String> labels=new ArrayList<>();labels.add("Best owned tool for "+method.label+" (automatic)");
         for(var t:list)labels.add(t.name()+" ("+t.location()+")");
         var i=data.inputs(method);
-        minecraft.setScreen(new ChoiceScreen(this,"Tool you hold",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
+        Compat.setScreen(minecraft,new ChoiceScreen(this,"Tool you hold",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
     }
     private void selectZone(){
         var zones=StatContext.Zone.values();List<String> labels=new ArrayList<>();labels.add("Usual for "+method.label+" ("+method.defaultZone().label+")");
         for(var z:zones)labels.add(z.label);labels.add("Not chosen (location bonuses not counted)");
         var i=data.inputs(method);
-        minecraft.setScreen(new ChoiceScreen(this,"Mining zone",labels,n->{i.zone=n==0?"":n>zones.length?"-":zones[n-1].name();scroll=0;persist();}));
+        Compat.setScreen(minecraft,new ChoiceScreen(this,"Mining zone",labels,n->{i.zone=n==0?"":n>zones.length?"-":zones[n-1].name();scroll=0;persist();}));
     }
-    private void selectMethod(){minecraft.setScreen(new ChoiceScreen(this,"Mining method",Arrays.stream(MiningMethod.values()).map(m->m.label).toList(),n->{method=MiningMethod.values()[n];scroll=0;slot="";}));}
-    private void selectStat(){minecraft.setScreen(new ChoiceScreen(this,"Stat focus",Arrays.stream(Stat.values()).map(s->s.label).toList(),n->{stat=Stat.values()[n];scroll=0;}));}
-    private void selectProfile(){if(data.report!=null)minecraft.setScreen(new ChoiceScreen(this,"SkyBlock profile",data.report.profiles.stream().map(p->p.name+" ["+p.mode+"]"+(p.selected?" - active":"")).toList(),n->{data.profileIndex=n;scroll=0;slot="";}));}
+    private void selectMethod(){Compat.setScreen(minecraft,new ChoiceScreen(this,"Mining method",Arrays.stream(MiningMethod.values()).map(m->m.label).toList(),n->{method=MiningMethod.values()[n];scroll=0;slot="";}));}
+    private void selectStat(){Compat.setScreen(minecraft,new ChoiceScreen(this,"Stat focus",Arrays.stream(Stat.values()).map(s->s.label).toList(),n->{stat=Stat.values()[n];scroll=0;}));}
+    private void selectProfile(){if(data.report!=null)Compat.setScreen(minecraft,new ChoiceScreen(this,"SkyBlock profile",data.report.profiles.stream().map(p->p.name+" ["+p.mode+"]"+(p.selected?" - active":"")).toList(),n->{data.profileIndex=n;scroll=0;slot="";}));}
 
     // ---- Analysis (worker) ----
     private static final int PLAN_STEPS=12;
@@ -254,8 +254,8 @@ public final class ProgressionScreen extends Screen {
                 var extra=others&&statsReady?OtherUpgrades.of(data.engine,p,selectedMethod,report,effective,efficiency,quotes,basis):null;
                 Map<Upgrade,Double> gains=new IdentityHashMap<>();
                 if(best!=null&&bestStats!=null&&best.method()!=selectedMethod)for(var u:ranked){Double g=MethodComparison.gain(best.method(),bestStats,bestEfficiency,bestEntry.ability,u.delta(),u.cooldownFactor());if(g!=null)gains.put(u,g);}
-                minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;overview=base;upgrades=ranked;plan=steps;other=extra;bestRow=best;bestGains=gains;calculating=false;buildCards();});
-            }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||minecraft.screen!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
+                minecraft.execute(()->{if(generation!=analysisGeneration||Compat.screen(minecraft)!=this)return;overview=base;upgrades=ranked;plan=steps;other=extra;bestRow=best;bestGains=gains;calculating=false;buildCards();});
+            }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||Compat.screen(minecraft)!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
         });
     }
 

@@ -1,9 +1,21 @@
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
 }
-// Fabric convention: mod version plus the Minecraft version it targets, e.g. 0.4.1+26.1.2.
-version = "${project.mod_version}+${project.minecraft_version}"
+// Pins of the selected Minecraft target (versions/<mc_target>.properties).
+def targetFile = file("versions/${project.mc_target}.properties")
+if (!targetFile.exists()) throw new GradleException("No Minecraft target file ${targetFile}")
+def target = new Properties()
+targetFile.withInputStream { target.load(it) }
+def gameVersions = target.game_versions.split(',')*.trim()
+ext.minecraft_version = target.minecraft_version
+ext.fabric_api_version = target.fabric_api_version
+// Jar label: the game version it runs on, or first-last for a shared jar (26.1.1-26.1.2).
+ext.minecraft_label = gameVersions.size() == 1 ? gameVersions[0] : "${gameVersions.first()}-${gameVersions.last()}"
+// Fabric convention: mod version plus the Minecraft version it targets, e.g. 0.4.1+26.2.
+version = "${project.mod_version}+${project.minecraft_label}"
 group = project.maven_group
+// The few calls that differ between Minecraft targets: src/compat/<mc_target>/java (Compat.java).
+sourceSets.main.java.srcDir "src/compat/${project.mc_target}/java"
 base { archivesName = 'skyprogression' }
 repositories { mavenCentral() }
 dependencies {
@@ -14,11 +26,17 @@ dependencies {
     include project(':core')
 }
 processResources {
+    def minecraftDependency = '[' + gameVersions.collect { "\"${it}\"" }.join(', ') + ']'
     inputs.property 'version', project.version
-    inputs.property 'minecraft_version', project.minecraft_version
+    inputs.property 'minecraft_dependency', minecraftDependency
     filesMatching('fabric.mod.json') {
-        expand version: project.version, minecraft_version: project.minecraft_version
+        expand version: project.version, minecraft_dependency: minecraftDependency
     }
+}
+// Print the target's details for CI: ./gradlew -q printTarget
+tasks.register('printTarget') {
+    def line = "${project.version}|${target.game_versions}"
+    doLast { println line }
 }
 java { toolchain.languageVersion = JavaLanguageVersion.of(25); withSourcesJar() }
 loom {

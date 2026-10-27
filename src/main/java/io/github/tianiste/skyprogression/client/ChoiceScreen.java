@@ -38,6 +38,6 @@ final class ChoiceScreen extends Screen {
         if(filtered.isEmpty())g.text(font,"No matching choices",left+12,top+66,MUTED,false);
         g.text(font,(page+1)+" / "+Math.max(1,(filtered.size()+count-1)/count),left+84,end-25,MUTED,false);super.extractRenderState(g,x,y,delta);
     }
-    @Override public void onClose(){minecraft.setScreen(parent);}
+    @Override public void onClose(){Compat.setScreen(minecraft,parent);}
     @Override public boolean isPauseScreen(){return false;}
 }

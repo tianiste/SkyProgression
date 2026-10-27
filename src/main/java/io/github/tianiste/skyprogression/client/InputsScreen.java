@@ -48,7 +48,7 @@ final class InputsScreen extends Screen {
             ProgressionEngine.rate(method,stats,numbers[10],numbers[11],numbers[12],numbers[13],numbers[14]);
             target.stats=stats;target.efficiency=numbers[10];target.blocksPerSecond=numbers[11];target.baseDrops=numbers[12];target.coinsPerItem=numbers[13];target.coleweightPerItem=numbers[14];target.confirmed=true;
             saving=true;error="Saving your inputs...";init();
-            ClientData.INSTANCE.save(minecraft::execute,success->{saving=false;if(success){if(minecraft.screen==this)onClose();}else{error="Applied for this session, but could not save to disk.";if(minecraft.screen==this)init();}});
+            ClientData.INSTANCE.save(minecraft::execute,success->{saving=false;if(success){if(Compat.screen(minecraft)==this)onClose();}else{error="Applied for this session, but could not save to disk.";if(Compat.screen(minecraft)==this)init();}});
         }catch(NumberFormatException e){error="Enter numbers in every field (use . for decimals).";}
         catch(IllegalArgumentException e){error=e.getMessage();}
     }
@@ -61,6 +61,6 @@ final class InputsScreen extends Screen {
         g.text(font,fit(font,status,span-24),left+12,end-46,error.isEmpty()?MUTED:RED,false);
         super.extractRenderState(g,x,y,delta);
     }
-    @Override public void onClose(){minecraft.setScreen(parent);}
+    @Override public void onClose(){Compat.setScreen(minecraft,parent);}
     @Override public boolean isPauseScreen(){return false;}
 }

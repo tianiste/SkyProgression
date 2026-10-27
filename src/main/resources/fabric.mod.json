@@ -10,5 +10,5 @@
   "icon": "assets/skyprogression/icon.png",
   "environment": "client",
   "entrypoints": {"client": ["io.github.tianiste.skyprogression.client.SkyProgressionClient"]},
-  "depends": {"fabricloader": ">=0.20.1", "minecraft": "${minecraft_version}", "java": ">=25", "fabric-api": "*"}
+  "depends": {"fabricloader": ">=0.20.1", "minecraft": ${minecraft_dependency}, "java": ">=25", "fabric-api": "*"}
 }

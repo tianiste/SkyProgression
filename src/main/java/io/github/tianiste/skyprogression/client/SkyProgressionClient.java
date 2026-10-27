@@ -17,11 +17,11 @@ public final class SkyProgressionClient implements ClientModInitializer {
         // Open on the following tick: the chat screen closes after command execution.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!previewed && Boolean.getBoolean("skyprogression.preview")
-                    && client.screen instanceof net.minecraft.client.gui.screens.TitleScreen && client.getOverlay() == null) {
+                    && Compat.screen(client) instanceof net.minecraft.client.gui.screens.TitleScreen && Compat.overlay(client) == null) {
                 ClientData.INSTANCE.initialize(client::execute, () -> {});
                 if (ClientData.INSTANCE.ready) { previewed = true; ClientData.INSTANCE.demo(); open = true; }
             }
-            if (open) { open = false; client.setScreen(new ProgressionScreen()); }
+            if (open) { open = false; Compat.setScreen(client, new ProgressionScreen()); }
         });
     }
 }
