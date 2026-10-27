@@ -102,21 +102,37 @@ final class ClientData {
             }catch(Exception e){dispatch.accept(()->{initializing=false;initializationFailed=true;message="Could not initialize SkyProgression. Restart Minecraft to retry.";revision++;changed.run();});}
         });
     }
-    /** Latest GitHub release of this mod, once per launch, off the game thread; any failure is silently ignored. */
+    /** Newest GitHub release of this mod with a jar for this Minecraft version, once per launch, off the game thread; any failure is silently ignored. */
     private void checkForUpdate(HttpClient client,Consumer<Runnable> dispatch,Runnable changed){
         if(updateChecked)return;updateChecked=true;
         String current=FabricLoader.getInstance().getModContainer("skyprogression").map(m->m.getMetadata().getVersion().getFriendlyString()).orElse("");
+        String game=FabricLoader.getInstance().getModContainer("minecraft").map(m->m.getMetadata().getVersion().getFriendlyString()).orElse("");
         WORK.submit(()->{
             try{
-                var request=HttpRequest.newBuilder(URI.create("https://api.github.com/repos/tianiste/SkyProgression/releases/latest")).timeout(Duration.ofSeconds(5))
+                var request=HttpRequest.newBuilder(URI.create("https://api.github.com/repos/tianiste/SkyProgression/releases?per_page=10")).timeout(Duration.ofSeconds(5))
                         .header("Accept","application/vnd.github+json").header("User-Agent","SkyProgression/"+current).GET().build();
                 var response=client.send(request,HttpResponse.BodyHandlers.ofInputStream());
                 byte[] bytes;try(var body=response.body()){if(response.statusCode()!=200)return;bytes=body.readNBytes(256*1024+1);}
                 if(bytes.length>256*1024)return;
-                String tag=JsonParser.parseString(new String(bytes,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject().get("tag_name").getAsString().replaceFirst("^v","");
-                if(newer(tag,current))dispatch.accept(()->{update=tag;revision++;changed.run();});
+                // Releases come newest first; offer the first newer one that ships a jar for this game version.
+                for(var element:JsonParser.parseString(new String(bytes,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonArray()){
+                    var release=element.getAsJsonObject();
+                    if(release.get("draft").getAsBoolean()||release.get("prerelease").getAsBoolean())continue;
+                    String tag=release.get("tag_name").getAsString().replaceFirst("^v","");
+                    if(!newer(tag,current))continue;
+                    for(var asset:release.getAsJsonArray("assets"))if(jarFor(asset.getAsJsonObject().get("name").getAsString(),game)){
+                        dispatch.accept(()->{update=tag;revision++;changed.run();});return;
+                    }
+                }
             }catch(Exception ignored){/* No notice without a clear answer. */}
         });
+    }
+    /** True when a release asset is a mod jar for this game version: skyprogression-X+26.2.jar, or a range such as +26.1.1-26.1.2. */
+    static boolean jarFor(String asset,String game){
+        var match=java.util.regex.Pattern.compile("skyprogression-[^+]+\\+([0-9.]+)(?:-([0-9.]+))?\\.jar").matcher(asset);
+        if(game.isEmpty()||!match.matches())return false;
+        String low=match.group(1),high=match.group(2)==null?low:match.group(2);
+        return !newer(low,game)&&!newer(game,high);
     }
     /** True when dotted version a is above b ("0.4.1" > "0.4.0"); anything unparsable is not newer. */
     static boolean newer(String a,String b){

@@ -13,7 +13,13 @@ jobs:
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
-      - run: ./gradlew build :core:test :service:distZip
+      # One mod jar per Minecraft target in versions/.
+      - name: Build every Minecraft target
+        run: |
+          for file in versions/*.properties; do
+            ./gradlew build -Pmc_target="$(basename "$file" .properties)"
+          done
+      - run: ./gradlew :core:test :service:distZip
       - uses: actions/upload-artifact@v4
         with:
           name: SkyProgression
