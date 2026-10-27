@@ -20,10 +20,12 @@ public final class PlayerData {
 
     /** body: the raw v2/skyblock/profiles JSON; fetchedAt: when the backend fetched it (ISO-8601). */
     public PlayerData(String player, String uuid, String body, String fetchedAt) {
+        this(player, uuid, object(JsonParser.parseString(body)), fetchedAt);
+    }
+    /** root: the already parsed v2/skyblock/profiles response (the relay receives it inside a larger request). */
+    public PlayerData(String player, String uuid, JsonObject root, String fetchedAt) {
         this.player = player; this.uuid = uuid.replace("-", "").toLowerCase(Locale.ROOT);
-        JsonElement root = JsonParser.parseString(body);
-        if (!root.isJsonObject()) throw new IllegalArgumentException("Profile response is not an object");
-        raw = root.getAsJsonObject();
+        raw = root;
         if (!"true".equals(string(raw.get("success"), "false"))) throw new IllegalArgumentException("Hypixel could not return this profile");
         this.fetchedAt = fetchedAt;
         long at;
@@ -32,6 +34,11 @@ public final class PlayerData {
         report = new Report();
         report.profiles = ProfileParser.parse(raw, this.uuid, player);
         report.fetchedAt = fetchedAt;
+    }
+
+    private static JsonObject object(JsonElement root) {
+        if (!root.isJsonObject()) throw new IllegalArgumentException("Profile response is not an object");
+        return root.getAsJsonObject();
     }
 
     public record Member(JsonObject member, Loadout.Owned owned, String id, String name) {}

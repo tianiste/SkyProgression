@@ -17,7 +17,7 @@ import static io.github.tianiste.skyprogression.core.ProfileParser.*;
  * Local data backend for the mod, with the same endpoints as the hosted SkyProgression API: raw profiles, a price
  * bundle and resale quotes. All calculations run in the mod. The Hypixel key never goes into the mod or a response.
  * With SKYPROGRESSION_RELAY_SECRET set it runs as the hosted API's profile relay on a fixed-IP server (behind an HTTPS
- * reverse proxy): only /health, /profile, /uuid (Mojang refuses Cloudflare's addresses) and POST /checklist (the website's
+ * reverse proxy): only /health, /profile, /uuid (Mojang refuses Cloudflare's addresses), POST /web (the website's player pages) and POST /checklist (the website's
  * guide checklist, evaluated by the core engine), all but /health only for requests carrying that secret.
  * SKYPROGRESSION_PROFILE_FIXTURE (local mode only, for development): a saved profiles response served for every player.
  */
@@ -82,7 +82,7 @@ public final class ProgressionService {
     private void handle(HttpExchange x) throws IOException {
         try {
             String path = x.getRequestURI().getPath();
-            String method = path.equals("/checklist") ? "POST" : "GET";
+            String method = path.equals("/checklist") || path.equals("/web") ? "POST" : "GET";
             if (!x.getRequestMethod().equals(method)) { send(x, 405, Map.of("error", method + " required")); return; }
             String origin = x.getRequestHeaders().getFirst("Origin");
             String host = x.getRequestHeaders().getFirst("Host");
@@ -91,7 +91,7 @@ public final class ProgressionService {
             }
             if (RELAY_SECRET != null && !path.equals("/health")) {
                 String given = Objects.toString(x.getRequestHeaders().getFirst("X-Relay-Secret"), "");
-                if (!(path.equals("/profile") || path.equals("/uuid") || path.equals("/checklist")) || !java.security.MessageDigest.isEqual(RELAY_SECRET, given.getBytes(StandardCharsets.UTF_8))) {
+                if (!(path.equals("/profile") || path.equals("/uuid") || path.equals("/checklist") || path.equals("/web")) || !java.security.MessageDigest.isEqual(RELAY_SECRET, given.getBytes(StandardCharsets.UTF_8))) {
                     send(x, 404, Map.of("error", "Unknown endpoint")); return;
                 }
             }
@@ -100,6 +100,7 @@ public final class ProgressionService {
                 case "/uuid" -> send(x, 200, uuid(query(x).getOrDefault("name", "")));
                 case "/profile" -> profile(x, query(x));
                 case "/checklist" -> send(x, 200, checklist(x));
+                case "/web" -> sendWeb(x, web(x));
                 case "/prices" -> send(x, 200, bundle());
                 case "/resale" -> send(x, 200, Collections.singletonMap("price", resale(query(x))));
                 default -> send(x, 404, Map.of("error", "Unknown endpoint"));
@@ -305,6 +306,128 @@ public final class ProgressionService {
         out.put("api", report.api());
         out.put("results", report.results());
         return out;
+    }
+    /** /web body: the profile (up to 16 MB) plus the price bundle (about 100 KB, capped at 2 MB) and a few options. */
+    private static final int MAX_WEB_BYTES = 18 * 1024 * 1024;
+    /** Decoded profiles of the last few players (by uuid and fetch time), so the pages of one player decode the items once. */
+    private final Map<String, PlayerData> decoded = Collections.synchronizedMap(new LinkedHashMap<>(4, .75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, PlayerData> eldest) { return size() > 4; }
+    });
+    private volatile ProgressionEngine engine;
+    private record WebPrices(String updatedAt, Map<String, Price> prices, List<StatBreakdown.MayorPerk> mayor) {}
+    private volatile WebPrices webPrices;
+    /**
+     * POST /web {"uuid", "player"?, "view", "profile"?, "method"?, "price"?, "god"?, "gear"?, "data"?, "fetchedAt"?, "bundle"?}: one
+     * website page (WebViews) for a player. Like /checklist, "data" is the raw profiles response and "bundle" the hosted API's
+     * price bundle; relay mode requires both (it fetches neither), the local companion fetches whatever is not sent.
+     */
+    private String web(HttpExchange x) throws Exception {
+        String length = x.getRequestHeaders().getFirst("Content-Length");
+        if (length != null && length.matches("[0-9]{1,12}") && Long.parseLong(length) > MAX_WEB_BYTES) throw new LookupException(413, "Request too large");
+        byte[] bytes = x.getRequestBody().readNBytes(MAX_WEB_BYTES + 1);
+        if (bytes.length > MAX_WEB_BYTES) throw new LookupException(413, "Request too large");
+        JsonObject request;
+        try { request = JsonParser.parseString(new String(bytes, StandardCharsets.UTF_8)).getAsJsonObject(); }
+        catch (RuntimeException e) { throw new LookupException(400, "Body must be a JSON object"); }
+        String view = string(request.get("view"), "");
+        if (!WebViews.VIEWS.contains(view)) throw new LookupException(400, "view must be one of " + String.join(", ", new TreeSet<>(WebViews.VIEWS)));
+        MiningMethod method; MethodComparison.PriceMode mode;
+        try {
+            method = MiningMethod.valueOf(string(request.get("method"), "MF_GEMS"));
+            mode = MethodComparison.PriceMode.valueOf(string(request.get("price"), "INSTANT_SELL"));
+        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method or price mode"); }
+        boolean god = !"false".equals(string(request.get("god"), "true")), best = !"equipped".equals(string(request.get("gear"), "best"));
+        String uuid = string(request.get("uuid"), "").replace("-", "").toLowerCase(Locale.ROOT), player = string(request.get("player"), "");
+        JsonElement data = request.get("data"), bundle = request.get("bundle");
+        if (data != null && !data.isJsonObject() || bundle != null && !bundle.isJsonObject()) throw new LookupException(400, "data and bundle must be objects");
+        if (RELAY_SECRET != null && (data == null || bundle == null)) throw new LookupException(400, "data and bundle are required: the relay fetches neither");
+        if (uuid.isEmpty() && data == null) { Map<String, String> found = uuid(player); uuid = found.get("id"); player = found.get("name"); }
+        if (!uuid.matches("[a-f0-9]{32}")) throw new LookupException(400, "uuid must be 32 hex characters");
+        if (!player.matches("[A-Za-z0-9_]{0,16}")) throw new LookupException(400, "Invalid player name");
+        PlayerData d = player(uuid, player, data, string(request.get("fetchedAt"), ""));
+        WebPrices p = webPrices(bundle);
+        ProgressionEngine e = engine;
+        if (e == null) engine = e = new ProgressionEngine(Catalog.load());
+        String wanted = string(request.get("profile"), "");
+        String profileId = "";
+        if (!wanted.isEmpty()) profileId = d.report.profiles.stream().filter(pr -> pr.id.equals(wanted) || pr.name.equalsIgnoreCase(wanted)).map(pr -> pr.id).findFirst()
+                .orElseThrow(() -> new LookupException(404, "Profile not found"));
+        else if (d.report.profiles.isEmpty()) throw new LookupException(404, "This player has no SkyBlock profiles");
+        else if (d.report.profiles.stream().noneMatch(pr -> pr.selected)) profileId = d.report.profiles.getFirst().id;
+        var q = new WebViews.Query(view, profileId, method, mode, god, best);
+        try { return WebViews.GSON.toJson(WebViews.build(q, d, e, p.prices(), p.mayor(), p.updatedAt(), skin(uuid))); }
+        catch (NoSuchElementException ex) { throw new LookupException(404, "Profile not found"); }
+    }
+    private void sendWeb(HttpExchange x, String json) throws IOException {
+        byte[] body = json.getBytes(StandardCharsets.UTF_8);
+        x.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+        x.getResponseHeaders().set("Cache-Control", "no-store");
+        x.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
+        x.sendResponseHeaders(200, body.length);
+        x.getResponseBody().write(body);
+    }
+    /** The sent profiles response (or this companion's own copy), decoded once per player and fetch time. */
+    private PlayerData player(String uuid, String player, JsonElement data, String fetchedAt) throws Exception {
+        JsonObject root; String at;
+        if (data != null) {
+            root = data.getAsJsonObject();
+            try { at = Instant.parse(fetchedAt).toString(); } catch (RuntimeException e) { at = Instant.now().toString(); }
+        } else {
+            Cached c = cachedProfile(uuid, false);
+            root = parsed.computeIfAbsent(c, ignored -> JsonParser.parseString(new String(c.body, StandardCharsets.UTF_8)).getAsJsonObject());
+            at = c.time.toString();
+        }
+        if (FIXTURE != null && at(root, "profiles").isJsonArray()) {
+            // The development fixture's single member stands in for whoever is looked up, and it has no success flag.
+            root.addProperty("success", true);
+            for (JsonElement pr : root.getAsJsonArray("profiles")) {
+                JsonElement members = at(pr, "members");
+                if (members.isJsonObject() && members.getAsJsonObject().size() == 1 && !members.getAsJsonObject().has(uuid))
+                    members.getAsJsonObject().add(uuid, members.getAsJsonObject().entrySet().iterator().next().getValue());
+            }
+        }
+        String key = uuid + "@" + at;
+        PlayerData hit = decoded.get(key);
+        if (hit != null) return hit;
+        if (!at(root, "profiles").isJsonArray()) throw new LookupException(404, "This player has no SkyBlock profiles");
+        PlayerData d;
+        try { d = new PlayerData(player, uuid, root, at); }
+        catch (IllegalArgumentException e) { throw new LookupException(502, "Hypixel could not return this profile"); }
+        decoded.put(key, d);
+        return d;
+    }
+    /** Prices and mayor perks from the sent bundle (parsed once per bundle version), or this companion's own in local mode. */
+    private WebPrices webPrices(JsonElement bundle) throws Exception {
+        if (bundle == null) return new WebPrices(quotedAt.toString(), prices(), mayorPerks());
+        String updatedAt = string(at(bundle, "updatedAt"), "");
+        WebPrices hit = webPrices;
+        if (hit != null && !updatedAt.isEmpty() && hit.updatedAt().equals(updatedAt)) return hit;
+        Map<String, Price> parsedPrices = Catalog.GSON.fromJson(at(bundle, "prices"), new com.google.gson.reflect.TypeToken<Map<String, Price>>(){}.getType());
+        List<StatBreakdown.MayorPerk> perks = null;
+        JsonElement m = at(bundle, "mayor");
+        if (m.isJsonArray()) perks = List.copyOf(Catalog.GSON.<List<StatBreakdown.MayorPerk>>fromJson(m, new com.google.gson.reflect.TypeToken<List<StatBreakdown.MayorPerk>>(){}.getType()));
+        hit = new WebPrices(updatedAt, parsedPrices == null ? Map.of() : Map.copyOf(parsedPrices), perks);
+        webPrices = hit;
+        return hit;
+    }
+    private final Map<String, Timed<WebViews.Skin>> skins = new ConcurrentHashMap<>();
+    /** The player's skin texture from Mojang's session server, cached for an hour; null when it cannot be read (the page shows a default). */
+    private WebViews.Skin skin(String uuid) {
+        Timed<WebViews.Skin> hit = skins.get(uuid);
+        if (hit != null && hit.time().plusSeconds(3600).isAfter(Instant.now())) return hit.value();
+        WebViews.Skin skin = null;
+        try {
+            JsonObject profile = get("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid, false);
+            for (JsonElement p : profile.getAsJsonArray("properties")) {
+                if (!"textures".equals(string(at(p, "name"), ""))) continue;
+                JsonElement textures = JsonParser.parseString(new String(Base64.getDecoder().decode(string(at(p, "value"), "")), StandardCharsets.UTF_8));
+                String hash = WebViews.textureHash(string(at(textures, "textures", "SKIN", "url"), ""));
+                if (hash != null) skin = new WebViews.Skin(hash, "slim".equals(string(at(textures, "textures", "SKIN", "metadata", "model"), "")));
+            }
+        } catch (Exception ignored) { /* Unknown skin; retried after the cache entry expires. */ }
+        if (skins.size() > 500) skins.clear();
+        skins.put(uuid, new Timed<>(Instant.now(), skin));
+        return skin;
     }
     private static boolean fresh(Cached c) { return c.time.plusSeconds(300).isAfter(Instant.now()); }
     private Cached fetchProfile(String uuid) throws Exception {
