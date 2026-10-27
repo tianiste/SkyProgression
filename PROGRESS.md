@@ -8,9 +8,13 @@ Last updated: 2026-10-27 (hosted backend: calculations moved into the mod). Curr
 **Deployed (2026-10-27):** the owner deployed the Worker at <https://skyprogression-api.tian-istenic34.workers.dev>;
 it is now the mod's default (`HOSTED_BACKEND`). Live check: `/health` ok, cron filled the bundle (334 prices,
 `complete: true`, so the regex scans fit the CPU limit), `/resale` 0.27 s then 0.16 s cached, `/prices` 50 KB in 0.16 s,
-errors/Origin refusal as designed. `HYPIXEL_API_KEY` is set (dashboard secret; `/health` ready) but Hypixel rejects
-the stored value ("Invalid API key", now shown in the 503 message; the Worker trims spaces/quotes): the owner re-enters a
-valid key. A first CLI attempt created a secret named after the key; the owner deletes it. Workers Logs (observability)
+errors/Origin refusal as designed. The owner's application key was rejected from the Worker ("Invalid API key"): it is
+IP-restricted (allowlist), and Workers have no fixed egress IP (static egress is not on the free plan), so it cannot be
+used there. The owner then stored a personal key, which works: live end-to-end check 2026-10-27 11:50 UTC (scratch runner,
+same calls as the mod): profile 0.54 s, decode 0.18 s, prices 0.14 s (334 + mayor), stats 0.08-0.16 s, compare ~0.4 s,
+start ~0.4 s, resale quotes returned. Open decision: personal keys are not meant for public apps; for public release either
+an application key without an allowlist (ask Hypixel) or `/profile` on a fixed-IP host (VPS/Azure) with prices staying on
+Cloudflare. Workers Logs (observability)
 enabled in `wrangler.jsonc` so deploys keep it on. Mojang returns 403 to the Worker, so the mod now resolves names itself (own name from the session UUID, others
 at Mojang directly, backend `/uuid` as fallback). The KV namespace ID that wrangler wrote into the owner's local
 `wrangler.jsonc` is deliberately not committed. **Owner next:** set the secret, then Load in game with the default config;
