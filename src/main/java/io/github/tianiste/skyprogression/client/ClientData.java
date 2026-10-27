@@ -50,6 +50,9 @@ final class ClientData {
     boolean compareGodPotion = true;
     final Map<String, Inputs> inputs = new HashMap<>();
     private HttpClient http;
+    /** Newer release tag from GitHub ("" = none known); checked once per launch, never downloaded. */
+    volatile String update = "";
+    private static boolean updateChecked;
     private Set<String> catalogIds = Set.of();
     private final Path file = FabricLoader.getInstance().getConfigDir().resolve("skyprogression-inputs.json");
     private final Path config = FabricLoader.getInstance().getConfigDir().resolve("skyprogression.json");
@@ -95,9 +98,31 @@ final class ClientData {
                 try{base=readBackend();}catch(Exception e){warning="config/skyprogression.json has an invalid backend URL; using "+base+".";}
                 Set<String> ids=new HashSet<>();items.forEach(i->ids.add(i.id));
                 String notice=warning,chosen=base;
-                dispatch.accept(()->{catalog=items;catalogIds=ids;engine=new ProgressionEngine(items);http=client;backend=chosen;saved.forEach(inputs::putIfAbsent);ready=true;initializing=false;message=notice.isEmpty()?"Load your player, or try the offline Demo.":notice;revision++;changed.run();});
+                dispatch.accept(()->{catalog=items;catalogIds=ids;engine=new ProgressionEngine(items);http=client;backend=chosen;saved.forEach(inputs::putIfAbsent);ready=true;initializing=false;message=notice.isEmpty()?"Load your player, or try the offline Demo.":notice;revision++;changed.run();checkForUpdate(client,dispatch,changed);});
             }catch(Exception e){dispatch.accept(()->{initializing=false;initializationFailed=true;message="Could not initialize SkyProgression. Restart Minecraft to retry.";revision++;changed.run();});}
         });
+    }
+    /** Latest GitHub release of this mod, once per launch, off the game thread; any failure is silently ignored. */
+    private void checkForUpdate(HttpClient client,Consumer<Runnable> dispatch,Runnable changed){
+        if(updateChecked)return;updateChecked=true;
+        String current=FabricLoader.getInstance().getModContainer("skyprogression").map(m->m.getMetadata().getVersion().getFriendlyString()).orElse("");
+        WORK.submit(()->{
+            try{
+                var request=HttpRequest.newBuilder(URI.create("https://api.github.com/repos/tianiste/SkyProgression/releases/latest")).timeout(Duration.ofSeconds(5))
+                        .header("Accept","application/vnd.github+json").header("User-Agent","SkyProgression/"+current).GET().build();
+                var response=client.send(request,HttpResponse.BodyHandlers.ofInputStream());
+                byte[] bytes;try(var body=response.body()){if(response.statusCode()!=200)return;bytes=body.readNBytes(256*1024+1);}
+                if(bytes.length>256*1024)return;
+                String tag=JsonParser.parseString(new String(bytes,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject().get("tag_name").getAsString().replaceFirst("^v","");
+                if(newer(tag,current))dispatch.accept(()->{update=tag;revision++;changed.run();});
+            }catch(Exception ignored){/* No notice without a clear answer. */}
+        });
+    }
+    /** True when dotted version a is above b ("0.4.1" > "0.4.0"); anything unparsable is not newer. */
+    static boolean newer(String a,String b){
+        String[] x=a.split("[.+-]"),y=b.split("[.+-]");
+        try{for(int i=0;i<3;i++){int u=i<x.length?Integer.parseInt(x[i]):0,v=i<y.length?Integer.parseInt(y[i]):0;if(u!=v)return u>v;}}catch(NumberFormatException e){return false;}
+        return false;
     }
     /** "backend" from config/skyprogression.json (empty = default); the file is created with an empty value when missing. */
     private String readBackend() throws Exception {

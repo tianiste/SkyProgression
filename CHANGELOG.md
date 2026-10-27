@@ -12,6 +12,7 @@ loads through the hosted SkyProgression API.
 - Every calculation runs inside the mod, so stats, rates, upgrades, Compare and Start with all work from one load.
 - Your own name is resolved from the game session, other names directly at Mojang.
 - Faster loading: profiles and prices you already loaded are shown at once while a fresh copy loads in the background.
+- Home tells you when a newer SkyProgression release is out (checked once per launch; nothing is downloaded).
 
 ### New interface
 

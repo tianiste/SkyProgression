@@ -271,6 +271,7 @@ public final class ProgressionScreen extends Screen {
             c.add(new Text("Or try the offline Demo (example data)",GOLD,"Example ownership and prices, not your real profile.",()->{data.demo();scroll=0;refresh();}));
             card("Connect your profile",CYAN,1).line(data.localBackend()?"Start the local companion, then press Load.":"Press Load: profiles come from the SkyProgression API.",TEXT,"Backend: "+data.backend+"\nChange it in config/skyprogression.json (\"backend\").")
                     .line("Enable Inventory API in SkyBlock Settings for gear advice.",MUTED,"SkyBlock Menu > Settings > API Settings > Inventory API: ON.");
+            updateNotice();
         }else switch(tab){case HOME->homeCards(p);case GEAR->gearCards();case UPGRADES->upgradeCards(p);case METHODS->methodCards();default->moreCards(p);}
         layoutCards();
     }
@@ -301,6 +302,10 @@ public final class ProgressionScreen extends Screen {
         rateTile();
         nextUpgradeTile(p);
         methodChart(true);
+        updateNotice();
+    }
+    private void updateNotice(){
+        if(!data.update.isEmpty())card("SkyProgression "+data.update+" is available",CYAN,1).line("Download it from github.com/tianiste/SkyProgression/releases.",MUTED,"Replace the old jar in your mods folder. Nothing is downloaded automatically.");
     }
     /** One bar per method stat: current vs attainable with this loadout; hover lists the top sources, click opens Gear. */
     private void statsCard(){
