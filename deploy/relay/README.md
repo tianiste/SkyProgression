@@ -9,8 +9,9 @@ Mojang lookup fails (Mojang answers 403 to Cloudflare's addresses).
 mod -> https://api.skyprogression.dev (Worker) -> https://relay.skyprogression.dev (Caddy -> companion) -> Hypixel
 ```
 
-In relay mode (`SKYPROGRESSION_RELAY_SECRET` set) the companion answers only `/health`, `/profile` and `/uuid` (names
-cached for a day), the last two only when the request carries the secret in `X-Relay-Secret`. Everything else answers 404. It fetches no prices.
+In relay mode (`SKYPROGRESSION_RELAY_SECRET` set) the companion answers only `/health`, `/profile`, `/uuid` (names
+cached for a day) and `POST /checklist` (the website's guide checklist: the engine checks a guide's requirements against a
+profile; bodies up to 256 KB), all but `/health` only when the request carries the secret in `X-Relay-Secret`. Everything else answers 404. It fetches no prices.
 
 Tested target: Oracle Cloud Always Free `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB) with Ubuntu 24.04. Any small Linux VM
 with a fixed IP works the same way.
