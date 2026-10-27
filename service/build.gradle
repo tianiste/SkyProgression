@@ -1,4 +1,5 @@
 plugins { id 'application' }
+version = rootProject.mod_version
 repositories { mavenCentral() }
 java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
 dependencies { implementation project(':core') }

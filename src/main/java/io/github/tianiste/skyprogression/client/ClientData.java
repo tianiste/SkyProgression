@@ -18,7 +18,7 @@ final class ClientData {
     static final ExecutorService WORK = Executors.newVirtualThreadPerTaskExecutor();
     private static final ExecutorService DISK = Executors.newSingleThreadExecutor(Thread.ofPlatform().daemon().name("SkyProgression settings").factory());
     /** Hosted SkyProgression API (Cloudflare Worker, github.com/tianiste/SkyProgression-API); empty = the local companion. */
-    static final String HOSTED_BACKEND = "https://skyprogression-api.tian-istenic34.workers.dev";
+    static final String HOSTED_BACKEND = "https://api.skyprogression.dev";
     static final String COMPANION_BACKEND = "http://localhost:18475";
     List<Item> catalog = List.of();
     ProgressionEngine engine;

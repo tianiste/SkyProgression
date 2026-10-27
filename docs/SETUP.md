@@ -1,37 +1,40 @@
-# Install SkyProgression 0.3.0
+# Install SkyProgression
 
 ## Mod
 
 1. Use Minecraft **26.1.2**, **Fabric Loader 0.20.1 or newer**, and Java **25**.
 2. Install **Fabric API for 26.1.2**. Keep your other existing mods.
-3. Copy `skyprogression-0.3.0.jar` into that instance's `mods` folder.
-   Do not install the `-sources.jar` file.
-4. Start Minecraft and enter `/sp` or `/skyprogression` while in a world/server.
-5. Select **Demo** to try the interface immediately. Demo inventory/prices are fabricated and labeled.
+3. Download `skyprogression-<version>.jar` from the [latest release](https://github.com/tianiste/SkyProgression/releases/latest)
+   and copy it into that instance's `mods` folder. You do not need the `service-<version>.zip` (the optional companion).
+4. In SkyBlock, enable **SkyBlock Menu > Settings > API Settings > Inventory API** (and the skill/collection API
+   options if available).
+5. Enter `/sp` or `/skyprogression`. Your profile loads automatically; use the name field and **Load** for another
+   player, the profile selector for another profile, and **Demo** for clearly labelled sample data.
 
-## Enable real profile lookups
+That is all: no API key and no extra program. All calculations run in the mod; the hosted SkyProgression API at
+`https://api.skyprogression.dev` only supplies the raw profile and prices
+([source](https://github.com/tianiste/SkyProgression-API)).
 
-In SkyBlock, enable **SkyBlock Menu > Settings > API Settings > Inventory API** (and the skill/collection API
-options if available). Then press **Load**. All calculations run in the mod; the backend only supplies the raw
-profile and prices. The backend is set in `config/skyprogression.json`, created on first start:
+## Choosing the backend
+
+The backend is set in `config/skyprogression.json`, created on first start:
 
 ```json
 { "backend": "" }
 ```
 
-- Empty: the built-in default, the hosted SkyProgression API at `https://skyprogression-api.tian-istenic34.workers.dev`
-  (`ClientData.HOSTED_BACKEND`). Until its Hypixel key is set, Load there says "The server has no Hypixel API key
-  configured"; use the companion meanwhile.
-- `"https://..."`: a hosted SkyProgression API (see [Hosted API](#hosted-api-owner)).
+- Empty (default): the hosted SkyProgression API at `https://api.skyprogression.dev` (`ClientData.HOSTED_BACKEND`).
+- `"https://..."`: another hosted SkyProgression API (see [Hosted API](#hosted-api-owner)).
 - `"http://localhost:18475"`: the local companion below (for development, or with your own key). A companion
   started with `SKYPROGRESSION_PORT` needs that port here too.
 
-Names are resolved in the mod: your own name from the game session, other names directly at Mojang (which refuses
-Cloudflare's addresses), with the backend's `/uuid` as a fallback. Restart Minecraft after editing the file. The mod shows which backend it uses on the Home card before you load.
+Names are resolved in the mod: your own name from the game session, other names directly at Mojang, with the backend's
+`/uuid` as a fallback. Restart Minecraft after editing the file. The Home card shows which backend is used before you
+load.
 
 ### Local companion
 
-The companion fetches a profile when the mod asks. The API key stays in the companion process and is never sent to
+Optional, for developers and players who want to use their own Hypixel key. The companion fetches a profile when the mod asks. The API key stays in the companion process and is never sent to
 Minecraft or committed to Git.
 
 1. Open <https://developer.hypixel.net/> yourself and sign in.
@@ -40,7 +43,7 @@ Minecraft or committed to Git.
    Development keys expire. Read <https://developer.hypixel.net/policies/>.
 3. In SkyBlock, enable **SkyBlock Menu > Settings > API Settings > Inventory API**.
    Enable the relevant skill/collection API options as well if available in your settings.
-4. Extract the entire test pack, then double-click **`Start-Service.cmd`**.
+4. Extract the release's `service-<version>.zip` (or a development build), then double-click **`Start-Service.cmd`**.
    It starts Java directly, does not require PowerShell script permissions, and keeps
    errors visible. Alternatively, where scripts are permitted, run `Start-Service.ps1`
    in an existing PowerShell window.
@@ -113,22 +116,9 @@ Use the mouse wheel, Page Up/Down or footer arrows to scroll results. Selectors 
 
 ## Current limits
 
-This is a working **gear-upgrade preview**, not yet a full replacement for Mining Cat or SkyCompass.
-The 57-item catalog covers selected armor, equipment, tools, accessories and lanterns.
-The method selector includes all requested methods, but specialized loadouts and bonuses
-are not comprehensive. Do not interpret a completed bar as a fully maxed account.
-
-Individual gear copies retain their enchantments, rarity, socket contents and displayed
-item stats. Supported upgrades include Fortune IV, Efficiency/Silex, Prismatic,
-Polarvoid Books, and Flawless/Perfect Jade, Amber and Topaz. Gemstone costs include
-known unlock and removal fees. Owned materials reduce the amount to buy.
-Recommendations are independent alternatives, not a cumulative shopping list.
-
-Reforge upgrades, drill modules, pet bonuses, complete HOTM math, attributes and temporary
-buffs are not modeled automatically. Enter effective totals for method estimates.
-Displayed item lore is not your effective total. Base-item bars compare catalog base
-stats; modifier bars show supported upgrades separately. Stored gear is not necessarily
-equipped. New-item comparisons do not assume modifiers transfer from your old item.
+This is not yet a full replacement for Mining Cat or SkyCompass. Stats are calculated from what the API shows; sources
+it never shows (some consumables, weather, held-item state) are listed as not-in-API and not counted, and Type Stats
+overrides any value. Do not interpret a completed bar as a fully maxed account.
 
 Prices are purchase quotes, not exact matching auction listings. Crafting and forging are compared
 one recipe level deep; net cost subtracts a replaced item's sale quote (lowest matching BIN for your copy's
@@ -152,7 +142,7 @@ result stays unavailable. The Home rate tile and the Methods tab use the rate mo
   No execution-policy change is needed for the CMD launcher. Do not run files inside the ZIP.
 - **Could not reach the local companion:** start the service on this computer; check its terminal for errors.
 - **Could not reach the SkyProgression API:** check your connection; the message names the backend in use.
-- **The server has no Hypixel API key configured:** the hosted API is running without its key; the owner sets it.
+- **The server has no Hypixel API key configured / key rejected:** a problem on the hosted API; try again later or use the companion with your own key.
 - **Key invalid/expired:** restart with a current key. Never send the key with a bug report.
 - **Inventory unavailable:** enable Inventory API and wait out the five-minute profile cache.
 - **Unknown price:** Coflnet has no valid quote or could not be reached. Unknown is never free.
@@ -163,8 +153,9 @@ result stays unavailable. The Home rate tile and the Methods tab use the rate mo
 
 ## Updating from an earlier build
 
-Replace the mod jar. If you use the local companion, close the old one and start the new one from this pack: the
-mod now calculates everything itself and needs the companion's new raw endpoints.
+Replace the mod jar with the new one (remove the old jar). From 0.4.0 the hosted API is the default, so you can stop
+using the companion. If you keep it, close the old one and start the one from the same release: the mod calculates
+everything itself and needs the companion's raw endpoints.
 
 ## Your first in-game test
 

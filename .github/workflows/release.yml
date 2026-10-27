@@ -1,0 +1,33 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew
+      - name: Check the tag matches mod_version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          grep -qx "mod_version=$version" gradle.properties || { echo "Tag $GITHUB_REF_NAME does not match mod_version in gradle.properties"; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - run: ./gradlew build :service:distZip
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="$VERSION" '$0 ~ "^## " v "( |$)" {on=1; next} on && /^## / {exit} on' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "No CHANGELOG.md section for $VERSION"; exit 1; }
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "SkyProgression $VERSION" --notes-file notes.md \
+            "build/libs/skyprogression-$VERSION.jar" "service/build/distributions/service-$VERSION.zip"

@@ -1,6 +1,6 @@
 plugins { id 'java-library' }
 group = 'io.github.tianiste'
-version = '0.3.0'
+version = rootProject.mod_version
 repositories { mavenCentral() }
 java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
 dependencies {

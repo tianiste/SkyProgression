@@ -5,7 +5,7 @@ API forwards `/profile` to this relay: the companion running in relay mode on a 
 behind Caddy for HTTPS. Prices, resale and names stay on the Worker.
 
 ```
-mod -> https://skyprogression-api...workers.dev (Worker) -> https://relay.skyprogression.dev (Caddy -> companion) -> Hypixel
+mod -> https://api.skyprogression.dev (Worker) -> https://relay.skyprogression.dev (Caddy -> companion) -> Hypixel
 ```
 
 In relay mode (`SKYPROGRESSION_RELAY_SECRET` set) the companion answers only `/health` and `/profile`, and `/profile` only
