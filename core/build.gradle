@@ -51,3 +51,4 @@ tasks.register('exportPriceIds', JavaExec) {
     workingDir = rootProject.projectDir
     args = [project.findProperty('priceIdsOut') ?: 'build/price-ids.json']
 }
+jar { from(rootProject.file('LICENSE')) { rename { 'LICENSE_skyprogression-core' } } }

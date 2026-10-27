@@ -58,3 +58,8 @@ off the render thread with bounded response sizes and timeouts.
 
 Inspired by Mining Cat (Mycelium Larper) and SkyCompass (banana eater). This is an independent implementation, not their
 code or an official integration. Not affiliated with or endorsed by Hypixel or Mojang.
+
+## License
+
+MIT License, see [LICENSE](LICENSE). Bundled data from the NotEnoughUpdates repository is also MIT-licensed; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

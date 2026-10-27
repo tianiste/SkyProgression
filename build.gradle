@@ -27,3 +27,5 @@ loom {
         }
     }
 }
+// Ship the license with the mod jar.
+jar { from('LICENSE') { rename { "LICENSE_${base.archivesName.get()}" } } }
