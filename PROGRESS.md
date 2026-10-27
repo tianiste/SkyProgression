@@ -88,7 +88,7 @@ fix them later; do not block on the in-game test. Order:
    pay the same per Rough). End Stone now has a known value (NPC 2); Glacite, Mycelium, Red Sand, Gold sell higher to NPCs.
    Coleweight: no verifiable coefficients (module archived, no weights in its repo), recorded unknown and not shown.
    Rules: CALCULATIONS.md "Coins per hour across methods".
-   **Start with tab (`69e34a3`, `51907cd`, in-game test pending):** `StartWith` + companion `/start` + a **Start with** tab
+   **Start with tab (`69e34a3`, `51907cd`, owner confirmed working in game 2026-10-27):** `StartWith` + companion `/start` + a **Start with** tab
    (between Breakdown and Rates): best owned loadout for the method by the existing choice (`Loadout.bestFor`/`bestTool`,
    `chooseTree`) with each piece's storage (worn, hotbar/inventory, wardrobe slot, ender chest page, backpack slot, Loadouts set,
    pets menu, pet item), swaps from the worn loadout only (each rated alone through `MethodRates` at the Price mode, largest gain
@@ -354,7 +354,7 @@ Recent milestones:
 - [ ] Use early/mid/end guide stages for orientation; personalize actual next steps.
 - [ ] Explain prerequisites, where/how to acquire, owned/missing quantities, source
   confidence and distance from a validated method-specific max.
-- [x] **Start with tab (owner request, 2026-10-26; `69e34a3`, `51907cd`; in-game test pending):** which owned gear to use
+- [x] **Start with tab (owner request, 2026-10-26; `69e34a3`, `51907cd`; owner confirmed working in game 2026-10-27):** which owned gear to use
   for the selected method before buying anything (best owned armor, equipment, tool, pet with item, method accessories and
   HOTM tree, where each piece is stored, swaps from the current loadout with stat and rate change, best-method hint).
 
