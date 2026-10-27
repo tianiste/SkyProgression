@@ -40,6 +40,13 @@ public final class StatsReport {
         public double flat, multiplier = 1, total;
         /** The total is a lower bound while sources that count have unknown values. */
         public boolean complete;
+        /**
+         * Best attainable total with this loadout (Breakdown.attainable); null when a counted source's maximum is unknown,
+         * then attainableKnown is the total with those sources at their current value.
+         */
+        public Double attainable;
+        public double attainableKnown;
+        public int unknownMaxima;
         /** Totals with what is worn now and with the best owned gear (same tool and context). */
         public Double equipped, bestOwned;
         public List<Breakdown.Contribution> contributions = new ArrayList<>();
@@ -89,6 +96,7 @@ public final class StatsReport {
             StatBreakdown.mayor(b, perks);
             Ledger l = new Ledger();
             l.stat = stat; l.flat = b.flat(); l.multiplier = b.multiplier(); l.total = b.total(); l.complete = b.complete();
+            l.attainable = b.attainable(); l.attainableKnown = b.attainableKnown(); l.unknownMaxima = b.unknownMaxima().size();
             l.contributions.addAll(b.contributions); l.notes.addAll(new LinkedHashSet<>(b.notes));
             l.equipped = bestGear ? StatBreakdown.compute(member, equipped, context, stat).total() : l.total;
             l.bestOwned = bestGear ? l.total : StatBreakdown.compute(member, best, context, stat).total();

@@ -445,6 +445,7 @@ public final class ProgressionScreen extends Screen {
         used.line(r.accessories+" accessories from the accessory bag, one per family.",MUTED);
         if(r.hotmTrees>1)used.line(StatBreakdown.treeLabel(r.hotmTree)+" of "+r.hotmTrees+": best for "+method.label+" (the API does not show which tree is active).",CYAN);
         if(r.bestGear)used.line("Picked from all readable storage; equip these pieces to reach this total. Gear: Equipped shows what you wear now.",MUTED);
+        used.line("Attainable keeps this gear, tool, pet and HOTM tree with each source at its own maximum, plus missing attributes, essence perks, collections and consumables. It is not a maxed account: other gear, pets, perks needing tokens and set bonuses are not added.",MUTED);
         // Method: only the method's stats (plus the focused one); the rest still feed Upgrades and Rates.
         List<Stat> shown=statGroup.equals("All")?Arrays.asList(Stat.values()):StatBreakdown.GROUPS.getOrDefault(statGroup,method.relevantStats());
         boolean byMethod=statGroup.equals("Method");
@@ -460,6 +461,8 @@ public final class ProgressionScreen extends Screen {
             if(l.stat==Stat.BREAKING_POWER&&method.breakingPower()!=null)head.line(method.label+" needs Breaking Power "+method.breakingPower()+(l.total>=method.breakingPower()?": met.":": not met with this tool."),l.total>=method.breakingPower()?GREEN:RED);
             if(r.tool.isEmpty())head.line("No readable mining tool is owned, so tool stats are missing.",RED);
             if(!l.complete)head.line("Some counted sources have unknown values, so this is a lower bound.",RED);
+            if(l.attainable!=null)head.meter("Attainable: "+amount(l.stat,l.attainable)+(l.total>=l.attainable-1e-9?"  ✔ maxed":""),l.total,Math.max(l.total,l.attainable));
+            else if(l.unknownMaxima>0)head.line("Attainable: unknown, at least "+amount(l.stat,l.attainableKnown)+" ("+l.unknownMaxima+" counted source"+(l.unknownMaxima==1?"":"s")+" without a known maximum, such as gear stat lines)",MUTED);
             if(r.bestGear&&l.equipped!=null)head.meter("Wearing now: "+amount(l.stat,l.equipped),l.equipped,Math.max(l.equipped,l.total));
             if(!r.bestGear&&l.bestOwned!=null)head.meter("Best owned gear: "+amount(l.stat,l.bestOwned),l.total,Math.max(l.total,l.bestOwned));
             Double override=manual.get(l.stat);if(override!=null)head.line("Manual value in use instead: "+fmt(override)+" (clear it in Type Stats)",GOLD);
@@ -470,7 +473,12 @@ public final class ProgressionScreen extends Screen {
                 for(var x:list){
                     String value=x.value()==null?"?":(x.category().equals(Breakdown.ADDITIVE_PERCENT)?"+"+fmt(x.value())+"%":signed(l.stat,x.value()));
                     String text=value+"  "+x.source()+" ("+x.category()+")"+(x.confidence()==Breakdown.Confidence.MANUAL&&x.value()!=null?" - assumed":"");
-                    if(state==Breakdown.State.COUNTED&&x.value()!=null&&x.maximum()!=null&&x.maximum()>x.value())c.meter(text+" / "+fmt(x.maximum()),x.value(),x.maximum());
+                    boolean counted=state==Breakdown.State.COUNTED&&x.value()!=null;
+                    String max=x.maximum()==null?"":(x.category().equals(Breakdown.ADDITIVE_PERCENT)?fmt(x.maximum())+"%":amount(l.stat,x.maximum()));
+                    if(counted&&x.maximum()!=null&&x.maximum()>x.value()+1e-9)c.meter(text+" / "+max,x.value(),x.maximum());
+                    else if(counted&&x.maximum()!=null&&x.maximum()>0)c.line(text+"  ✔ maxed",GREEN);
+                    else if(counted)c.line(text+" / max unknown",TEXT);
+                    else if(state==Breakdown.State.MISSING&&x.maximum()!=null)c.line(text+" / "+max,TEXT);
                     else c.line(text,x.value()==null&&state==Breakdown.State.COUNTED?RED:TEXT);
                     if(!x.condition().isEmpty())c.line("  "+x.condition(),MUTED);
                     if(state!=Breakdown.State.COUNTED||x.value()==null)c.line("  "+x.note(),MUTED);

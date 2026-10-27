@@ -322,11 +322,23 @@ public final class StatBreakdown {
             }
             Condition condition = zoneCondition(text);
             if (!condition.none()) add(b, category, source, value, null, condition, Confidence.KNOWN, "Conditional lore bonus.");
-            else if (drill) add(b, category, header + " (drill part)", value, null, Condition.NONE, Confidence.KNOWN,
+            else if (drill) add(b, category, header + " (drill part)", value, partMaximum(header, b.stat, value), Condition.NONE, Confidence.KNOWN,
                     "Listed in the drill lore outside the stat line total.");
             else b.contributions.add(new Contribution(category, source, b.stat, null, null, "", State.COUNTED, Confidence.UNKNOWN,
                     "Lore paragraph lists +" + amount.group(1) + "; not verified to be outside the stat line total."));
         }
+    }
+
+    /**
+     * Best value of the drill part's slot for a stat (wiki Drill Parts via GearUpgrades.ENGINES / MODULES): any engine for an
+     * engine paragraph, any stat module for a module paragraph; null for other paragraphs.
+     */
+    private static Double partMaximum(String header, Stat stat, double value) {
+        int index = stat == Stat.MINING_SPEED ? 0 : stat == Stat.MINING_FORTUNE ? 1 : -1;
+        if (index < 0) return null;
+        Collection<double[]> slot = header.contains("Drill Engine") ? GearUpgrades.ENGINES.values()
+                : header.contains("Omelette") || header.contains("Egg Part") || header.contains("Seasoning") ? GearUpgrades.MODULES.values() : null;
+        return slot == null ? null : Math.max(value, slot.stream().mapToDouble(v -> v[index]).max().orElse(0));
     }
 
     /** "[+N]" after a stat line is shown outside the total; on drills it is the Polarvoid bonus. */
@@ -499,7 +511,7 @@ public final class StatBreakdown {
             }
             Condition condition = enabled(nodes, perk.id) ? perk.condition : Condition.unchecked("Perk toggled off in the HOTM tree");
             int effective = level + (omelette ? 1 : 0);
-            add(b, "HOTM", perk.name + " " + level + (omelette ? " (+1 Blue Cheese)" : ""), perk.at(effective), perk.at(perk.maxLevel + 1), condition, Confidence.KNOWN,
+            add(b, "HOTM", perk.name + " " + level + (omelette ? " (+1 Blue Cheese)" : ""), perk.at(effective), perk.at(perk.maxLevel + (omelette ? 1 : 0)), condition, Confidence.KNOWN,
                     omelette ? "Blue Cheese Goblin Omelette on the drill: +1 level." : "");
         }
         Double frontLoaded = FRONT_LOADED.get(b.stat);

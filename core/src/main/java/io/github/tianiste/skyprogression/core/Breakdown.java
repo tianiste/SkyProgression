@@ -74,6 +74,48 @@ public final class Breakdown {
         return contributions.stream().filter(c -> c.state == State.COUNTED && c.value == null).toList();
     }
     public boolean complete() { return unresolved().isEmpty(); }
+
+    /**
+     * Missing sources that fit the same loadout and so count toward the attainable maximum: profile-wide sources
+     * (attributes, essence, collections, skill, consumables, the Booster Cookie) and an empty fuel tank slot. Missing HOTM
+     * perks (tokens limit what one tree holds), set bonuses (other armor) and conditional sources are left out.
+     */
+    static final Set<String> COMPATIBLE_MISSING = Set.of("Attribute", "Essence", "Collection", "Skill", "Consumable", "Buff");
+    private boolean attainableSource(Contribution c) {
+        if (c.state == State.COUNTED) return true;
+        if (c.state != State.MISSING || c.maximum == null) return false;
+        if (c.category.equals("Tool")) return c.source.startsWith("Fuel tank");
+        if (!COMPATIBLE_MISSING.contains(c.category)) return false;
+        return c.condition.isEmpty() || c.category.equals("Essence") && context.zone() != null && StatContext.MINING_ISLANDS.contains(context.zone());
+    }
+    /** Maximum of one source as it counts toward the attainable total, or null when it is not known. */
+    private Double best(Contribution c) {
+        if (c.maximum == null) return c.state == State.COUNTED ? null : 0.0;
+        return Math.max(c.maximum, c.value == null ? 0 : c.value);
+    }
+    /**
+     * Best attainable total keeping this loadout's pieces, pet, tool and HOTM tree, each source at its own maximum, plus the
+     * compatible missing sources. Null when a counted source has no known maximum (gear stat lines, for now).
+     */
+    public Double attainable() {
+        List<Contribution> parts = contributions.stream().filter(this::attainableSource).toList();
+        if (parts.stream().anyMatch(c -> best(c) == null)) return null;
+        return combine(parts, this::best);
+    }
+    /** The attainable total with unknown maxima taken at their current value: a lower bound when attainable() is null. */
+    public double attainableKnown() {
+        return combine(contributions.stream().filter(this::attainableSource).toList(), c -> best(c) == null ? (c.value == null ? 0 : c.value) : best(c));
+    }
+    /** Counted sources whose maximum is unknown. */
+    public List<Contribution> unknownMaxima() {
+        return contributions.stream().filter(c -> c.state == State.COUNTED && c.maximum == null).toList();
+    }
+    private double combine(List<Contribution> parts, java.util.function.Function<Contribution, Double> value) {
+        if (stat == Stat.PICKAXE_ABILITY_COOLDOWN) return combined(parts.stream().mapToDouble(value::apply).toArray());
+        double flat = parts.stream().filter(c -> !c.category.equals(ADDITIVE_PERCENT)).mapToDouble(value::apply).sum();
+        double percent = parts.stream().filter(c -> c.category.equals(ADDITIVE_PERCENT)).mapToDouble(value::apply).sum();
+        return flat * (1 + percent / 100);
+    }
     public List<Contribution> in(State state) {
         return contributions.stream().filter(c -> c.state == state).toList();
     }
