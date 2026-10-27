@@ -5,7 +5,16 @@ Last updated: 2026-10-27 (hosted backend: calculations moved into the mod). Curr
 
 ## Resume here
 
-**Hosted backend (2026-10-27, in-game test pending, Worker not yet deployed).** Owner decision: a thin Cloudflare Worker
+**Deployed (2026-10-27):** the owner deployed the Worker at <https://skyprogression-api.tian-istenic34.workers.dev>;
+it is now the mod's default (`HOSTED_BACKEND`). Live check: `/health` ok, cron filled the bundle (334 prices,
+`complete: true`, so the regex scans fit the CPU limit), `/resale` 0.27 s then 0.16 s cached, `/prices` 50 KB in 0.16 s,
+errors/Origin refusal as designed. `/profile` answers 503 until the owner sets `HYPIXEL_API_KEY` (application key
+pending). Mojang returns 403 to the Worker, so the mod now resolves names itself (own name from the session UUID, others
+at Mojang directly, backend `/uuid` as fallback). The KV namespace ID that wrangler wrote into the owner's local
+`wrangler.jsonc` is deliberately not committed. **Owner next:** set the secret, then Load in game with the default config;
+until then set `"backend": "http://localhost:18475"` and restart the (new) companion.
+
+**Hosted backend (2026-10-27, in-game test pending).** Owner decision: a thin Cloudflare Worker
 proxy (free plan, nothing to maintain) in <https://github.com/tianiste/SkyProgression-API>; no TypeScript engine. Every
 report (`/stats`, `/compare`, `/start`, resale credit) is now calculated in the mod by `core/` on `ClientData.WORK`
 (new `core` `PlayerData`: raw profile decoded once, owned items per profile; cancellation and stale-key rejection as

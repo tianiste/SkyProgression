@@ -19,13 +19,15 @@ profile and prices. The backend is set in `config/skyprogression.json`, created 
 { "backend": "" }
 ```
 
-- Empty: the built-in default. That is the hosted SkyProgression API once it is deployed (its URL is compiled into
-  the mod as `ClientData.HOSTED_BACKEND`); until then it is the local companion at `http://localhost:18475`.
+- Empty: the built-in default, the hosted SkyProgression API at `https://skyprogression-api.tian-istenic34.workers.dev`
+  (`ClientData.HOSTED_BACKEND`). Until its Hypixel key is set, Load there says "The server has no Hypixel API key
+  configured"; use the companion meanwhile.
 - `"https://..."`: a hosted SkyProgression API (see [Hosted API](#hosted-api-owner)).
 - `"http://localhost:18475"`: the local companion below (for development, or with your own key). A companion
   started with `SKYPROGRESSION_PORT` needs that port here too.
 
-Restart Minecraft after editing the file. The mod shows which backend it uses on the Home card before you load.
+Names are resolved in the mod: your own name from the game session, other names directly at Mojang (which refuses
+Cloudflare's addresses), with the backend's `/uuid` as a fallback. Restart Minecraft after editing the file. The mod shows which backend it uses on the Home card before you load.
 
 ### Local companion
 
@@ -72,7 +74,8 @@ limits). It runs on Cloudflare's free Workers plan. One-time setup, done by the 
    apps other players use. Store it with `npx wrangler secret put HYPIXEL_API_KEY` (never in a file or Git).
    Until then `/profile` answers 503 and prices still work.
 5. Put the Worker URL into `ClientData.HOSTED_BACKEND` and rebuild the mod, or set it in
-   `config/skyprogression.json` for testing.
+   `config/skyprogression.json` for testing. (Done for `skyprogression-api.tian-istenic34.workers.dev`, deployed
+   2026-10-27.) Wrangler writes the KV namespace ID into the local `wrangler.jsonc`; keep it out of Git.
 6. Optional: a custom domain for the Worker (Cloudflare dashboard > the Worker > Domains & Routes) makes the
    Cache API effective for profiles; on `workers.dev` only in-memory caching helps.
 

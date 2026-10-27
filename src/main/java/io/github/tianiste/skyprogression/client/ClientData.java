@@ -17,8 +17,8 @@ final class ClientData {
     static final ClientData INSTANCE = new ClientData();
     static final ExecutorService WORK = Executors.newVirtualThreadPerTaskExecutor();
     private static final ExecutorService DISK = Executors.newSingleThreadExecutor(Thread.ofPlatform().daemon().name("SkyProgression settings").factory());
-    /** Hosted SkyProgression API (Cloudflare Worker); empty until it is deployed, then the local companion is the default. */
-    static final String HOSTED_BACKEND = "";
+    /** Hosted SkyProgression API (Cloudflare Worker, github.com/tianiste/SkyProgression-API); empty = the local companion. */
+    static final String HOSTED_BACKEND = "https://skyprogression-api.tian-istenic34.workers.dev";
     static final String COMPANION_BACKEND = "http://localhost:18475";
     List<Item> catalog = List.of();
     ProgressionEngine engine;
@@ -341,13 +341,14 @@ final class ClientData {
         if(!ready||loading)return;
         if(!ign.matches("[A-Za-z0-9_]{1,16}")){message="Enter a valid Minecraft username.";revision++;changed.run();return;}
         cancel();int requestGeneration=generation;String base=backend;
+        // Your own name needs no lookup: the game session already has its UUID.
+        var user=net.minecraft.client.Minecraft.getInstance().getUser();
+        String own=user!=null&&ign.equalsIgnoreCase(user.getName())&&user.getProfileId()!=null?user.getProfileId().toString().replace("-",""):"";
         loading=true;message="Loading "+ign+"...";report=null;playerData=null;demo=false;prices=new HashMap<>();revision++;changed.run();
         lookup=WORK.submit(()->{
             try {
-                JsonObject identity=fetch(base+"/uuid?name="+ign,15,64*1024).getAsJsonObject();
-                String uuid=ProfileParser.string(identity.get("id"),"");
-                if(!uuid.matches("[0-9a-fA-F]{32}"))throw new IllegalStateException("Minecraft player not found.");
-                PlayerData d=fetchProfile(base,ProfileParser.string(identity.get("name"),ign),uuid,true);
+                String[] identity=own.isEmpty()?identity(base,ign):new String[]{own,ign};
+                PlayerData d=fetchProfile(base,identity[1],identity[0],true);
                 if(d.report.profiles.isEmpty())throw new IllegalStateException("No SkyBlock profiles found for "+ign+".");
                 // Decode the selected profile's items now, so the first report does not wait for it.
                 try{d.member("");}catch(Exception ignored){}
@@ -362,6 +363,27 @@ final class ClientData {
                 loading=false;message=(e instanceof IllegalStateException&&e.getMessage()!=null&&!e.getMessage().isBlank()?e.getMessage():unreachable())+" Demo works offline.";revision++;changed.run();
             });}
         });
+    }
+    /**
+     * UUID and name for a Minecraft name: asked of Mojang directly (Mojang refuses Cloudflare's addresses, so the hosted
+     * API cannot do it reliably), with the backend's /uuid as the fallback when Mojang cannot be reached.
+     */
+    private String[] identity(String base,String ign) throws Exception {
+        for(String url:List.of("https://api.minecraftservices.com/minecraft/profile/lookup/name/"+ign,"https://api.mojang.com/users/profiles/minecraft/"+ign)){
+            try{
+                var response=BoundedHttp.get(http,URI.create(url),Duration.ofSeconds(10),64*1024);
+                if(response.statusCode()==404||response.statusCode()==204)throw new IllegalStateException("Minecraft player not found.");
+                if(response.statusCode()!=200)continue;
+                JsonObject json=JsonParser.parseString(response.body()).getAsJsonObject();
+                String uuid=ProfileParser.string(json.get("id"),"");
+                if(uuid.matches("[0-9a-fA-F]{32}"))return new String[]{uuid.toLowerCase(Locale.ROOT),ProfileParser.string(json.get("name"),ign)};
+            }catch(IllegalStateException e){throw e;}
+            catch(Exception ignored){/* Try the next host, then the backend. */}
+        }
+        JsonObject json=fetch(base+"/uuid?name="+ign,15,64*1024).getAsJsonObject();
+        String uuid=ProfileParser.string(json.get("id"),"");
+        if(!uuid.matches("[0-9a-fA-F]{32}"))throw new IllegalStateException("Minecraft player not found.");
+        return new String[]{uuid,ProfileParser.string(json.get("name"),ign)};
     }
     void loadPrices(Consumer<Runnable> dispatch,Runnable changed) {
         int requestGeneration=generation;String base=backend;
