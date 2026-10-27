@@ -25,9 +25,10 @@ Not affiliated with or endorsed by Hypixel or Mojang.
 
 The native Stitch-inspired interface has four icon tabs (Home, Gear, Upgrades, Methods) and a More page, with
 profile/method selectors always in the top bar, stat bars, item icons, a coins/hour method chart, hover details and a
-clearly labeled offline demo. A local companion service
-loads Hypixel profiles and Coflnet price quotes. Inventory lookups and price requests
-run off the Minecraft render thread and are cached.
+clearly labeled offline demo. Every calculation runs inside the mod. Profiles and prices come from a backend: the
+hosted [SkyProgression API](https://github.com/tianiste/SkyProgression-API) (a thin Cloudflare Worker that holds the
+Hypixel key and caches profiles and one price bundle), or the local companion service for development and for
+players with their own key. Lookups, calculations and price requests run off the Minecraft render thread and are cached.
 
 **This is not yet full Mining Cat parity.** The item catalog is generated from the official
 items resource (every obtainable item with a mining stat). The mod reads individual gear copies,
@@ -46,8 +47,8 @@ prices remain unknown. Rates for non-gem methods still need further implementati
 the profile using the best gear and tool you own for the method (Gear tab; you can switch to your
 equipped gear or a specific tool); Type Stats overrides them.
 Read [installation and API setup](docs/SETUP.md) before testing. You do not need an API
-key for Demo. Real profile lookup requires your own registered Hypixel application key
-in the local companion service. The mod never asks for a key.
+key for Demo or for the hosted API. With the local companion, profile lookup uses your own Hypixel key in the
+companion process. The mod never asks for a key. Choose the backend in `config/skyprogression.json`.
 
 Read [calculation scope and sources](docs/CALCULATIONS.md) for formulas, limitations and
 the version-upgrade workflow.

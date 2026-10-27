@@ -48,6 +48,20 @@ The automatic coins/hour of every method is in "Coins per hour across methods" b
   and `/v2/resources/skyblock/collections` snapshots from 2026-10-26.
 - Coflnet `GET /api/item/price/{itemTag}/current`:
   <https://sky.coflnet.com/api/index.html>. Quotes request listings at least 120 seconds old.
+- Hosted price bundle (SkyProgression API, <https://github.com/tianiste/SkyProgression-API>): Bazaar items from Hypixel's
+  public `v2/skyblock/bazaar` (top of the order book: `buy` = lowest sell offer, `sell` = highest buy order, the same
+  meaning as Coflnet's figures, Bazaar tax not included), Auction House items and level-100 pets from the Coflnet endpoints
+  below, NPC sell prices from the items resource, mayor perks from the election resource. The local companion still asks
+  Coflnet for every item. Either way an ID without a quote is left out and reads as unknown, never 0.
+
+## Where calculations run
+
+Since 2026-10-27 every report (stat ledger, method comparison, start with, upgrades, rates) is calculated in the mod by
+`core/` on its worker threads (`PlayerData` holds the decoded profile and each profile's owned items). The backend, the
+hosted API or the local companion, only passes through the raw Hypixel profiles response (`/profile`, cached 5 minutes,
+older copies served while refreshing), resolves names (`/uuid`), serves the price bundle (`/prices`) and modifier-aware
+sale quotes (`/resale`). The endpoint names below that used to be companion endpoints (`/stats`, `/compare`, `/start`) now
+name the mod's report keys; the wire formats are the same classes.
 - Pristine expected-drop model:
   <https://hypixelskyblock.minecraft.wiki/w/Pristine>.
 - Lantern increments were supplied in the user's Mining Cat screenshot. They are explicitly
@@ -95,8 +109,8 @@ Rule references:
 
 ## Stat breakdown: Mining Fortune and Mining Speed
 
-`core/` `Loadout`, `StatContext`, `StatBreakdown` and `Breakdown` build a source ledger. The companion
-serves it as `GET /stats?ign=&profile=&method=&gear=best|equipped&tool=&zone=&target=&god=` (`StatsReport`:
+`core/` `Loadout`, `StatContext`, `StatBreakdown` and `Breakdown` build a source ledger. The mod calculates it as
+`/stats?ign=&profile=&method=&gear=best|equipped&tool=&zone=&target=&god=` (`StatsReport`:
 ledger per supported stat, equipped and best-owned totals, the gear used, owned tools). Owner decision
 2026-10-26: by default the gear is the best owned for the method (`Loadout.bestFor`) and the tool is the
 best owned tool (`Loadout.bestTool`). Items are scored like the upgrade ranking: Mining Fortune + the
@@ -288,8 +302,8 @@ Sources (wiki pages fetched 2026-10-27 through the wiki API; <https://hypixelsky
 - Permanent consumables the API exposes: Reaper Pepper only (above). Dwarven O's cereals stay untrackable.
 
 Temporary buffs (owner decision 2026-10-26: listed, never counted):
-- Mayor and minister perks from the official election resource (`v2/resources/skyblock/election`, no key; companion cache
-  20 minutes, retried after 5 minutes on failure). Each perk description is parsed for "+N [%] <stat>"; percentages of
+- Mayor and minister perks from the official election resource (`v2/resources/skyblock/election`, no key; part of the price
+  bundle, refreshed every 20 minutes; null while unreadable). Each perk description is parsed for "+N [%] <stat>"; percentages of
   Fortune are additive % lines. Since 2026-08-25 the Mining Fiesta lasts the whole mayorship (wiki Cole, Mining Fiesta), so
   Cole's perk means the Fiesta is on: +25% Mining Fortune and +25 Mining Wisdom (live check 2026-10-27, Cole is mayor). It
   replaces the untrackable Mining Fiesta line, and Fiesta Fortune (Packrat Shard, Uncommon, 5 Gemstone Fortune/level, wiki)
@@ -408,7 +422,9 @@ Talisman vs buy 32.0M.
 
 Cards show the cash outlay and, when the upgrade replaces something, the net cost = outlay - sale value of what it
 replaces. Ranking and the plan's choices use the outlay; the net is shown beside it.
-- Replaced gear (armor, equipment, tool, accessories) and the replaced pet: the companion asks Coflnet for the lowest
+- Replaced gear (armor, equipment, tool, accessories) and the replaced pet: the mod asks its backend's `/resale` (which asks
+  Coflnet, caching filter lists 1 hour and quotes 15 minutes; the mod caches quotes 15 minutes and waits at most 1.5 s
+  before showing the report, swapping in late quotes when they arrive) for the lowest
   BIN listing matching the evaluated copy (`/api/item/price/<tag>/bin`): Rarity, Recombobulated, Reforge,
   PowderCoating (drills and Divan items), DrillPartEngine/FuelTank/UpgradeModule; pets Rarity, PetLevel (exact) and
   PetItem. Only filters listed by `/api/filter/options?itemTag=` for that item are used, matched case-insensitively
@@ -467,7 +483,7 @@ Fortune" is unclear (additive or multiplicative) and not counted.
 
 ## Essence perks, attributes, HOTM perk levels
 
-The companion reads each source's level and the balances, and sends target levels with their counted stats in the
+The stat report reads each source's level and the balances, and sends target levels with their counted stats in the
 method's context (same conditions as the Breakdown) and the total cost from the current level:
 - Essence perks: Eager Miner (Gold Essence, +10 Mining Speed per level) and Rhinestone Infusion (Diamond Essence, +2
   Gemstone Fortune per level), 100, 200, ... 1,000 essence for levels 1..10 (NEU `constants/essenceshops.json`). The
@@ -518,7 +534,7 @@ value / stored count for other tiered sets.
 
 ## Pets and pet items
 
-The companion sends the evaluated pet's counted stats (same ledger rules as the Breakdown, in the method's zone and
+The stat report carries the evaluated pet's counted stats (same ledger rules as the Breakdown, in the method's zone and
 target) and the alternatives. Alternatives are each catalogued pet at level 100, one option per rarity whose
 catalogued stats differ from the rarity below (Bal Epic/Legendary, Scatha Rare/Epic/Legendary, Bee Rare/Epic/Mythic,
 Glacite Golem Common/Rare/Epic, Mithril Golem, Silverfish, Armadillo and Mole one each), and a Quick Claw for the
@@ -838,7 +854,7 @@ through its own ratio, by construction. The Grotto's other gems match the guide'
 
 ## Coins per hour across methods
 
-`core/` `MethodComparison`; companion `GET /compare?ign=&profile=&god=` (about 9 KB on the fixture); mod **Compare** tab.
+`core/` `MethodComparison`; calculated in the mod (`PlayerData.compare`, key `/compare?ign=&profile=&god=`); mod **Compare** tab.
 - Setup per method: the automatic totals with that method's best owned gear and best tool (`Loadout.bestFor`/`bestTool`),
   its best HOTM tree and its usual zone and block target (`MiningMethod.defaultZone`), God Potion as toggled (default on, the
   owner's decision for the Breakdown). That method's Type Stats values override the totals and its efficiency is used
@@ -847,8 +863,8 @@ through its own ratio, by construction. The Grotto's other gems match the guide'
 - Items / hour = `MethodRates.perHour` (sections "Rates: ..." above). Coins / hour = items / hour x coins per item. Ranked by
   coins / hour; methods without a usable price sort after every priced one and show "coins unknown", never 0, with their
   item rate. A method whose rate cannot be computed (for example Mining Speed 0) sorts last with the reason.
-- Prices: Coflnet `GET /api/item/price/{tag}/current?minAgeSeconds=120` (<https://sky.coflnet.com/api/index.html>), cached 15
-  minutes by the companion; each card names the quote's source and `updatedAt`. Two labelled figures:
+- Prices: Coflnet `GET /api/item/price/{tag}/current?minAgeSeconds=120` (<https://sky.coflnet.com/api/index.html>), refreshed about
+  every 15 minutes by the backend (hosted API: Bazaar items from Hypixel's Bazaar, see Data sources); each card names the quote's source and `updatedAt`. Two labelled figures:
   - instant-sell (default) = Coflnet `sell`, selling into the highest buy order now;
   - sell offer = Coflnet `buy`, the lowest current sell offer, which a new sell order matches only when someone buys.
   Both are gross: the Bazaar sales tax is not applied (its current rate and account reductions are not verified here).
@@ -856,7 +872,7 @@ through its own ratio, by construction. The Grotto's other gems match the guide'
   Red Sand (`SAND:1`) 3.2 sell / 133.7 buy, Mycelium (`MYCEL`) 1.9 / 47.3, Coal 4.4 / 7.7; `ENDER_STONE` had no sell figure,
   so End Stone's instant-sell coins were unknown. Crafting into enchanted items is not counted.
 - NPC sell (third mode): `npc_sell_price` from the official items resource
-  (<https://api.hypixel.net/v2/resources/skyblock/items>, no key), fetched by the companion at most every six hours and
+  (<https://api.hypixel.net/v2/resources/skyblock/items>, no key), fetched by the backend at most every six hours and
   attached to the `/prices` quotes as `npc` with its fetch time. Block products use their own entry. The resource lists no
   NPC price for Flawless or Perfect gems, but Rough, Flawed and Fine sell for the same amount per Rough (checked 2026-10-27:
   Ruby/Amber/Topaz 3 / 240 / 19,200, Jasper 4 / 320 / 25,600, which are x80 per tier), so a gem method's NPC value per Flawless
@@ -893,8 +909,7 @@ official. No coefficient is encoded; the manual Rates scenario still accepts a u
 
 ## Start with: best owned loadout
 
-`core/` `StartWith`; companion `GET /start?ign=&profile=&method=&tool=&zone=&target=&god=` (about 8-12 KB on the owner's
-snapshot); mod **Start with** tab. Added 2026-10-27 (owner request, roadmap 4).
+`core/` `StartWith`; calculated in the mod (`PlayerData.start`, key `/start?ign=&profile=&method=&tool=&zone=&target=&god=`); mod **Start with** tab. Added 2026-10-27 (owner request, roadmap 4).
 - Best owned loadout: the same choice as the Breakdown tab's default, without a second ranking: `Loadout.bestFor` with
   `Loadout.bestTool` (one copy per armor/equipment slot from all readable storage by the method weighting `Loadout.weigh`, one
   tool, the best catalogued pet, one accessory per family) and `StatBreakdown.chooseTree` for the HOTM tree. Slots are chosen

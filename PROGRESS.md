@@ -1,9 +1,30 @@
 # SkyProgression progress
 
-Last updated: 2026-10-27 (Heat, Cold, Maniac Miner, secondary drops). Current release: **0.3.0**. Status: functional preview;
+Last updated: 2026-10-27 (hosted backend: calculations moved into the mod). Current release: **0.3.0**. Status: functional preview;
 **not yet Mining Cat parity**. This file is the durable handoff for new chats.
 
 ## Resume here
+
+**Hosted backend (2026-10-27, in-game test pending, Worker not yet deployed).** Owner decision: a thin Cloudflare Worker
+proxy (free plan, nothing to maintain) in <https://github.com/tianiste/SkyProgression-API>; no TypeScript engine. Every
+report (`/stats`, `/compare`, `/start`, resale credit) is now calculated in the mod by `core/` on `ClientData.WORK`
+(new `core` `PlayerData`: raw profile decoded once, owned items per profile; cancellation and stale-key rejection as
+before; profiles older than 5 minutes refetch in the background). The mod reads `config/skyprogression.json`
+`"backend"` (empty = `ClientData.HOSTED_BACKEND`, empty until deployed, so the local companion is the default). Backend
+endpoints (Worker and companion alike): `/health`, `/uuid?name=`, `/profile?uuid=&fresh=1` (raw Hypixel body, 5-minute
+cache, stale-while-revalidate), `/prices` (bundle: prices + mayor perks + complete), `/resale?tag=&<filters>`. The
+companion lost `/report`, `/stats`, `/compare`, `/start` (an old companion makes the mod say "older than the mod").
+Worker: profile pass-through (memory + Cache API), cron `*/3` builds the price bundle in KV in steps (Bazaar from Hypixel's
+public bazaar every ~15 min, 175 Coflnet AH/pet quotes in batches of 40, NPC prices every 6 h, mayor every 20 min);
+large resources scanned by regex (3 ms) because `JSON.parse` takes ~15 ms > the free 10 ms CPU limit; rate-limit bindings
+(240/min per IP, 4/min per player, 100/min Hypixel); 503 without key; `src/price-ids.json` from `./gradlew
+:core:exportPriceIds`. Verified: Worker locally with `wrangler dev` (key only in the process environment): health,
+uuid, profile MISS 0.8 s then HIT 5 ms, 6 cron steps -> 334 prices + mayor, resale; the mod's data path with a scratch
+runner against that Worker and a companion on 18476 (decode 0.19 s, stats 0.1-0.17 s, compare ~0.45 s, start ~0.5 s,
+same totals both ways). Not run in game. **Owner next:** `npx wrangler login` in SkyProgression-API, then deploy
+(steps in docs/SETUP.md "Hosted API (owner)"), apply for a Hypixel application key and `wrangler secret put
+HYPIXEL_API_KEY`; put the Worker URL in `HOSTED_BACKEND` (or the config file) and check Load, Gear/Upgrades/Methods,
+resale net costs filling in, and the error messages (backend down, no key, rate limited, old companion).
 
 **Direction (2026-10-26): build our own Mining Cat + SkyCompass equivalent.** No
 runtime dependency on either tool; their outputs are validation evidence only.
@@ -466,11 +487,23 @@ endpoints backed by the core engine, and later a hosted deployment (owner decisi
 - `docs/SETUP.md`, `docs/CALCULATIONS.md`, `docs/DESIGN.md` explain current behavior.
 - Local companion: localhost:18475. Preserve an existing user-started service; do not
   terminate unknown processes or change its key silently. Restart instructions are in setup.
-- Current normal-user limitation: companion still required. No hosted backend exists.
+- Backend: hosted SkyProgression API (Cloudflare Worker, separate repo) or the local companion; chosen in
+  `config/skyprogression.json`. Until the Worker is deployed and `HOSTED_BACKEND` set, the companion is the default.
 - Previous downloadable packs live in the creating chat's outputs folder; rebuild from
   repository sources in a new chat rather than relying on those temporary handoff paths.
 
 ## Handoff log
+
+2026-10-27 (hosted backend): new `core` `PlayerData` (decode, `member`, `stats`/`start`/`compare`), `PriceIdsExporter` +
+`:core:exportPriceIds`; `ClientData` rewritten around a backend URL (config file, `HOSTED_BACKEND`, `COMPANION_BACKEND`),
+local report calculation, resale quotes (15-minute cache, 4 parallel, 1.5 s wait, late quotes swapped into a new map),
+mayor perks from the bundle (stats recalculated once they arrive), backend-specific error messages; `ProgressionScreen`
+wording. Companion: raw `/uuid`, `/profile`, bundle `/prices`, `/resale`. New repo SkyProgression-API (TypeScript,
+wrangler 4.152.0, TypeScript 7.0.2, GitHub Actions type-check + dry-run deploy). Cloudflare limits checked 2026-10-27
+(Workers: 10 ms CPU, 50 subrequests, 100k requests/day, 5 crons; KV: 100k reads, 1k writes/day). Open: deploy (blocked
+on `wrangler login`; the owner's `cf` CLI login is not read by wrangler), Hypixel application key, CPU of the cron
+steps on Cloudflare (not measurable locally), whether Mojang blocks Worker IPs (the Worker tries the services host then
+api.mojang.com), Bazaar figures now top-of-book from Hypixel instead of Coflnet's (same meaning, may differ slightly).
 
 2026-10-27 (Heat, Cold, Maniac Miner, secondary drops): `MethodRates` refactor: private `Core` evaluation (`blockCore`, `gemCore`), `rateAt`
 (rate as a function of a Mining Speed factor), `exposure` (Heat/Cold kept share), `Ability.fortunePerBlock`/`maniac()`/`level()`/
