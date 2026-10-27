@@ -110,6 +110,12 @@ details; lines starting with + expand on click.
   method**, **Refresh**), then the selected method's rate: items per hour or per its window, coins per hour at each
   price, efficiency, ticks, the next speed threshold, tool and zone, with assumptions on an expandable line. Also
   "Same change, different value" (+50 Fortune / +100 Speed per method) and the manual Type Stats scenario.
+- **Session tracker** (top of Methods): select the method, then just mine; the session starts on the first gain (or press
+  **Session: Start**) and pauses after 60 s without one. It counts inventory pickups, the [Sacks] chat summaries and Pristine
+  procs, and shows measured items / hour and coins / hour next to the model, with active time and uptime. It keeps running
+  with /sp closed; **HUD: On** shows a one-line summary in the corner. **Session: Stop**, then **Save session** writes it to
+  `config/skyprogression-sessions.json`; **Reset session** clears it. Don't move mined items from your inventory into sacks
+  mid-session (they would count twice).
 - **More** (gear button or F1): Type Stats, stat focus, Demo, HOTM and skill progress, powder, the gear audit for the
   focused stat, profile notes and help.
 

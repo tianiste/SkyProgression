@@ -29,6 +29,8 @@
 - **Upgrades that matter.** Every upgrade ranked by how much it raises your rate per coin, a step-by-step plan, buy vs
   craft, and resale of what it replaces.
 - **Start with what you own.** The best loadout you already have for a method, and where each piece is stored.
+- **Session tracker.** Measures your real collection and coins per hour for the selected method (pickups, sack
+  summaries, Pristine procs) next to the model, with active time and uptime; save sessions as JSON.
 - **Compare methods.** Coins per hour across every method with your own gear (instant-sell, sell offer or NPC prices).
 
 SkyProgression only gives advice. It never buys, equips or mines for you.

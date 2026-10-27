@@ -23,7 +23,8 @@ lines, and the existing flat palette (no blur).
   "Rank: <stat> points" replaces the old Stats tab. **View: Other & progress** switches to the guide stage (purple, expandable
   checklist items), "Can't check: skip if you already have it" bonuses (cyan cards: effect, gain, price) and "Progress you
   have to grind" (green cards: distance as the subtitle, gain, "Grinding"); requirement, how to get it and caveats are tooltips.
-- **Methods** (old Rates + Compare): the bar chart, then the selected method's rate card (big number, coins at each
+- **Methods** (old Rates + Compare): the session tracker card (measured vs model, active/elapsed, Pristine, counted items;
+  its controls Start/Stop, Reset, Save, Auto-start, HUD join the tab's row; Home shows a short tile while a session exists), the bar chart, then the selected method's rate card (big number, coins at each
   price, efficiency, ticks, next threshold, tool and zone, expandable assumptions), "Same change, different value"
   and the manual Type Stats scenario.
 - **More** (settings button, F1): Type Stats, stat focus, Demo; HOTM/skill meters, powder, the gear audit for the

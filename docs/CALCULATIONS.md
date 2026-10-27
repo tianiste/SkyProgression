@@ -1012,3 +1012,51 @@ all four Divan pieces, a DR-X555 or better, or HOTM 7; otherwise "Before the che
 checklist items (expandable), marking "(you own one)" only where the API shows the item. It is orientation, not a fixed
 order, and the checklist's unticked cells are not profile facts; personalized steps are the ranked lists. Fixture: Mid game
 (HOTM 10, Divan armor, DR-X655).
+
+## Session tracker
+
+`core` `SessionTracker` (rules) and the client's `SessionWatcher` (chat and inventory glue). It measures one method's real
+gains and compares them with the rate model; it only reads chat and the player's own inventory and sends nothing.
+
+**What counts.** Each method counts its product and that product's compacted forms, converted to base items with the NEU
+recipes (NotEnoughUpdates-REPO `items/*.json`, checked 2026-10-27): Enchanted X = 160 X (Coal, Gold Ingot, Obsidian, Umber,
+Tungsten, Glacite, End Stone, Cobblestone, Mycelium, Red Sand); Enchanted Coal Block, Enchanted Gold Block, Enchanted Mycelium
+Cube and Enchanted Red Sand Cube = 160 of the Enchanted form; gems Rough -> Flawed -> Fine -> Flawless = 80 each (Flawless =
+512,000 Rough, as in the rate model); Enchanted Hard Stone = 576 Hard Stone, Concentrated Stone = 576 Enchanted Hard Stone.
+Display names come from the official items resource (`/v2/resources/skyblock/items`), for example "Enchanted Gold Ingot",
+"Rough Amber Gemstone". MF Gems counts Amber, Sapphire, Jade and Amethyst as its product; MF Ruby / MF Topaz their gem;
+Grotto counts Jasper as the product and the four Breaking Power 7 gems as secondary (as the model's secondary drop). Hard
+Stone is a secondary drop on every Crystal Hollows, Dwarven Mines and Glacite method. Mineshaft corpse loot is not counted.
+
+**Sources of gains.**
+- Sack summaries: the chat line `[Sacks] +N items. (Last Ns.)` (also `+N items, -M items.`), sent at most every 30 s. Its
+  item list is the hover text: `Added items:` then lines `+20 Enchanted Gold Ingot (Enchanted Mining Sack)`; removed items
+  start with `-` and are ignored. Formats from the Hypixel chat as documented in comments of open-source mods
+  (SkyblockAPI `SacksAPI`, SoulMod `SackChatReader`; formats only, no code copied).
+- Inventory: every 0.5 s the net base items of each counted chain in the 36 main slots are compared with the last check;
+  an increase is a gain, a decrease (selling, storing) is ignored. So Compact turning 160 Coal into 1 Enchanted Coal counts
+  nothing. Items are matched by their SkyBlock id (custom data `id`), else by name. No comparison while a container screen is
+  open (the next check starts fresh), on a new world, or for 5 s after `/gfs`, `/sacks`, `/pickupstash`, `/storage` and similar
+  commands that move items into the inventory.
+- Pristine: `PRISTINE! You found ❈ Flawed Amber Gemstone x28!` (a gem symbol before the name; wiki Pristine: each Pristine
+  point is +1% chance per Rough of a Flawed). Procs and their Flawed are shown, but the gems are counted only once, when they
+  reach the inventory or a sack.
+
+**Time.** Auto-start (on by default) begins a session on the first product gain, back-dated by the sack summary's window
+(`Last Ns`, at most 30 s); Start begins one by hand. After 60 s without a product gain (sack summaries can be 30 s apart; set
+`trackerIdleSeconds`, 10-3600, in `config/skyprogression.json`) the session pauses and its active time ends at the last
+gain; the next product gain resumes it, back-dated at most to that last gain. Secondary drops count only while it runs. Stop
+ends the active time at once; a sack summary arriving within its window after Stop still counts (it covers earlier mining).
+Uptime = active / elapsed.
+
+**Rates.** Measured product per hour = product in the model's unit (Flawless for gems, else the block product) / active hours.
+Coins per hour values each counted family at its priced item (Flawless gem or base product) in the selected price mode, the same
+quotes the Methods tab uses; an unpriced product makes the coins "no price", an unpriced secondary is left out and marks the
+total "at least". The model column is the method's rate with the current stats, efficiency, tool ability and zone (as Rate now),
+and its coins add the modelled secondary drops. Measured / model x efficiency is the efficiency at which the model would give
+the measured rate.
+
+**Known errors.** Moving tracked items from the inventory into sacks during a session counts them twice (once picked up, once in
+the summary). Items dropped and picked up again, or received in trades outside a container screen, count as gains. Gains while
+the selected method is another method are not counted. Saved sessions (Save session, `config/skyprogression-sessions.json`)
+hold the method, times, counts, measured and model values and a stat/tool/zone/profile snapshot as validation evidence.
