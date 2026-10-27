@@ -32,6 +32,14 @@
 
 SkyProgression only gives advice. It never buys, equips or mines for you.
 
+## Screenshots
+
+| Home | Gear |
+| --- | --- |
+| <img src="docs/screenshots/home.png" alt="Home tab: stats for the selected method, current rate, best next upgrade and coins per hour for every method"> | <img src="docs/screenshots/gear.png" alt="Gear tab: best owned loadout and each stat split by source"> |
+| **Upgrades** | **Methods** |
+| <img src="docs/screenshots/upgrades.png" alt="Upgrades tab: step-by-step plan and every upgrade ranked by rate gain per coin"> | <img src="docs/screenshots/methods.png" alt="Methods tab: coins per hour by method and the selected method's rate details"> |
+
 ## Install
 
 1. Install **Fabric Loader 0.20.1+** and **Fabric API** for Minecraft **26.1.1**, **26.1.2** or **26.2** (Java **25**).
