@@ -95,7 +95,7 @@ fix them later; do not block on the in-game test. Order:
    first, total before/after, "already best" when none), and a best-method hint (gear worn now vs Compare's best owned).
    Held tool = the Tool choice shared with Breakdown (API has no held item; without it no tool swap). Rules: CALCULATIONS.md
    "Start with: best owned loadout".
-   **Rest of the stat model (`2fbfa62`, `5d1f3b5`, `8014139`, `3544f5c`; in-game test pending):** Mining Wisdom, Breaking Power,
+   **Rest of the stat model (`2fbfa62`, `5d1f3b5`, `8014139`, `3544f5c`; owner: works in game 2026-10-27, detailed menu comparison still open):** Mining Wisdom, Breaking Power,
    Pickaxe Ability Cooldown (reductions multiply), Heat and Cold Resistance (no longer manual) and All/Mithril/Gemstone/Glacite
    powder buffs in the same ledger and `/stats`; Breakdown tab **Stats** picker (Method, General, Gemstone, Blocks & Ores, Dwarven
    Metal, Resistance, Powder, All). New sources: Seasoned Mineman, Keep It Cool, Warm Heart, Powder Buff, Mineshaft Mayhem, Sky
