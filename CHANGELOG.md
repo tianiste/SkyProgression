@@ -1,11 +1,41 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 - 2026-10-28
 
-- Session tracker on the Methods tab: measures your real collection / hour and coins / hour for the selected method and shows
-  them next to the model, with active time, elapsed time and uptime. Counts inventory pickups, the [Sacks] chat summaries and
+### Session tracker
+
+- New on the Methods tab: measures your real collection / hour and coins / hour for the selected method and shows them
+  next to the model, with active time, elapsed time and uptime. Counts inventory pickups, the [Sacks] chat summaries and
   Pristine procs (compacted items count as their base items). Starts on the first gain, pauses after 60 s idle, keeps
-  running with /sp closed, optional HUD line, and Save session writes it to config/skyprogression-sessions.json. Read only.
+  running with /sp closed, optional HUD line, and Save session writes it to `config/skyprogression-sessions.json`. Read only.
+
+### More stat sources
+
+- Counted now: the Mineshaft HOTM perks Eager Adventurer and Steady Hand; the Ultimate DNA, Sleepy Spread, Gold Box, Royal
+  Riches, Greedy Goblin and Freezing Spread attributes and the Echo attributes; the Dwarven Expertise, Cut Loose and
+  Fungus / Harena Fortuna essence perks; Goblin, Snail, Kuudra, Mammoth, Baby Yeti and Penguin pets; Hephaestus Relic
+  (+50% of the pet's base stats) and Bejeweled Collar.
+- Gold Box and Dwarven Expertise moved from "can't check" into Upgrades.
+
+### Upgrades
+
+- Prices for every attribute shard and the newer pets and pet items.
+- Items nobody sells (such as the Relic of Power line) are priced through their recipes, several levels deep, using what
+  you own first; the card lists the recipes and total forge time. Locked recipes say what to unlock first.
+- Buy or craft is compared at every recipe level, and items you own are never counted by two plan steps.
+- New **Cost: buy order** toggle prices Bazaar items at buy-order prices ("fills only when a seller accepts your order").
+  Instant buy stays the default.
+- Pet items come back when you replace them, so a new pet keeps your Quick Claw, Hephaestus Relic or Bejeweled Collar,
+  and swapping between pet items you own is offered.
+- The plan can now pick a full drill build (engine, tank, module, reforge and gems together) and checks pairs of upgrades
+  that only pay off together.
+- Upgrade cards show the item each upgrade is about (the engine, reforge stone, gem, book, shard, essence or pet) instead
+  of the drill.
+- Fixed: the upgrade list failed when a pet had no price.
+
+### Rates
+
+- Tungsten and Umber are rated at 3 drops per block, matching the community route (Clay and Smooth Red Sandstone).
 
 ## 0.4.1 - 2026-10-27
 
