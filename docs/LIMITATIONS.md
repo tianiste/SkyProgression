@@ -188,7 +188,9 @@ is "assumed" is labelled in the interface where it affects a number.
 
 - **HOTM trees:** only the trees whose method is confirmed are published (MF Gems MSB and Maniac Miner, Dwarven Metals MSB,
   Gold MSB); the rest say "coming soon". Player HOTM pages compare against those only.
-- **Guides** are community guides with the date they were posted; rates and setups age as the game changes.
+- **Guides** are community guides with the date they were posted; rates and setups age as the game changes. Known stale
+  parts carry a dated notice (an author's "outdated" mark, the Bal cooldown swap removed in patch 0.27); the authors' text
+  itself is not rewritten.
 - **Checklist:** reads the inventory, armor, equipment, ender chest, wardrobe, bags, backpacks, Loadouts sets, sacks and the
   vault (with its API on), but not the museum, minions, forge, auctions or the Rift. Applied items checked: Polarvoid
   Books, Divan's Powder Coating, power scrolls, Recombobulator, Hot Potato Books; others show "not checked". An upgraded
@@ -196,7 +198,8 @@ is "assumed" is labelled in the interface where it affects a number.
   `prismatic` enchant and `heroic` reforge IDs are unverified.
 - **Player pages** use the mod's defaults (best owned gear, the method's usual zone and efficiency, God Potion on unless
   off). There are no manual stat overrides, no tool or zone choice and no "rank by stat points" view. Upgrade costs are the
-  cash outlay only (no resale credit). Item icons exist only for items the guides use, so many gear rows show an empty
+  cash outlay only (no resale credit); the Cost option (instant-buy or buy order) works once the Worker that passes it is
+  deployed. Item icons exist only for items the guides use, so many gear rows show an empty
   slot. The session tracker and anything that needs the game client stay in the mod.
 - **3D model:** armor is painted on the skin's outer layer, which is thinner than real armor. FurfSky Reborn textures cover
   513 items; variants the pack picks by lore (such as Adaptive's class) and its tinted set use the base texture; other
