@@ -51,4 +51,15 @@ tasks.register('exportPriceIds', JavaExec) {
     workingDir = rootProject.projectDir
     args = [project.findProperty('priceIdsOut') ?: 'build/price-ids.json']
 }
+// The hosted bundle prices only the IDs in its own copy of the list: warn when the API checkout next to this one is stale.
+def hostedPriceIds = rootProject.file('../SkyProgression-API/src/price-ids.json')
+tasks.register('checkPriceIds', JavaExec) {
+    description = 'Warns when ../SkyProgression-API/src/price-ids.json differs from the price IDs the mod reads.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.github.tianiste.skyprogression.core.PriceIdsExporter'
+    workingDir = rootProject.projectDir
+    args = ['core/build/price-ids.json', hostedPriceIds.path]
+    onlyIf { hostedPriceIds.exists() }
+}
+check.dependsOn 'checkPriceIds'
 jar { from(rootProject.file('LICENSE')) { rename { 'LICENSE_skyprogression-core' } } }
