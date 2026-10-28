@@ -74,7 +74,10 @@ public final class ProgressionService {
         System.out.println("SkyProgression service listening on http://localhost:" + PORT + (RELAY_SECRET != null ? " (profile relay mode)" : " (local access only)"));
         if (FIXTURE != null) System.out.println("Serving the profile fixture " + FIXTURE + " for every player.");
         else if (apiKey == null || apiKey.isBlank()) System.out.println("HYPIXEL_API_KEY is not set. Profile lookup is unavailable; price lookup still works.");
-        if (RELAY_SECRET != null) return; // The relay serves profiles only; the hosted API builds prices itself.
+        if (RELAY_SECRET != null) { // The relay serves profiles only; the hosted API builds prices itself.
+            ahead.execute(this::warmUp);
+            return;
+        }
         // Warm the shared caches so the first screen does not wait for ~300 price quotes.
         background.submit(() -> { try { prices(); } catch (Exception ignored) { /* Retried on the first /prices request. */ } });
         background.submit(this::mayorPerks);
@@ -316,54 +319,177 @@ public final class ProgressionService {
     private volatile ProgressionEngine engine;
     private record WebPrices(String updatedAt, Map<String, Price> prices, List<StatBreakdown.MayorPerk> mayor) {}
     private volatile WebPrices webPrices;
+    /** A /web request: its small fields, the profile (or the already decoded copy, whose resent body is then skipped) and the bundle. */
+    private record WebRequest(Map<String, JsonElement> fields, JsonElement data, PlayerData known, JsonElement bundle) {
+        String text(String name, String fallback) { return string(fields.get(name), fallback); }
+    }
+    /** A page and what it took (Server-Timing): reading the request, decoding the profile, building the page (about 0 when it was ready). */
+    private record WebAnswer(String json, String timing) {}
     /**
      * POST /web {"uuid", "player"?, "view", "profile"?, "method"?, "price"?, "cost"?, "god"?, "gear"?, "data"?, "fetchedAt"?, "bundle"?}: one
      * website page (WebViews) for a player. Like /checklist, "data" is the raw profiles response and "bundle" the hosted API's
      * price bundle; relay mode requires both (it fetches neither), the local companion fetches whatever is not sent.
+     * After the first page of a profile copy, the player's other pages are built in the background (see AHEAD).
      */
-    private String web(HttpExchange x) throws Exception {
+    private WebAnswer web(HttpExchange x) throws Exception {
+        long start = System.nanoTime();
         String length = x.getRequestHeaders().getFirst("Content-Length");
         if (length != null && length.matches("[0-9]{1,12}") && Long.parseLong(length) > MAX_WEB_BYTES) throw new LookupException(413, "Request too large");
         byte[] bytes = x.getRequestBody().readNBytes(MAX_WEB_BYTES + 1);
         if (bytes.length > MAX_WEB_BYTES) throw new LookupException(413, "Request too large");
-        JsonObject request;
-        try { request = JsonParser.parseString(new String(bytes, StandardCharsets.UTF_8)).getAsJsonObject(); }
-        catch (RuntimeException e) { throw new LookupException(400, "Body must be a JSON object"); }
-        String view = string(request.get("view"), "");
+        WebRequest request = readWeb(bytes);
+        String view = request.text("view", "");
         if (!WebViews.VIEWS.contains(view)) throw new LookupException(400, "view must be one of " + String.join(", ", new TreeSet<>(WebViews.VIEWS)));
         MiningMethod method; MethodComparison.PriceMode mode; Model.CostMode cost;
         try {
-            method = MiningMethod.valueOf(string(request.get("method"), "MF_GEMS"));
-            mode = MethodComparison.PriceMode.valueOf(string(request.get("price"), "INSTANT_SELL"));
-            cost = Model.CostMode.valueOf(string(request.get("cost"), "INSTANT_BUY"));
+            method = MiningMethod.valueOf(request.text("method", "MF_GEMS"));
+            mode = MethodComparison.PriceMode.valueOf(request.text("price", "INSTANT_SELL"));
+            cost = Model.CostMode.valueOf(request.text("cost", "INSTANT_BUY"));
         } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, price mode or cost mode"); }
-        boolean god = !"false".equals(string(request.get("god"), "true")), best = !"equipped".equals(string(request.get("gear"), "best"));
-        String uuid = string(request.get("uuid"), "").replace("-", "").toLowerCase(Locale.ROOT), player = string(request.get("player"), "");
-        JsonElement data = request.get("data"), bundle = request.get("bundle");
+        boolean god = !"false".equals(request.text("god", "true")), best = !"equipped".equals(request.text("gear", "best"));
+        String uuid = request.text("uuid", "").replace("-", "").toLowerCase(Locale.ROOT), player = request.text("player", "");
+        JsonElement data = request.data(), bundle = request.bundle();
+        boolean sent = data != null || request.known() != null;
         if (data != null && !data.isJsonObject() || bundle != null && !bundle.isJsonObject()) throw new LookupException(400, "data and bundle must be objects");
-        if (RELAY_SECRET != null && (data == null || bundle == null)) throw new LookupException(400, "data and bundle are required: the relay fetches neither");
-        if (uuid.isEmpty() && data == null) { Map<String, String> found = uuid(player); uuid = found.get("id"); player = found.get("name"); }
+        if (RELAY_SECRET != null && (!sent || bundle == null)) throw new LookupException(400, "data and bundle are required: the relay fetches neither");
+        if (uuid.isEmpty() && !sent) { Map<String, String> found = uuid(player); uuid = found.get("id"); player = found.get("name"); }
         if (!uuid.matches("[a-f0-9]{32}")) throw new LookupException(400, "uuid must be 32 hex characters");
         if (!player.matches("[A-Za-z0-9_]{0,16}")) throw new LookupException(400, "Invalid player name");
-        PlayerData d = player(uuid, player, data, string(request.get("fetchedAt"), ""));
+        String skinOf = uuid;
+        Future<WebViews.Skin> skin = background.submit(() -> skin(skinOf)); // Mojang answers while the page is built
+        long read = System.nanoTime();
+        boolean firstPage = request.known() == null;
+        PlayerData d = request.known() != null ? request.known() : player(uuid, player, data, request.text("fetchedAt", ""));
         WebPrices p = webPrices(bundle);
-        ProgressionEngine e = engine;
-        if (e == null) engine = e = new ProgressionEngine(Catalog.load());
-        String wanted = string(request.get("profile"), "");
+        ProgressionEngine e = engine();
+        String wanted = request.text("profile", "");
         String profileId = "";
         if (!wanted.isEmpty()) profileId = d.report.profiles.stream().filter(pr -> pr.id.equals(wanted) || pr.name.equalsIgnoreCase(wanted)).map(pr -> pr.id).findFirst()
                 .orElseThrow(() -> new LookupException(404, "Profile not found"));
         else if (d.report.profiles.isEmpty()) throw new LookupException(404, "This player has no SkyBlock profiles");
         else if (d.report.profiles.stream().noneMatch(pr -> pr.selected)) profileId = d.report.profiles.getFirst().id;
         var q = new WebViews.Query(view, profileId, method, mode, god, best, cost);
-        try { return WebViews.GSON.toJson(WebViews.build(q, d, e, p.prices(), p.mayor(), p.updatedAt(), skin(uuid))); }
-        catch (NoSuchElementException ex) { throw new LookupException(404, "Profile not found"); }
+        long decodedAt = System.nanoTime();
+        // Pages are kept only for a versioned bundle (the hosted API's), so one key always means the same prices.
+        boolean keep = bundle != null && !p.updatedAt().isEmpty();
+        String json = page(keep, q, d, e, p, skin);
+        long built = System.nanoTime();
+        if (keep && firstPage) {
+            String pid = profileId;
+            for (String next : AHEAD) if (!next.equals(view)) ahead.execute(() -> {
+                try { page(true, new WebViews.Query(next, pid, method, mode, god, best, cost), d, e, p, skin); }
+                catch (Exception ignored) { /* Built again, with its error, when the page is asked for. */ }
+            });
+        }
+        return new WebAnswer(json, String.format(Locale.ROOT, "read;dur=%.0f, decode;dur=%.0f, build;dur=%.0f", (read - start) / 1e6, (decodedAt - read) / 1e6, (built - decodedAt) / 1e6));
     }
-    private void sendWeb(HttpExchange x, String json) throws IOException {
-        byte[] body = json.getBytes(StandardCharsets.UTF_8);
+    /**
+     * The request's fields in one streaming pass. The Worker sends the small fields first, so when "data" comes and that profile
+     * copy (uuid and fetch time) is already decoded, its body is skipped instead of parsed again.
+     */
+    private WebRequest readWeb(byte[] bytes) throws LookupException {
+        Map<String, JsonElement> fields = new HashMap<>();
+        JsonElement data = null, bundle = null;
+        PlayerData known = null;
+        try (var in = new com.google.gson.stream.JsonReader(new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8))) {
+            in.setStrictness(Strictness.LENIENT);
+            in.beginObject();
+            while (in.hasNext()) {
+                String name = in.nextName();
+                PlayerData hit = name.equals("data") ? decodedCopy(string(fields.get("uuid"), ""), string(fields.get("fetchedAt"), "")) : null;
+                if (hit != null) { in.skipValue(); known = hit; data = null; continue; }
+                JsonElement value = JsonParser.parseReader(in);
+                switch (name) {
+                    case "data" -> { data = value; known = null; }
+                    case "bundle" -> bundle = value;
+                    default -> fields.put(name, value);
+                }
+            }
+            in.endObject();
+        } catch (IOException | RuntimeException e) { throw new LookupException(400, "Body must be a JSON object"); }
+        return new WebRequest(fields, data, known, bundle);
+    }
+    /** The decoded copy of this player's profile fetched at fetchedAt, or null. */
+    private PlayerData decodedCopy(String uuid, String fetchedAt) {
+        if (uuid.isEmpty()) return null;
+        try { return decoded.get(uuid.replace("-", "").toLowerCase(Locale.ROOT) + "@" + Instant.parse(fetchedAt)); }
+        catch (RuntimeException e) { return null; }
+    }
+    private ProgressionEngine engine() {
+        ProgressionEngine e = engine;
+        if (e == null) engine = e = new ProgressionEngine(Catalog.load());
+        return e;
+    }
+    /**
+     * Relay start: builds every page of the bundled sample profile (the core test fixture) a few times, without prices, so the
+     * first visitor's page does not wait for class loading and the JIT compiler.
+     */
+    private void warmUp() {
+        long start = System.nanoTime();
+        try (var stream = ProgressionService.class.getResourceAsStream("/warmup-profile.json")) {
+            if (stream == null) return;
+            JsonObject root = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+            root.addProperty("success", true);
+            String uuid = "0".repeat(32);
+            for (JsonElement pr : root.getAsJsonArray("profiles")) {
+                JsonObject members = pr.getAsJsonObject().getAsJsonObject("members");
+                members.add(uuid, members.entrySet().iterator().next().getValue());
+            }
+            PlayerData d = new PlayerData("", uuid, root, Instant.EPOCH.toString());
+            ProgressionEngine e = engine();
+            for (int round = 0; round < 3; round++) for (MiningMethod m : List.of(MiningMethod.MF_GEMS, MiningMethod.TUNGSTEN, MiningMethod.END_STONE))
+                for (String view : WebViews.VIEWS)
+                    WebViews.GSON.toJson(WebViews.build(new WebViews.Query(view, "", m, MethodComparison.PriceMode.INSTANT_SELL, true, true), d, e, Map.of(), List.of(), "", null));
+            System.out.printf(Locale.ROOT, "Page engine warmed up in %.1f s%n", (System.nanoTime() - start) / 1e9);
+        } catch (Exception e) { System.out.println("Page engine warm-up failed: " + e); }
+    }
+    /** Pages built ahead after a player's first page, most visited first. */
+    private static final List<String> AHEAD = List.of("upgrades", "overview", "methods", "start", "gear", "hotm");
+    /**
+     * One thread for pages built ahead (the relay VM has a fraction of one core, so they run one at a time); when a new player's
+     * pages are queued, older queued ones are dropped.
+     */
+    private final ThreadPoolExecutor ahead = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(AHEAD.size()),
+            Thread.ofPlatform().daemon().name("SkyProgression pages").factory(), new ThreadPoolExecutor.DiscardOldestPolicy());
+    private record Page(Instant time, FutureTask<String> task) {}
+    /** Finished or running pages by everything they depend on, for ten minutes; a page asked for while it runs is waited for, not built twice. */
+    private final Map<String, Page> pages = Collections.synchronizedMap(new LinkedHashMap<>(16, .75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, Page> eldest) { return size() > 24; }
+    });
+    private String page(boolean keep, WebViews.Query q, PlayerData d, ProgressionEngine e, WebPrices p, Future<WebViews.Skin> skin) throws Exception {
+        Callable<String> build = () -> {
+            WebViews.Skin s;
+            try { s = skin.get(); } catch (ExecutionException ex) { s = null; }
+            return WebViews.GSON.toJson(WebViews.build(q, d, e, p.prices(), p.mayor(), p.updatedAt(), s));
+        };
+        FutureTask<String> task;
+        String key = null;
+        if (!keep) task = new FutureTask<>(build);
+        else {
+            // Gear is the only view that shows the gear choice; the profile copy, bundle and options fix everything else.
+            key = String.join("|", d.uuid + "@" + d.fetchedAt, q.profileId(), q.view(), q.method().name(), q.mode().name(), String.valueOf(q.god()),
+                    String.valueOf(!q.view().equals("gear") || q.bestGear()), q.cost().name(), p.updatedAt());
+            synchronized (pages) {
+                Page hit = pages.get(key);
+                if (hit == null || hit.time().plusSeconds(600).isBefore(Instant.now())) pages.put(key, hit = new Page(Instant.now(), new FutureTask<>(build)));
+                task = hit.task();
+            }
+        }
+        task.run(); // Builds here unless it is already built or being built on another thread.
+        try { return task.get(); }
+        catch (ExecutionException ex) {
+            if (key != null) pages.remove(key);
+            if (ex.getCause() instanceof NoSuchElementException) throw new LookupException(404, "Profile not found");
+            if (ex.getCause() instanceof Exception cause) throw cause;
+            throw ex;
+        }
+    }
+    private void sendWeb(HttpExchange x, WebAnswer answer) throws IOException {
+        byte[] body = answer.json().getBytes(StandardCharsets.UTF_8);
         x.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
         x.getResponseHeaders().set("Cache-Control", "no-store");
         x.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
+        x.getResponseHeaders().set("Server-Timing", answer.timing());
         x.sendResponseHeaders(200, body.length);
         x.getResponseBody().write(body);
     }

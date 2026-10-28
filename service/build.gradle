@@ -4,3 +4,5 @@ repositories { mavenCentral() }
 java { toolchain.languageVersion = JavaLanguageVersion.of(25) }
 dependencies { implementation project(':core') }
 application { mainClass = 'io.github.tianiste.skyprogression.service.ProgressionService' }
+// The relay warms its page engine up on this sample profile at start (ProgressionService.warmUp).
+processResources { from(project(':core').file('src/test/resources/fixtures/debotes-zucchini.json')) { rename { 'warmup-profile.json' } } }
