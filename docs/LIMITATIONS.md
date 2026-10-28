@@ -19,8 +19,7 @@ is "assumed" is labelled in the interface where it affects a number.
   view and the redesigned interface were confirmed by eye in game, not number by number against the in-game stat menu.
 - **One test profile.** Numbers were checked against one late-game profile. Early-game profiles, Ironman and Bingo,
   profiles with API settings off and profiles with duplicates or maxed gear have not been systematically tested.
-- **Not built yet:** live gear (reading equipped gear from the game client instead of the API), the HOTM tree planner (best
-  perk allocation and respec gain), and methods without a model (Mithril, Titanium, Dwarven ores such as Diamond, Flint,
+- **Not built yet:** live gear (reading equipped gear from the game client instead of the API) and methods without a model (Mithril, Titanium, Dwarven ores such as Diamond, Flint,
   Netherrack, and Umber/Tungsten as full routes with mineshafts).
 
 ## What the Hypixel API does not tell us
@@ -111,6 +110,22 @@ is "assumed" is labelled in the interface where it affects a number.
 - **Coleweight** is not shown: its coefficients could not be verified from a primary source.
 - **Comparison** uses each method's usual zone and best owned gear; the zone and tool you picked on the Gear tab are not used.
 
+## HOTM tree planner
+
+- **Rate-only, stat perks only.** The planner values a tree by the method's rate alone. Perks the rate model does not
+  know (Sky Mall, Front Loaded, Mineshaft Mayhem, Precision Mining's aim target, Lonesome Miner, powder, Wisdom and
+  Mineshaft-spawn perks) count nothing: they are bridges, or kept from your tree when tokens and powder are left. Strong
+  Arm's hidden Pure Ore and airborne Hard Stone speed (wiki Tier 8) is not counted either.
+- **Bounded search.** Greedy by gain per token with one-perk swaps, not an exhaustive search, so a better tree can exist;
+  perks that only pay off together through a tick threshold can be missed.
+- **Same ability level and cooldown.** Maniac Miner and Mining Speed Boost are compared at the tool's ability level and
+  cooldown; Sky Mall's and Mineshaft Mayhem's cooldown buffs are not counted.
+- **One tree, default efficiency and zone.** It plans the tree the engine evaluates (the best of your Loadouts trees), at
+  the method's usual zone. The tree-picture guides are not used as presets: their method mapping is unconfirmed.
+- **Core of the Mountain stays.** Its levels are kept by a reset (wiki); the planner never levels it for more tokens.
+- **Not checked in game.** Powder costs reproduce one profile's `powder_spent` exactly; the reset refund is from the wiki
+  only, and the website does not draw the plan yet (the relay returns it).
+
 ## Upgrades and costs
 
 - **Alternatives are independent.** Each upgrade is measured against the same current state; the list is not a shopping
@@ -133,7 +148,7 @@ is "assumed" is labelled in the interface where it affects a number.
   rarity sets a replacement fee is not on the wiki (the higher is used), and applying an item to an empty pet is assumed free.
   The replaced pet's sale price without its item is not quoted, so that net cost is unknown. Pet items held by your other pets
   are not offered. Pets that need other pet items or perks stay unknown.
-- **Not offered as upgrades:** scrolls, levelling Core of the Mountain for tokens, resetting the HOTM tree, Quartz Speed and
+- **Not offered as upgrades:** scrolls, levelling Core of the Mountain for tokens, resetting the HOTM tree (the planner card shows it), Quartz Speed and
   Deep Technique (situational), and modifiers on a newly bought base item (it is treated as having none).
 - **Assumed:** every drill accepts every part (not stated on the wiki); the fuel tank removal fee equals the engine's 9,999.
   Enchantment XP costs are not converted to coins.

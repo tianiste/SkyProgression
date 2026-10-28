@@ -21,7 +21,9 @@ lines, and the existing flat palette (no blur).
   best-method hint in tooltips. Each stat card has one bar split by source category (Gear gold, HOTM cyan, Skill
   green, Pet purple, others muted) over the attainable total, a legend, the top four sources (check mark when maxed,
   "+ N more" expands) and one collapsed line for situational, temporary, missing and not-in-API sources.
-- **Upgrades:** the step-by-step plan as numbered icon cards (gain green, cost right), then every ranked upgrade in
+- **Upgrades:** the step-by-step plan as numbered icon cards (gain green, cost right), the purple "HOTM tree planner" card
+  (current and planned rate, ability, reset, tokens, powder rows red when the target is short, expandable "Perk changes"
+  green up / red down), then every ranked upgrade in
   the same card style; the model, assumptions, cost efficiency and resale notes are tooltips. "Rank: rate gain" /
   "Rank: <stat> points" replaces the old Stats tab. **View: Other & progress** switches to the guide stage (purple, expandable
   checklist items), "Can't check: skip if you already have it" bonuses (cyan cards: effect, gain, price) and "Progress you

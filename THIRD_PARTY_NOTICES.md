@@ -7,7 +7,7 @@ SkyProgression is licensed under the MIT License (see [LICENSE](LICENSE)). It al
 Parts of the bundled mining data are generated from the
 [NotEnoughUpdates-REPO](https://github.com/NotEnoughUpdates/NotEnoughUpdates-REPO): reforges and reforge stones
 (`mining-reforges.json`), crafting and forge recipes (`mining-recipes.json`), pet levels (`pet-levels.json`), and the
-essence shop, attribute shard, HOTM layout and pet ability constants cited in the source code.
+essence shop, attribute shard, HOTM layout (node positions, maxima, powder costs) and pet ability constants cited in the source code.
 
 MIT License, Copyright (c) 2020 Moulberry. The full license text ships in the mod jar as
 `licenses/NotEnoughUpdates-REPO-LICENSE.txt` and is in

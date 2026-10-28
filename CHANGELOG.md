@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### HOTM tree planner
+
+- New card on the Upgrades tab: the best HOTM tree for the method within your tier, Tokens of the Mountain and powder
+  (a reset is free and refunds all powder except Core of the Mountain), next to your current tree. It shows the rate
+  before and after, whether a reset is needed, the better pickaxe ability (Mining Speed Boost or Maniac Miner), tokens,
+  powder needed per type and what is still missing, and every perk change (expand "Perk changes").
+- Every HOTM node's cost and maximum is now known (NEU, checked against the wiki): Mole's powder cost uses the wiki's
+  exponent (2.17883), and Keep It Cool, Warm Heart, Seasoned Mineman and Powder Buff levels appear as upgrade options.
+- Companion/relay: the `hotm` view returns the plan as `planner`.
+
 ### Live gear
 
 - Gear, Home and Start with now use the gear the game shows: worn armor, the inventory and the held drill or pickaxe

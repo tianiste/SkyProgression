@@ -575,7 +575,8 @@ method's context (same conditions as the Breakdown) and the total cost from the 
 - HOTM perks: levelling perks already unlocked in the evaluated tree, to the next level, +5, +10, +25 and max.
   Powder per level from NEU `constants/hotmlayout.json`: floor((level + 2)^e) with e = 3 (Mining Speed), 3.05
   (Mining Fortune, Rags to Riches), 3.2 (Speedy/Fortunate Mineman), 2.3 (Professional, Strong Arm), 4 (Gem Lover,
-  Old-School, Blockhead, Metal Head), 2.6 (Efficient Miner), 2.17883 (Mole: wiki `Template:Heart_of_the_Mountain/List/Tier_4`; NEU still has 2.2, and only
+  Old-School, Blockhead, Metal Head), 2.6 (Efficient Miner), 3.07 (Keep It Cool), 3.1 (Warm Heart), 2.3 (Seasoned
+  Mineman), 3.2 (Powder Buff), 2.17883 (Mole: wiki `Template:Heart_of_the_Mountain/List/Tier_4`; NEU still has 2.2, and only
   2.17883 reproduces the fixture's `powder_spent_gemstone` exactly); Mining Master floor((level + 8)^5); level is
   the current level. Unspent powder = `powder_<type>` (the API value is already net of `powder_spent_<type>`; owner check: 21.2M
 Gemstone Powder in game). An option is free when the unspent powder
@@ -588,7 +589,8 @@ Gemstone Powder in game). An option is free when the unspent powder
   10, 26 unlocked perks -> 25 = `tokens_spent.mountain`). Options: unlock (level 1, tokens only), then levels 5, 10, 25
   and max with powder from level 1 (same formula). Free when the tokens and unspent powder cover it, otherwise grinding;
   below the path's tier it is blocked as "Reach HOTM N first (grinding)". The plan tracks unlocked nodes and tokens, so
-  a shared path is paid once. Not modelled: levelling Core of the Mountain for tokens, resetting the tree.
+  a shared path is paid once. Not modelled here: levelling Core of the Mountain for tokens. Resetting the tree is the
+  HOTM tree planner's job (below).
 - Mining skill (grinding): +4 Mining Fortune per level; options for the next level, +5, +10 and 60, with the Mining XP
   still needed (official skills resource). Collections (grinding): tiers whose rewards include a mining stat. In the
   official collections resource (checked 2026-10-26) these are only Tungsten, Umber, Glacite and Obsidian (+1 Mining
@@ -596,6 +598,49 @@ Gemstone Powder in game). An option is free when the unspent powder
   priced ones and are skipped by the plan; the list shows each chain's nearest level.
 In the plan a taken level replaces the chain's stats, the chain's earlier spending is subtracted from its later
 levels, and balances shrink by what was used.
+
+## HOTM tree planner
+
+`HotmPlanner` finds the perk allocation with the best rate for the selected method and shows it next to the current tree
+(Upgrades tab card; relay `/web` view `hotm`, field `planner`).
+- Node data: every node's position, maximum level, powder type and cost exponent from NEU `constants/hotmlayout.json`
+  (pinned commit `f19539bb`, MIT, credited in `THIRD_PARTY_NOTICES.md`), checked against the wiki
+  `Template:Heart_of_the_Mountain/List/Tier_1` .. `Tier_10` (wiki maxima are one higher: that is the Blue Cheese level). The
+  next level costs floor((level + 2)^e) at the current level (Mining Master (level + 8)^5); level 1 is the unlock and costs
+  only its token. Where the two differ the wiki is used: Mole 2.17883 (NEU 2.2), Quick Forge 3.2 (NEU 4), Subterranean
+  Fisher 3.07 (NEU 3.7). Fixture check: the perk formulas give exactly `powder_spent_mithril` 8,517,747,
+  `powder_spent_gemstone` 20,843,215 and `powder_spent_glacite` 3,286,000, so `powder_spent_<type>` leaves out Core of the
+  Mountain.
+- Reset (wiki Heart of the Mountain, <https://hypixelskyblock.minecraft.wiki/w/Heart_of_the_Mountain>): free since
+  2025-07-03 ("Removed cost of resetting the Heart of the Mountain tree", repeated in 0.23.1; the 24-hour cooldown was removed
+  on 2023-09-12). A reset "reverts all perk purchases and reimburses all spent" powder and Tokens of the Mountain; "Tier and
+  Core of the Mountain levels are kept; thus powder spent on upgrading Core of the Mountain is not reimbursed". Powder after
+  a reset per type = `powder_<type>` + `powder_spent_<type>`; tokens = the earned total (tiers and Core of the Mountain, as
+  above).
+- Rules: a node needs its tier (10 - row) and an orthogonal neighbour already in the tree, starting from Mining Speed;
+  every node but Core of the Mountain takes one token (Core of the Mountain is a free passage once the tier reaches 5); a
+  perk's level is at most its maximum; the Blue Cheese Goblin Omelette adds +1 level to every unlocked perk past the cap
+  (wiki, as in the Breakdown); perks toggled off count nothing now and are switched on in the plan.
+- Value: the method's counted stats with the current tree minus the current perks' counted stats (same conditions as the
+  Breakdown, so Professional counts only on Gemstones, Strong Arm on Dwarven Metals, Rags to Riches and Eager Adventurer
+  only in Mineshafts), plus the candidate tree's, rated with `MethodRates.perHour` at the method's default efficiency and
+  zone, the same rate as the Upgrades tab. Only the perks in `StatBreakdown.PERKS` change the rate; Sky Mall, Front Loaded,
+  Mineshaft Mayhem, Precision Mining, Lonesome Miner and the other nodes are bridges with no value.
+- Ability: the selected ability's node must be in the tree. Both Mining Speed Boost and Maniac Miner are planned at the
+  tool's ability level and cooldown (`MethodRates.alternative`; the level comes from Core of the Mountain and the omelette,
+  which a reset keeps) and the better tree is shown, with the other one's gain.
+- Search (bounded, 2-70 ms per method on the fixture, on the analysis worker): grow the tree from Mining Speed (and,
+  separately, from the current tree) by adding the stat perk with the best rate gain per token along its fewest-token path,
+  with every stat perk at its maximum; drop nodes that add nothing; then for each taken perk plan again without it and keep
+  the better tree (two rounds). Each stat perk is then cut to the lowest level that keeps that rate (the target tree).
+  When the powder after a reset does not cover the target, perks of the short types restart at level 1 and are levelled
+  greedily by rate gain per share of that powder (steps +1, +5, +10, +25, target). Last, what the player has is kept where
+  it costs nothing the plan needs: planned perks go back up to their current level and other current nodes next to the
+  tree stay, while tokens and powder are left. If nothing beats the current tree, the current tree is the plan.
+- Output: current and planned rate (per hour) and gain, the target rate when the powder falls short, the ability, tokens
+  used, whether a reset is needed (the plan lowers or removes something; otherwise it only adds levels from unspent
+  powder), powder needed per type against what pays for it, and what the target still misses; changed nodes with old
+  and new levels. Unknown HOTM data (no tree or no HOTM XP) means no plan; an unknown powder type means only the target.
 
 ## Set bonuses
 
