@@ -31,6 +31,8 @@ public final class ProgressionScreen extends Screen {
     /** Upgrades tab: false shows purchasable upgrades; true shows bonuses the API can't check, grinding and the guide stage. */
     private boolean otherView;
     private OtherUpgrades.Report other;
+    /** Upgrades tab: the HOTM tree planner for the method (null when not planned or unknown). */
+    private HotmPlanner.Plan hotm;
     /** Gear tab: key of the clicked loadout slot (empty = none); keys of expanded lines. */
     private String slot="";
     private final Set<String> expanded=new HashSet<>();
@@ -246,7 +248,7 @@ public final class ProgressionScreen extends Screen {
     private static final int PLAN_STEPS=12;
     private void analyze(){
         int generation=++analysisGeneration;if(analysis!=null)analysis.cancel(true);
-        Profile p=data.profile();overview=List.of();upgrades=List.of();plan=List.of();other=null;bestRow=null;bestGains=new IdentityHashMap<>();
+        Profile p=data.profile();overview=List.of();upgrades=List.of();plan=List.of();other=null;hotm=null;bestRow=null;bestGains=new IdentityHashMap<>();
         boolean needed=tab==HOME||tab==UPGRADES||tab==MORE;
         if(p==null||!data.ready||!needed||!p.inventoryEnabled&&!(tab==UPGRADES&&otherView)){calculating=false;buildCards();return;}
         calculating=true;buildCards();
@@ -261,15 +263,17 @@ public final class ProgressionScreen extends Screen {
         StatsReport report=data.stats(method);var basis=report==null?new ProgressionEngine.RateBasis(data.inputs(method).efficiency,null)
                 :new ProgressionEngine.RateBasis(data.inputs(method).efficiency,report.ability,report.petStats,report.petOptions,report.profileUpgrades,report.resale);
         boolean statsReady=data.hasStats(method);double efficiency=data.inputs(method).efficiency;
+        var hotmContext=new StatContext(data.zone(method),method.target(),data.inputs(method).godPotion);
         analysis=ClientData.WORK.submit(()->{
             try {
                 var base=selectedTab==MORE?data.engine.overview(p,selectedMethod,selectedStat):List.<Overview>of();
                 var ranked=ranks&&(focused||statsReady)?data.engine.upgrades(p,selectedMethod,focused?selectedStat:null,effective,quotes,basis):List.<Upgrade>of();
                 var steps=plans&&statsReady?data.engine.plan(p,selectedMethod,effective,quotes,basis,PLAN_STEPS):List.<ProgressionEngine.Step>of();
+                var tree=ranks&&!focused&&statsReady&&report!=null?HotmPlanner.plan(selectedMethod,report.hotm,effective,efficiency,report.ability,hotmContext):null;
                 var extra=others&&statsReady?OtherUpgrades.of(data.engine,p,selectedMethod,report,effective,efficiency,quotes,basis):null;
                 Map<Upgrade,Double> gains=new IdentityHashMap<>();
                 if(best!=null&&bestStats!=null&&best.method()!=selectedMethod)for(var u:ranked){Double g=MethodComparison.gain(best.method(),bestStats,bestEfficiency,bestEntry.ability,u.delta(),u.cooldownFactor());if(g!=null)gains.put(u,g);}
-                minecraft.execute(()->{if(generation!=analysisGeneration||Compat.screen(minecraft)!=this)return;overview=base;upgrades=ranked;plan=steps;other=extra;bestRow=best;bestGains=gains;calculating=false;buildCards();});
+                minecraft.execute(()->{if(generation!=analysisGeneration||Compat.screen(minecraft)!=this)return;overview=base;upgrades=ranked;plan=steps;other=extra;hotm=tree;bestRow=best;bestGains=gains;calculating=false;buildCards();});
             }catch(Exception e){minecraft.execute(()->{if(generation!=analysisGeneration||Compat.screen(minecraft)!=this)return;calculating=false;cards.clear();card("Unable to calculate",RED,0).line("Try loading the profile again. No upgrades were assumed.",TEXT);layoutCards();});}
         });
     }
@@ -775,6 +779,7 @@ public final class ProgressionScreen extends Screen {
                 }
                 if(n%2==1)card("",GOLD,1).line(plan.size()==PLAN_STEPS?"First "+PLAN_STEPS+" steps shown.":"End of the plan.",MUTED);
             }
+            hotmCard();
         }
         Card list=card(focused?stat.label+" | cheapest points first":"All upgrades, best value first",GOLD,FULL);
         list.right=upgrades.size()+" found";
@@ -790,6 +795,42 @@ public final class ProgressionScreen extends Screen {
             c.add(new Entry(upgradeIcon(u),"#"+rank+"  "+u.item().name,u.blocked().isEmpty()?TEXT:RED,!u.blocked().isEmpty()?u.blocked():!changes.isEmpty()?changes:u.current()!=null?"Replaces: "+u.current().name:"",!u.blocked().isEmpty()?RED:CYAN,
                     gain,GREEN,u.owned()?"Owned":costText(u),u.owned()?GREEN:u.cost()==null?MUTED:TEXT,upgradeTip(u,focused),null));
         }
+    }
+
+    /** HOTM tree planner: the best tree for the method next to the current one, with the reset gain, tokens and powder. */
+    private void hotmCard(){
+        StatsReport r=data.stats(method);var h=hotm;
+        Card c=card("HOTM tree planner",PURPLE,FULL);
+        c.tip="Best perk allocation for "+method.label+" within your HOTM tier, Tokens of the Mountain and powder, rated with the same model as the plan."
+                +"\nA reset is free and refunds all tokens and powder except Core of the Mountain, whose level is kept."
+                +"\nOnly perks with modelled stats are valued; Sky Mall, Front Loaded, Precision Mining, Mineshaft Mayhem and other perks are not.";
+        if(r==null||r.hotm==null){c.line("HOTM tree or HOTM XP not in the API, so the planner can't tell what you have.",MUTED);return;}
+        if(h==null){c.line(MethodRates.supported(method)?"Rate unavailable for these stats.":"No rate model for "+method.label+" yet.",MUTED);return;}
+        Double g=h.gain();var t=h.now()!=null?h.now():h.target();
+        c.right=g==null?"gain unknown":g<=1e-4?"no gain":"+"+fmt(g)+"% rate";c.rightColor=g!=null&&g>1e-4?GREEN:MUTED;
+        c.pair("Current tree",h.before()==null?"unknown":fmt(h.before())+" "+h.unit(),TEXT);
+        c.pair(h.now()!=null?"Planned tree":"Target tree",t.rate()==null?"unknown":fmt(t.rate())+" "+h.unit(),GREEN);
+        Double tg=h.targetGain();
+        if(h.now()!=null&&tg!=null&&!h.target().levels().equals(h.now().levels()))c.pair("With enough powder",fmt(h.target().rate())+" (+"+fmt(tg)+"%)",CYAN);
+        String ability=t.ability().isEmpty()?"none on the tool":t.ability();
+        if(h.other()!=null&&h.other().rate()!=null&&t.rate()!=null&&t.rate()>0)ability+=" ("+h.other().ability()+" "+fmt((h.other().rate()/t.rate()-1)*100)+"%)";
+        c.pair("Pickaxe ability",ability,TEXT);
+        if(!h.changes().isEmpty())c.pair("Reset",h.reset()?"needed (free, refunds the powder)":"not needed, only adds levels",h.reset()?GOLD:GREEN);
+        c.pair("Tokens of the Mountain",t.tokens()+" / "+h.tokens(),TEXT);
+        for(String type:List.of("MITHRIL","GEMSTONE","GLACITE")){
+            Double need=h.need().get(type),have=h.have().get(type),miss=h.missing().get(type);
+            if(need==null&&miss==null)continue;
+            boolean short_=miss!=null&&miss>0;
+            c.pair(type.charAt(0)+type.substring(1).toLowerCase(Locale.ROOT)+" Powder",compact(need==null?0:need)+" of "+(have==null?"unknown":compact(have))
+                    +(short_?", target needs "+compact(miss)+" more":""),short_?RED:have==null?MUTED:TEXT);
+        }
+        String key="hotm:"+method;boolean open=expanded.contains(key);
+        if(!h.changes().isEmpty()){
+            c.add(new Text((open?"- ":"+ ")+"Perk changes ("+h.changes().size()+")",CYAN,null,()->toggle(key)));
+            if(open)for(var ch:h.changes())c.line("  "+ch.name()+": "+(ch.from()==0?"locked":String.valueOf(ch.from()))+" -> "+(ch.to()==0?"locked":String.valueOf(ch.to()))
+                    +(ch.disabled()?" (switch it on)":""),ch.to()>ch.from()?GREEN:ch.to()<ch.from()?RED:GOLD);
+        }
+        for(String n:h.notes())c.line(n,MUTED);
     }
 
     /** Upgrades, other view: the guide stage, bonuses the API can't check, and progress to grind, each ranked by rate gain here. */
