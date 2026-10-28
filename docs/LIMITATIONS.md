@@ -79,7 +79,9 @@ is "assumed" is labelled in the interface where it affects a number.
 - **Gaps against the guides** (checked 2026-10-28, [GUIDE-COMPARISON.md](references/GUIDE-COMPARISON.md)): at the guides' own
   setups Obsidian comes to 4.4-5.5M/h at our default 65% against the guide's 3.5M (the route is walking-limited, so 65% is
   probably too high for it), and Mycelium/Red Sand to about 10.7M/h against 4.6-4.8M (unexplained; Glossy Mineral Spread
-  may not apply there or may not find enough adjacent blocks). Cobblestone and End Stone now match (14.2M/h in 11-16M).
+  may not apply there or may not find enough adjacent blocks). No primary source gives a Spread cap on flat surfaces (the wiki
+  only excludes blocks beneath your feet; one 2024 forum report suggests a 3x3 limit, which would explain about 11%), so Spread
+  is not capped and Spread upgrades on Mycelium/Red Sand may be overvalued. Cobblestone and End Stone now match (14.2M/h in 11-16M).
   The Gold guide has not posted rates yet.
 - **Block strength unknown:** Mycelium and Red Sand have no wiki strength and are assumed instamined.
 - **Dwarven metals:** Tungsten and Umber are rated at 3 per block, the Dwarven Metal guide's route (only Clay for Tungsten

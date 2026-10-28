@@ -865,6 +865,21 @@ not find enough adjacent blocks on a flat surface (the wiki says it breaks adjac
 the run is slower than 20 blocks / second. Not tuned; see [GUIDE-COMPARISON.md](references/GUIDE-COMPARISON.md). Fixture (Crimson Isle as "other" zone): Fortune 1,429.5 + Block 115, Spread 300: about
 3.9M / hour.
 
+Spread cap research (2026-10-28), no rule encoded:
+- Wiki Mining Spread (<https://hypixelskyblock.minecraft.wiki/w/Mining_Spread>): up to 100 it is the chance of one extra
+  adjacent block; above 100 the leading digits are guaranteed adjacent blocks plus the last two digits as a chance (145 = 1 +
+  45%); 10,000 = 100 extra blocks; Spread "will not break blocks beneath the player's feet, even if there are no other
+  options", except when the block was broken looking downwards. The page does not say which neighbours count as adjacent,
+  how far Spread may reach, or what happens when fewer neighbours exist than the guaranteed count.
+- NEU repository: no Spread data (item lore only).
+- Community: one Hypixel Forums post (2024-08-22, not staff; <https://hypixel.net/threads/why-is-mining-spread-so-weird.5752467/>)
+  reports Spread never breaking outside a 3x3 area around the mined block on Mycelium and Obsidian with Glossy armor. One
+  report, before the current Glossy values, so not a rule.
+- Even that limit would not explain the gap: on a flat surface a 3x3 area holds 8 neighbours, so capping the guaranteed
+  extra blocks at 8 turns Spread 910 (x10.1) into x9.0, about 11% less, while the guide is about 57% below the model. So
+  Spread on Mycelium and Red Sand is not capped in `MethodRates`; the open question stays in LIMITATIONS.md, and a session
+  tracker measurement at full Glossy (blocks per second and drops per block) is the way to settle it.
+
 ## Rates: pickaxe abilities, Heat and Cold
 
 Added 2026-10-27. Applies to every `MethodRates` model, so the Rates tab, Compare, Start with and the Upgrades ranking all use it.
