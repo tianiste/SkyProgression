@@ -62,7 +62,10 @@ summarizes. Rules and sources are in [CALCULATIONS.md](../CALCULATIONS.md), open
   collection / hour; Commissions 94M coins and 16M Mining XP / hour; powder methods (Gemstone powder chests up to 3,000 / hour,
   Mithril up to 2.47-3.03M powder / hour from goblin eggs, Glacite up to 0.95-1.85M / hour). None is modelled yet.
 - **HOTM trees**: the HOTM Tree guide lists HOTM tier, tokens and powder (minimum and maximum) for 20 trees, useful as a
-  sanity check for the HOTM planner. The pictures are not in the export, so the picture-to-method mapping stays unconfirmed.
+  sanity check for the HOTM planner. Its image links were still valid on 2026-10-28, which confirmed every community tree
+  picture's method: Gold (Maniac Miner, MSB), Coal, Magma Fields gemstones and Fairy Grotto, Dwarven Metals MSB,
+  Cobblestone, one block tree (End Stone, Mycelium/Red Sand, Netherrack, Glowstone, Gravel), and one tree for Ores and
+  Dwarven Diamond. The guide also has trees for Mithril, Obsidian, Shafting, powder grinding, Commissions and Scatha.
 - **Gear progression order**: the gear progression guide orders upgrades by cost-effectiveness (attribute shards, Dwarven
   O's, Jaderald, lanterns early; Divan's Drill, coatings, Relic of Power late). Our plan is a greedy cost per 1% at live
   prices, so it reorders as prices change. On the test profile the guide's early items (Mossy and Gold Box shards,
