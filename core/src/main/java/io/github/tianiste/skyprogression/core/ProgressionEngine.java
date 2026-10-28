@@ -122,10 +122,68 @@ public final class ProgressionEngine {
         // A step that replaces what an earlier step bought (a second reforge on one item, a new helmet after enchanting
         // the old one) would pay twice: ban the earlier step and plan again, so the later choice is taken directly.
         Set<String> banned = new HashSet<>();
+        Trail trail = new Trail();
         List<Step> steps;
         int restarts = 0;
-        while ((steps = plan(p, m, baseline, prices, basis, maxSteps, banned, false, lookahead)) == null && ++restarts <= 2 * maxSteps) {}
-        return steps != null ? steps : plan(p, m, baseline, prices, basis, maxSteps, banned, true, lookahead);
+        while ((steps = plan(p, m, baseline, prices, basis, maxSteps, banned, false, lookahead, trail)) == null && ++restarts <= 2 * maxSteps) {}
+        return steps != null ? steps : plan(p, m, baseline, prices, basis, maxSteps, banned, true, lookahead, trail);
+    }
+    /**
+     * What the passes of one plan saw at each step, so a restart (one more banned step) does not score every candidate again:
+     * the steps whose pick comes out the same with the new ban are replayed from these lists, and scoring resumes at the
+     * first step that changes. before: the state before each step (kept untouched); all: the candidates scored there;
+     * after: for the lookahead, the candidates after taking a pick in a copy of that state (empty when the pick is gone there).
+     * Recorded candidates are only read when replaying (their gear may have changed since); every commit is made with
+     * candidates scored on the live state.
+     */
+    private final class Trail {
+        final List<PlanState> before = new ArrayList<>();
+        final List<List<Candidate>> all = new ArrayList<>();
+        final List<Map<String, Optional<List<Candidate>>>> after = new ArrayList<>();
+        final List<Candidate> chosen = new ArrayList<>();
+        final List<Step> steps = new ArrayList<>();
+        double start;
+        /** How many recorded steps pick the same with this ban. */
+        int replay(Set<String> banned, MiningMethod m, boolean lookahead) {
+            for (int i = 0; i < chosen.size(); i++) {
+                Map<String, Optional<List<Candidate>>> known = after.get(i);
+                Candidate pick = decide(all.get(i), banned, m, before.get(i), lookahead, c -> known.get(id(c)));
+                if (pick == null || pick == UNKNOWN || !id(pick).equals(id(chosen.get(i)))) return i;
+            }
+            return chosen.size();
+        }
+        /** Keeps the first n steps, and the state and lookahead lists seen before step n (they do not depend on the ban). */
+        void cut(int n) {
+            chosen.subList(n, chosen.size()).clear();
+            steps.subList(n, steps.size()).clear();
+            if (before.size() > n + 1) before.subList(n + 1, before.size()).clear();
+            if (all.size() > n) all.subList(n, all.size()).clear();
+            if (after.size() > n + 1) after.subList(n + 1, after.size()).clear();
+        }
+    }
+    /** Stands for a pick that depends on a lookahead list not recorded yet (replay only). */
+    private static final Candidate UNKNOWN = new Candidate(null, null, Map.of());
+    /**
+     * The pick at one step: the cheapest per 1% (with lookahead also pairs), then "A then B" against "B alone": if the step
+     * after A would throw A away, the next choice instead. afterTaking: the candidates after taking a pick in a copy of the
+     * state (empty when the pick is gone there), or null when not known, which returns UNKNOWN.
+     */
+    private Candidate decide(List<Candidate> all, Set<String> banned, MiningMethod m, PlanState now, boolean lookahead,
+                                    java.util.function.Function<Candidate, Optional<List<Candidate>>> afterTaking) {
+        Set<String> skipped = new HashSet<>(banned);
+        Candidate best = choose(all, skipped, m, now, lookahead);
+        for (int i = 0; lookahead && best != null && i < RECHECKS; i++) {
+            Optional<List<Candidate>> next = afterTaking.apply(best);
+            if (next == null) return UNKNOWN;
+            if (next.isEmpty()) break;
+            Candidate after = choose(next.get(), banned, m, null, false);
+            if (after == null || Collections.disjoint(replaces(after), owns(best))) break;
+            skipped.add(id(best));
+            Candidate other = choose(all, skipped, m, now, true);
+            if (other == null) break;
+            best = other;
+        }
+        return best;
     }
     /**
      * Whether plan a is no worse than plan b at equal spend: at each plan's total cost, a's running gain (its last step within
@@ -146,31 +204,40 @@ public final class ProgressionEngine {
     private final class PlanState {
         final Profile state; final Map<String, Item> owned; Map<Stat, Double> stats; RateBasis current;
         PlanState(Profile state, Map<String, Item> owned, Map<Stat, Double> stats, RateBasis current) { this.state = state; this.owned = owned; this.stats = stats; this.current = current; }
-        PlanState copy() {
+        PlanState copy() { return copy(null); }
+        /** moved: filled with this state's gear item -> the copy's, so a candidate scored here can be applied to the copy. */
+        PlanState copy(Map<Item, Item> moved) {
             Profile p = new Profile();
             p.mode = state.mode; p.hotm = state.hotm; p.enchantingLevel = state.enchantingLevel; p.inventoryEnabled = true;
             p.owned = new HashMap<>(state.owned); p.collections = state.collections; p.milestones = state.milestones;
             Map<String, Item> gear = new LinkedHashMap<>();
-            owned.forEach((group, item) -> gear.put(group, item.copy()));
+            owned.forEach((group, item) -> {
+                Item copy = item.copy();
+                gear.put(group, copy);
+                if (moved != null) moved.put(item, copy);
+            });
             return new PlanState(p, gear, plus(stats, Map.of()), current);
         }
         List<Candidate> candidates(MiningMethod m, Map<String, Price> prices, boolean keepZero) { return ProgressionEngine.this.candidates(state, owned, m, null, stats, prices, current, keepZero); }
         /** Applies a step (each part of a pair or bundle in turn); the owned items it used are gone for later steps. */
-        void commit(Candidate c) {
-            if (c.parts() != null) c.parts().forEach(this::apply);
-            else apply(c);
+        void commit(Candidate c) { commit(c, null); }
+        /** moved: for a candidate scored on another state this is a copy of, that state's gear item -> this state's (null: scored here). */
+        void commit(Candidate c, Map<Item, Item> moved) {
+            if (c.parts() != null) c.parts().forEach(x -> apply(x, moved));
+            else apply(c, moved);
             c.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
         }
-        private void apply(Candidate c) {
+        private void apply(Candidate c, Map<Item, Item> moved) {
             Upgrade u = c.upgrade();
+            Item gear = moved == null || u.current() == null ? u.current() : moved.get(u.current());
             if (c.pet() != null) current = current.withPet(c.pet());
             else if (c.profile() != null) current = current.withProfile(c.profile());
             else if (c.set() != null) c.set().forEach(i -> owned.put(i.group, i.copy()));
             else if (c.apply() != null) {
-                c.apply().accept(u.current());
-                boolean omelette = StatBreakdown.blueCheese(u.current());
-                if (current != null && "DRILL".equals(u.current().category) && omelette != current.profile().omelette()) current = current.withOmelette(omelette);
-                u.delta().forEach((st, v) -> u.current().stats.merge(st, v, Double::sum));
+                c.apply().accept(gear);
+                boolean omelette = StatBreakdown.blueCheese(gear);
+                if (current != null && "DRILL".equals(gear.category) && omelette != current.profile().omelette()) current = current.withOmelette(omelette);
+                u.delta().forEach((st, v) -> gear.stats.merge(st, v, Double::sum));
             } else owned.put(u.item().group, u.item().copy());
             stats = plus(stats, u.delta());
             if (u.cooldownFactor() != 1 && current != null && current.ability() != null && current.ability().cooldown() != null) {
@@ -183,34 +250,41 @@ public final class ProgressionEngine {
     private static final int PAIR_POOL = 10, RECHECKS = 3;
     /** One plan pass; null when a conflict was found (its earlier step is then added to banned). */
     private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, Set<String> banned,
-                            boolean ignoreConflicts, boolean lookahead) {
-        Profile profile = new Profile();
-        profile.mode = p.mode; profile.hotm = p.hotm; profile.enchantingLevel = p.enchantingLevel; profile.inventoryEnabled = true;
-        profile.owned = new HashMap<>(p.owned); profile.collections = p.collections; profile.milestones = p.milestones;
-        Map<String, Item> gear = new LinkedHashMap<>();
-        bestOwned(p, m, null).forEach((group, item) -> gear.put(group, item.copy()));
-        PlanState now = new PlanState(profile, gear, plus(baseline, Map.of()), basis);
-        double start = metric(m, now.stats, now.current), total = 0, resale = 0;
-        int unpriced = 0;
-        List<Step> steps = new ArrayList<>();
-        List<Candidate> taken = new ArrayList<>();
+                            boolean ignoreConflicts, boolean lookahead, Trail trail) {
+        int same = trail.replay(banned, m, lookahead);
+        trail.cut(same);
+        PlanState now;
+        if (!trail.before.isEmpty()) now = trail.before.get(same).copy();
+        else {
+            Profile profile = new Profile();
+            profile.mode = p.mode; profile.hotm = p.hotm; profile.enchantingLevel = p.enchantingLevel; profile.inventoryEnabled = true;
+            profile.owned = new HashMap<>(p.owned); profile.collections = p.collections; profile.milestones = p.milestones;
+            Map<String, Item> gear = new LinkedHashMap<>();
+            bestOwned(p, m, null).forEach((group, item) -> gear.put(group, item.copy()));
+            now = new PlanState(profile, gear, plus(baseline, Map.of()), basis);
+            trail.start = metric(m, now.stats, now.current);
+        }
+        double start = trail.start;
+        Step last = same == 0 ? null : trail.steps.get(same - 1);
+        double total = last == null ? 0 : last.totalCost(), resale = last == null ? 0 : last.totalResale();
+        int unpriced = last == null ? 0 : last.unpricedResale();
+        List<Step> steps = new ArrayList<>(trail.steps);
+        List<Candidate> taken = new ArrayList<>(trail.chosen);
         while (steps.size() < maxSteps) {
+            int at = steps.size();
+            if (trail.before.size() == at) trail.before.add(now.copy());
             List<Candidate> all = now.candidates(m, prices, lookahead);
-            Set<String> skipped = new HashSet<>(banned);
-            Candidate best = choose(all, skipped, m, now, lookahead);
-            // "A then B" against "B alone": if the step after A would throw A away, take the next choice instead.
-            for (int i = 0; lookahead && best != null && i < RECHECKS; i++) {
-                PlanState next = now.copy();
-                Candidate again = find(next.candidates(m, prices, true), best);
-                if (again == null) break;
-                next.commit(again);
-                Candidate after = choose(next.candidates(m, prices, false), banned, m, next, false);
-                if (after == null || Collections.disjoint(replaces(after), owns(best))) break;
-                skipped.add(id(best));
-                Candidate other = choose(all, skipped, m, now, true);
-                if (other == null) break;
-                best = other;
-            }
+            trail.all.add(all);
+            if (trail.after.size() == at) trail.after.add(new HashMap<>());
+            Map<String, Optional<List<Candidate>>> known = trail.after.get(at);
+            PlanState here = now;
+            Candidate best = decide(all, banned, m, now, lookahead, c -> known.computeIfAbsent(id(c), k -> {
+                // c was scored on this state, so it is applied to a copy directly (its upgrades act only on the gear item they get).
+                Map<Item, Item> moved = new IdentityHashMap<>();
+                PlanState next = here.copy(moved);
+                next.commit(c, moved);
+                return Optional.of(next.candidates(m, prices, false));
+            }));
             if (best == null) break;
             if (!ignoreConflicts) for (Candidate earlier : taken) {
                 if (Collections.disjoint(replaces(best), owns(earlier))) continue;
@@ -223,20 +297,12 @@ public final class ProgressionEngine {
             total += u.cost();
             if (!u.resaleNote().isEmpty()) { if (u.resale() != null) resale += u.resale(); else unpriced++; }
             double rate = metric(m, now.stats, now.current);
-            steps.add(new Step(u, (rate / start - 1) * 100, total, u.rateAfter(), resale, unpriced));
+            Step step = new Step(u, (rate / start - 1) * 100, total, u.rateAfter(), resale, unpriced);
+            steps.add(step);
+            trail.chosen.add(best);
+            trail.steps.add(step);
         }
         return steps;
-    }
-    /** The candidate (or, for a pair or bundle, the same parts) in a list made from another copy of the state; null when gone. */
-    private static Candidate find(List<Candidate> list, Candidate c) {
-        if (c.parts() == null || c.upgrade().item().id.startsWith("bundle:")) return list.stream().filter(x -> id(x).equals(id(c))).findFirst().orElse(null);
-        List<Candidate> parts = new ArrayList<>();
-        for (Candidate part : c.parts()) {
-            Candidate x = find(list, part);
-            if (x == null) return null;
-            parts.add(x);
-        }
-        return new Candidate(c.upgrade(), null, c.materials(), null, null, null, parts);
     }
     /**
      * The next step: the single upgrade with the lowest cost per 1% (ties: larger gain); with lookahead, also every pair of
