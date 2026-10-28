@@ -98,7 +98,7 @@ public final class Recipes {
         if (!blocked.isEmpty() && buy != null)
             return depth > 0 ? bought : new Node(buy, "buy", List.of("Buying; can't " + how + " it yet (needs " + blocked + ")."), 0, Set.of(), "", Map.of());
         int crafts = (int)Math.ceil(amount / Math.max(1, r.count()));
-        Map<String, Integer> left = new HashMap<>(owned), used = new HashMap<>();
+        Map<String, Integer> left = new Left(owned), used = new HashMap<>();
         Set<String> locked = new LinkedHashSet<>();
         if (!blocked.isEmpty()) locked.add(blocked);
         making.add(id);
@@ -133,6 +133,29 @@ public final class Recipes {
         steps.add(step);
         steps.addAll(sub);
         return new Node(craft, how, steps, forge, locked, "", used);
+    }
+    /**
+     * Owned counts still left: the changes over a base map that is neither copied nor modified (a plan prices hundreds of
+     * upgrades against the full inventory). Reads see the change when there is one, else the base.
+     */
+    static final class Left extends AbstractMap<String, Integer> {
+        private final Map<String, Integer> base, changed = new HashMap<>();
+        Left(Map<String, Integer> base) { this.base = base; }
+        @Override public Integer get(Object key) { return changed.containsKey(key) ? changed.get(key) : base.get(key); }
+        @Override public boolean containsKey(Object key) { return changed.containsKey(key) ? changed.get(key) != null : base.containsKey(key); }
+        @Override public Integer getOrDefault(Object key, Integer fallback) { Integer v = get(key); return v != null ? v : fallback; }
+        @Override public Integer put(String key, Integer value) { Integer old = get(key); changed.put(key, value); return old; }
+        @Override public Integer remove(Object key) { Integer old = get(key); if (key instanceof String k) changed.put(k, null); return old; }
+        @Override public Integer merge(String key, Integer value, java.util.function.BiFunction<? super Integer, ? super Integer, ? extends Integer> f) {
+            Integer old = get(key), now = old == null ? value : f.apply(old, value);
+            changed.put(key, now);
+            return now;
+        }
+        @Override public Set<Entry<String, Integer>> entrySet() {
+            Map<String, Integer> all = new HashMap<>(base);
+            changed.forEach((k, v) -> { if (v == null) all.remove(k); else all.put(k, v); });
+            return all.entrySet();
+        }
     }
     private static Node unknown(String why) { return new Node(null, "", List.of(), 0, Set.of(), why, Map.of()); }
     static String duration(long seconds) {

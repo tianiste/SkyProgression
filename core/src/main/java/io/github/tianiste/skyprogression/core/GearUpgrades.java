@@ -60,7 +60,7 @@ public final class GearUpgrades {
         double sum=plan.fees; boolean known=true,allOwned=true;
         StringJoiner detail=new StringJoiner("; ");
         Set<String> locked=new LinkedHashSet<>();
-        Map<String,Integer> left=new HashMap<>(profile.owned),used=new HashMap<>();
+        Map<String,Integer> left=new Recipes.Left(profile.owned),used=new HashMap<>();
         for(var e:plan.materials.entrySet()) {
             int owned=Math.min(e.getValue(),Math.max(0,left.getOrDefault(e.getKey(),0)));
             int buy=e.getValue()-owned;allOwned &= buy==0;
