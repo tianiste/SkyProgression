@@ -54,7 +54,8 @@ public final class LiveGear {
             JsonObject nbt = part.slots().get(slot);
             if (nbt == null) continue;
             Item item = Loadout.item(nbt, catalog, label, slot);
-            if (item == null) continue;
+            // The equipment menu also shows the worn armor; only its equipment pieces belong here.
+            if (item == null || label.equals("equipment_contents") && !Loadout.EQUIPMENT.contains(item.category)) continue;
             item.liveAt = part.at();
             out.add(item);
         }

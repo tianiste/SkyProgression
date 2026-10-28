@@ -34,6 +34,9 @@ final class ClientData {
     /** Decoded profiles of the loaded player; the reports below are calculated from it on worker threads. */
     private volatile PlayerData playerData;
     private boolean profileRefreshing;
+    /** Live gear from the game client (LiveGearWatcher) and the tab list's profile name ("" = not shown); null before any read. */
+    private volatile LiveGear live;
+    private String liveProfile = "";
     /** Current mayor and minister perks from the price bundle; null while unknown. */
     private volatile List<StatBreakdown.MayorPerk> mayor;
     /** Automatic stat ledger for {@link #statsKey}, calculated in the mod from the loaded profile. */
@@ -183,18 +186,32 @@ final class ClientData {
         if(z==null||z.isEmpty())return method.defaultZone();
         try{return z.equals("-")?null:StatContext.Zone.valueOf(z);}catch(IllegalArgumentException e){return method.defaultZone();}
     }
+    /** A new live gear snapshot (game thread): the reports that use it recalculate on their next ensure call. */
+    void live(LiveGear snapshot,String profileName){live=snapshot;liveProfile=profileName;revision++;}
+    /**
+     * Live gear for a loaded profile: only the game user's own profile, the one the tab list names (or, when it shows
+     * none, the profile the API marks as selected); null otherwise, so other players and profiles stay API-only.
+     */
+    LiveGear liveFor(Profile p){
+        LiveGear g=live;PlayerData d=playerData;
+        if(g==null||demo||p==null||d==null)return null;
+        var user=net.minecraft.client.Minecraft.getInstance().getUser();
+        if(user==null||user.getProfileId()==null||!d.uuid.equals(user.getProfileId().toString().replace("-","").toLowerCase(Locale.ROOT)))return null;
+        return (liveProfile.isEmpty()?p.selected:p.name.equalsIgnoreCase(liveProfile))?g:null;
+    }
+    private String liveKey(){LiveGear g=liveFor(profile());return g==null?"":"&live="+g.version;}
     // Keys name every selection a report depends on; a report is shown only while its key matches the current selections.
     private String statsQuery(MiningMethod method) {
         Profile p=profile();if(p==null||demo)return "";
         Inputs i=inputs(method);StatContext.Zone z=zone(method);
         return "/stats?ign="+enc(p.player)+"&profile="+enc(p.id)+"&method="+method.name()+"&gear="+(i.equippedGear?"equipped":"best")+"&tool="+enc(i.tool==null?"":i.tool)+"&zone="+(z==null?"":z.name())
-                +"&target="+method.target().name()+"&god="+i.godPotion;
+                +"&target="+method.target().name()+"&god="+i.godPotion+liveKey();
     }
     private String startQuery(MiningMethod method) {
         Profile p=profile();if(p==null||demo)return "";
         Inputs i=inputs(method);StatContext.Zone z=zone(method);
         return "/start?ign="+enc(p.player)+"&profile="+enc(p.id)+"&method="+method.name()+"&tool="+enc(i.tool==null?"":i.tool)+"&zone="+(z==null?"":z.name())
-                +"&target="+method.target().name()+"&god="+i.godPotion;
+                +"&target="+method.target().name()+"&god="+i.godPotion+liveKey();
     }
     /** Start-with report for the current selections, or null while missing, loading or failed. */
     StartWith.Report start(MiningMethod method){String key=startQuery(method);return !key.isEmpty()&&key.equals(startKey)?start:null;}
@@ -207,10 +224,10 @@ final class ClientData {
         refreshProfileIfStale(dispatch);
         if(startRequest!=null)startRequest.cancel(true);
         startPending=key;startError="";int requestGeneration=generation;
-        String profileId=profile().id,tool=inputs(method).tool==null?"":inputs(method).tool;StatContext context=new StatContext(zone(method),method.target(),inputs(method).godPotion);
+        String profileId=profile().id,tool=inputs(method).tool==null?"":inputs(method).tool;StatContext context=new StatContext(zone(method),method.target(),inputs(method).godPotion);LiveGear g=liveFor(profile());
         startRequest=WORK.submit(()->{
             StartWith.Report result=null;String error="";
-            try{result=d.start(profileId,method,tool,context);}
+            try{result=d.start(profileId,method,tool,context,g);}
             catch(NoSuchElementException e){error=e.getMessage();}
             catch(Exception e){error="Could not work out the best owned loadout for this profile.";}
             StartWith.Report loaded=result;String failure=error;
@@ -242,10 +259,10 @@ final class ClientData {
         if(statsRequest!=null)statsRequest.cancel(true);
         statsPending=key;statsError="";int requestGeneration=generation;
         Inputs i=inputs(method);String profileId=profile().id,tool=i.tool==null?"":i.tool;boolean best=!i.equippedGear;
-        StatContext context=new StatContext(zone(method),method.target(),i.godPotion);List<StatBreakdown.MayorPerk> perks=mayor;String base=backend;
+        StatContext context=new StatContext(zone(method),method.target(),i.godPotion);List<StatBreakdown.MayorPerk> perks=mayor;String base=backend;LiveGear g=liveFor(profile());
         statsRequest=WORK.submit(()->{
             StatsReport result=null;String error="";Map<String,CompletableFuture<Price>> late=Map.of();
-            try{result=d.stats(profileId,method,tool,best,context,perks);late=resale(base,result.resaleQueries,result.resale);result.resalePending=!late.isEmpty();}
+            try{result=d.stats(profileId,method,tool,best,context,perks,g);late=resale(base,result.resaleQueries,result.resale);result.resalePending=!late.isEmpty();}
             catch(NoSuchElementException e){error=e.getMessage();}
             catch(Exception e){error="Could not calculate the stat breakdown for this profile.";}
             StatsReport loaded=result;String failure=error;Map<String,CompletableFuture<Price>> pending=late;
@@ -303,7 +320,7 @@ final class ClientData {
             });
         });
     }
-    private String compareQuery(){Profile p=profile();return p==null||demo?"":"/compare?ign="+enc(p.player)+"&profile="+enc(p.id)+"&god="+compareGodPotion;}
+    private String compareQuery(){Profile p=profile();return p==null||demo?"":"/compare?ign="+enc(p.player)+"&profile="+enc(p.id)+"&god="+compareGodPotion+liveKey();}
     /** Comparison for the loaded profile, or null while missing, loading or failed. */
     MethodComparison.Report comparison(){String key=compareQuery();return !key.isEmpty()&&key.equals(compareKey)?comparison:null;}
     boolean compareLoading(){String key=compareQuery();return !key.isEmpty()&&key.equals(comparePending);}
@@ -328,10 +345,10 @@ final class ClientData {
         refreshProfileIfStale(dispatch);
         if(compareRequest!=null)compareRequest.cancel(true);
         comparePending=key;compareError="";int requestGeneration=generation;
-        String profileId=profile().id;boolean god=compareGodPotion;
+        String profileId=profile().id;boolean god=compareGodPotion;LiveGear g=liveFor(profile());
         compareRequest=WORK.submit(()->{
             MethodComparison.Report result=null;String error="";
-            try{result=d.compare(profileId,god);}
+            try{result=d.compare(profileId,god,g);}
             catch(NoSuchElementException e){error=e.getMessage();}
             catch(Exception e){error="Could not compare methods for this profile.";}
             MethodComparison.Report loaded=result;String failure=error;

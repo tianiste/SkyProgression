@@ -10,6 +10,7 @@ public final class SkyProgressionClient implements ClientModInitializer {
     private boolean previewed;
     @Override public void onInitializeClient() {
         SessionWatcher.register();
+        LiveGearWatcher.register();
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) -> {
             for (String command : new String[]{"skyprogression", "sp"}) {
                 dispatcher.register(literal(command).executes(context -> { open = true; return 1; }));

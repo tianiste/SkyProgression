@@ -155,8 +155,10 @@ public final class ProgressionScreen extends Screen {
         // The session card changes without a revision: rebuild the cards (not the widgets) when it changed, or each second while it runs.
         if(tab==HOME||tab==METHODS){var t=data.tracker;long second=System.currentTimeMillis()/1000;
             if(t.version()!=trackerVersion||t.state()==SessionTracker.State.RUNNING&&second!=trackerSecond){trackerVersion=t.version();trackerSecond=second;buildCards();}}
+        // Gear shows the age of live and API data: refresh those labels every 10 seconds.
+        if(tab==GEAR){long tens=System.currentTimeMillis()/10_000;if(tens!=sourceTens){sourceTens=tens;buildCards();}}
     }
-    private int trackerVersion=-1;private long trackerSecond;
+    private int trackerVersion=-1;private long trackerSecond,sourceTens;
     void refresh(){if(Compat.screen(minecraft)==this)init();}
     private void typeStats(){Compat.setScreen(minecraft,new InputsScreen(this,data.inputs(method),method));}
     private void persist(){data.save(minecraft::execute,ignored->{});}
@@ -220,12 +222,12 @@ public final class ProgressionScreen extends Screen {
     private List<StatsReport.Tool> tools(){Profile p=data.profile();return data.stats!=null&&p!=null&&data.stats.profileId.equals(p.id)?data.stats.tools:List.of();}
     private String toolName(String key){
         if(key==null||key.isEmpty()){StatsReport r=data.stats(method);
-            return r==null?"Auto":r.tool.isEmpty()?"None owned":"Auto, "+tools().stream().filter(t->t.key().equals(r.tool)).map(StatsReport.Tool::name).findFirst().orElse("best");}
+            return r==null?"Auto":r.tool.isEmpty()?"None owned":(r.toolLive?"Held, ":"Auto, ")+tools().stream().filter(t->t.key().equals(r.tool)).map(StatsReport.Tool::name).findFirst().orElse("best");}
         return tools().stream().filter(t->t.key().equals(key)).map(StatsReport.Tool::name).findFirst().orElse(tools().isEmpty()?"Selected":"Not found");
     }
     /** The tool held now: the stat ledger evaluates it, and Start with compares the loadout worn with it. */
     private void selectTool(){
-        var list=tools();List<String> labels=new ArrayList<>();labels.add("Best owned tool for "+method.label+" (automatic)");
+        var list=tools();List<String> labels=new ArrayList<>();labels.add("Automatic: the tool you hold (live), else the best owned for "+method.label);
         for(var t:list)labels.add(t.name()+" ("+t.location()+")");
         var i=data.inputs(method);
         Compat.setScreen(minecraft,new ChoiceScreen(this,"Tool you hold",labels,n->{i.tool=n==0?"":list.get(n-1).key();scroll=0;persist();}));
@@ -534,9 +536,14 @@ public final class ProgressionScreen extends Screen {
         List<Slot> slots=new ArrayList<>();
         for(var piece:pieces){boolean tool=isTool(piece,r);
             slots.add(new Slot(icon(piece.id(),tool?"Tool":piece.slot()),tool?GOLD:piece.worn()?EDGE:CYAN,piece.key().equals(slot),
-                    piece.name()+"\n"+piece.slot()+(piece.detail().isEmpty()?"":", "+piece.detail())+"\n"+(piece.worn()?"Wearing it":"Stored: "+piece.location()),()->{slot=slot.equals(piece.key())?"":piece.key();buildCards();}));}
+                    piece.name()+"\n"+piece.slot()+(piece.detail().isEmpty()?"":", "+piece.detail())+"\n"+(piece.worn()?"Wearing it":"Stored: "+piece.location())
+                    +"\nSource: "+source(r.liveAt,piece.key(),piece.location(),r.fetchedAt),()->{slot=slot.equals(piece.key())?"":piece.key();buildCards();}));}
         if(slots.isEmpty())c.line(r.inventoryKnown?"No readable mining gear.":"Ownership unknown.",MUTED);
         else c.add(new Slots(slots));
+        long liveCount=pieces.stream().filter(x->r.liveAt.containsKey(x.key())).count();
+        c.line((liveCount>0?"Live: "+liveCount+" of "+pieces.size()+" from the game | ":"")+"API: "+apiAge(r.fetchedAt),liveCount>0?GREEN:MUTED,
+                "Live: read from your game now (armor, inventory, held tool), or when you last opened the equipment or pets menu.\n"
+                +"API: the Hypixel profile, a few minutes behind; it fills what the game has not shown (storage, accessory bag, equipment and pet until their menus are opened).");
         if(!r.inventoryKnown)c.line("Inventory API off: only the pet can be compared.",RED,"Ownership of armor, equipment, tools and accessories is unknown.");
         if(!r.petsKnown)c.line("Pet data unavailable.",RED);
         String rates="Now: "+rateText(before,each)+"\nBest owned: "+rateText(after,each)+(r.swaps.isEmpty()?"":"\nTotal: "+changeText(before,after,each))
@@ -549,7 +556,8 @@ public final class ProgressionScreen extends Screen {
         if(chosen!=null){
             var sw=r.swaps.stream().filter(x->x.to().key().equals(chosen.key())).findFirst().orElse(null);
             String swap=sw==null?(chosen.worn()?"Already worn":"No swap needed"):gainPercent(before,rateOf(sw.after(),eff));
-            c.add(new Entry(icon(chosen.id(),isTool(chosen,r)?"Tool":chosen.slot()),chosen.name(),GOLD,chosen.worn()?"Wearing it":"Stored: "+chosen.location()+(chosen.detail().isEmpty()?"":" ("+chosen.detail()+")"),CYAN,
+            c.add(new Entry(icon(chosen.id(),isTool(chosen,r)?"Tool":chosen.slot()),chosen.name(),GOLD,(chosen.worn()?"Wearing it":"Stored: "+chosen.location()+(chosen.detail().isEmpty()?"":" ("+chosen.detail()+")"))
+                    +" | "+source(r.liveAt,chosen.key(),chosen.location(),r.fetchedAt),CYAN,
                     swap,sw==null?MUTED:GREEN,"",MUTED,sw==null?null:swapTip(sw,r,before,eff,each),null));
         }else if(!slots.isEmpty())c.line("Click a slot for where it is stored.",MUTED);
         // Swaps, largest rate gain first; those without a computable rate last.
@@ -561,7 +569,7 @@ public final class ProgressionScreen extends Screen {
                     gainPercent(before,x.rate()),GREEN,"",MUTED,swapTip(sw,r,before,eff,each),()->{slot=sw.to().key();buildCards();}));}
         Card used=card("Stats use",MUTED,0);used.optional=true;
         StatsReport s=data.stats(method);
-        if(s!=null){StringJoiner tip=new StringJoiner("\n");for(var piece:s.loadout)tip.add(piece.name()+"  ("+piece.location()+")");
+        if(s!=null){StringJoiner tip=new StringJoiner("\n");for(var piece:s.loadout)tip.add(piece.name()+"  ("+StartWith.where(piece.location())+", "+source(s.liveAt,piece.key(),StartWith.where(piece.location()),s.fetchedAt)+")");
             tip.add(s.accessories+" accessories from the accessory bag, one per family.");
             if(s.hotmTrees>1)tip.add(StatBreakdown.treeLabel(s.hotmTree)+" of "+s.hotmTrees+": best for "+method.label+" (the API does not show the active tree).");
             if(s.bestGear)tip.add("Picked from all readable storage; equip these to reach the totals. Gear: Equipped shows what you wear now.");
@@ -569,6 +577,18 @@ public final class ProgressionScreen extends Screen {
             used.line((s.bestGear?"Best owned gear":"Gear worn now")+", "+s.loadout.size()+" pieces, "+s.accessories+" accessories",TEXT,tip.toString());}
         bestMethodLines(used,r);
         if(!r.notes.isEmpty())used.line("Notes ("+r.notes.size()+")",MUTED,String.join("\n",r.notes));
+    }
+    /** Source of a piece: "Live" while the game shows it, "Live, seen 3m ago" for a menu read, else the API and its age. */
+    private static String source(Map<String,Long> liveAt,String key,String where,String fetchedAt){
+        Long at=liveAt==null?null:liveAt.get(key);
+        if(at==null)return "API, "+apiAge(fetchedAt);
+        return Set.of("worn","hotbar","inventory").contains(where)?"Live":"Live, seen "+ago(System.currentTimeMillis()-at)+" ago";
+    }
+    private static String apiAge(String fetchedAt){
+        try{return ago(System.currentTimeMillis()-java.time.Instant.parse(fetchedAt).toEpochMilli())+" old";}catch(Exception e){return "age unknown";}
+    }
+    private static String ago(long ms){
+        long s=Math.max(0,ms/1000);return s<60?s+"s":s<3600?s/60+"m":s/3600+"h "+s%3600/60+"m";
     }
     private static boolean isTool(StartWith.Piece piece,StartWith.Report r){
         return !SLOT_ORDER.contains(piece.slot())&&!piece.slot().equals("Pet")&&!piece.slot().equals("Accessory")||r.bestOwned!=null&&piece.key().equals(r.bestOwned.tool);
