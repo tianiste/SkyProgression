@@ -35,6 +35,8 @@ public final class StatsReport {
     public PetLevel petLevel;
     /** Essence perk, attribute and HOTM perk levels as upgrade options, with balances (see ProfileUpgrades). */
     public ProfileUpgrades.State profileUpgrades;
+    /** The evaluated HOTM tree for the planner (HotmPlanner); null when the API has no tree or HOTM XP. */
+    public HotmPlanner.Input hotm;
     public List<Ledger> stats = new ArrayList<>();
     /** Sale queries for the evaluated copies (instance key, or "pet"), and the quotes the companion found for them. */
     public Map<String, Resale.Query> resaleQueries = new LinkedHashMap<>();
@@ -103,6 +105,7 @@ public final class StatsReport {
         r.ability = StatBreakdown.effectiveAbility(member, main, context);
         boolean drill = main.tool != null && main.tool.category.equals("DRILL");
         r.profileUpgrades = ProfileUpgrades.state(member, r.hotmTree, context, StatBreakdown.blueCheese(main.tool));
+        r.hotm = ProfileUpgrades.hotmInput(member, r.hotmTree, StatBreakdown.blueCheese(main.tool));
         if (main.petsKnown) {
             r.petStats = StatBreakdown.petStats(main.pet, context, drill);
             if (r.petStats != null) r.petOptions.addAll(PetUpgrades.options(owned, main.pet, context, drill));

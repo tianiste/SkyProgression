@@ -98,19 +98,52 @@ public final class ProfileUpgrades {
             "quartz_speed", "SHARD_QUARTZFANG", "mossy_box", "SHARD_HIDEONLEAF", "devouring_spread", "SHARD_GEMZIE", "deep_technique", "SHARD_BAL",
             "ultimate_dna", "SHARD_GALAXY_FISH", "sleepy_spread", "SHARD_SNOOZLE", "gold_box", "SHARD_HIDEONSUN");
     /**
-     * HOTM perk powder and cost exponent (hotmlayout.json); Mining Master uses offset 8, others 2. Mole uses 2.17883 (wiki Tier 4
-     * template; NEU still has 2.2), which makes the fixture's powder_spent_gemstone match exactly.
+     * Every HOTM node except Core of the Mountain (NEU constants/hotmlayout.json at f19539bb, MIT; wiki
+     * Template:Heart_of_the_Mountain/List/Tier_1..10): position (x 0..6, y 0..9, tier = 10 - y), maximum level, the powder
+     * it is levelled with, and the cost of the next level, floor((level + offset)^exponent) at the current level. Single-level
+     * nodes (abilities, Sky Mall, Front Loaded...) cost only their token. Where the wiki differs from NEU the wiki is used:
+     * Mole 2.17883 (NEU 2.2; only 2.17883 reproduces the fixture's powder_spent_gemstone), Quick Forge 3.2 (NEU 4),
+     * Subterranean Fisher 3.07 (NEU 3.7). The wiki lists maxima one higher: that is the Blue Cheese omelette's level.
      */
-    private record PerkCost(String powder, double offset, double exponent) {}
-    private static final Map<String, PerkCost> PERK_COSTS = Map.ofEntries(
-            Map.entry("mining_speed", new PerkCost("MITHRIL", 2, 3)), Map.entry("speedy_mineman", new PerkCost("GEMSTONE", 2, 3.2)),
-            Map.entry("professional", new PerkCost("GEMSTONE", 2, 2.3)), Map.entry("strong_arm", new PerkCost("GLACITE", 2, 2.3)),
-            Map.entry("mining_fortune", new PerkCost("MITHRIL", 2, 3.05)), Map.entry("fortunate_mineman", new PerkCost("GEMSTONE", 2, 3.2)),
-            Map.entry("rags_to_riches", new PerkCost("GLACITE", 2, 3.05)), Map.entry("gem_lover", new PerkCost("GEMSTONE", 2, 4)),
-            Map.entry("old_school", new PerkCost("GEMSTONE", 2, 4)), Map.entry("blockhead", new PerkCost("GEMSTONE", 2, 4)),
-            Map.entry("metal_head", new PerkCost("GLACITE", 2, 4)), Map.entry("efficient_miner", new PerkCost("MITHRIL", 2, 2.6)),
-            Map.entry("mole", new PerkCost("GEMSTONE", 2, 2.17883)), Map.entry("mining_master", new PerkCost("GLACITE", 8, 5)),
-            Map.entry("eager_adventurer", new PerkCost("GLACITE", 2, 2.3)), Map.entry("steady_hand", new PerkCost("GLACITE", 2, 2.6)));
+    public record Node(String id, String name, int x, int y, int max, String powder, double offset, double exponent) {
+        public int tier() { return 10 - y; }
+        /** Powder from level from to level to (level 1 is the unlock). */
+        public double powder(int from, int to) {
+            double amount = 0;
+            for (int l = Math.max(1, from); l < to; l++) amount += Math.floor(Math.pow(l + offset, exponent));
+            return amount;
+        }
+    }
+    public static final Map<String, Node> NODES = new LinkedHashMap<>();
+    static {
+        String[] rows = {
+            "mining_speed 3 9 50 MITHRIL 2 3|Mining Speed", "mining_speed_boost 1 8 1 MITHRIL 2 0|Mining Speed Boost",
+            "precision_mining 2 8 1 MITHRIL 2 0|Precision Mining", "mining_fortune 3 8 50 MITHRIL 2 3.05|Mining Fortune",
+            "titanium_insanium 4 8 50 MITHRIL 2 3.1|Titanium Insanium", "pickobulus 5 8 1 MITHRIL 2 0|Pickobulus",
+            "luck_of_the_cave 1 7 45 MITHRIL 2 3.07|Luck of the Cave", "efficient_miner 3 7 100 MITHRIL 2 2.6|Efficient Miner",
+            "quick_forge 5 7 20 MITHRIL 2 3.2|Quick Forge", "sky_mall 0 6 1 GEMSTONE 2 0|Sky Mall", "old_school 1 6 20 GEMSTONE 2 4|Old-School",
+            "professional 2 6 140 GEMSTONE 2 2.3|Professional", "mole 3 6 200 GEMSTONE 2 2.17883|Mole", "gem_lover 4 6 20 GEMSTONE 2 4|Gem Lover",
+            "seasoned_mineman 5 6 100 GEMSTONE 2 2.3|Seasoned Mineman", "front_loaded 6 6 1 GEMSTONE 2 0|Front Loaded",
+            "daily_grind 1 5 1 GEMSTONE 2 0|Daily Grind", "daily_powder 5 5 1 GEMSTONE 2 0|Daily Powder",
+            "anomalous_desire 0 4 1 GEMSTONE 2 0|Tunnel Vision", "blockhead 1 4 20 GEMSTONE 2 4|Blockhead",
+            "subterranean_fisher 2 4 40 GEMSTONE 2 3.07|Subterranean Fisher", "keep_it_cool 3 4 50 GEMSTONE 2 3.07|Keep It Cool",
+            "lonesome_miner 4 4 45 GEMSTONE 2 3.07|Lonesome Miner", "great_explorer 5 4 20 GEMSTONE 2 4|Great Explorer",
+            "maniac_miner 6 4 1 GEMSTONE 2 0|Maniac Miner", "powder_buff 3 3 50 GEMSTONE 2 3.2|Powder Buff",
+            "speedy_mineman 1 3 50 GEMSTONE 2 3.2|Speedy Mineman", "fortunate_mineman 5 3 50 GEMSTONE 2 3.2|Fortunate Mineman",
+            "warm_heart 4 2 50 GLACITE 2 3.1|Warm Heart", "miners_blessing 0 2 1 GLACITE 2 0|Miner's Blessing",
+            "no_stone_unturned 1 2 50 GLACITE 2 3.05|No Stone Unturned", "strong_arm 2 2 100 GLACITE 2 2.3|Strong Arm",
+            "steady_hand 3 2 100 GLACITE 2 2.6|Steady Hand", "mineshaft_mayhem 6 2 1 GLACITE 2 0|Mineshaft Mayhem",
+            "surveyor 5 2 20 GLACITE 2 4|Surveyor", "metal_head 1 1 20 GLACITE 2 4|Metal Head", "rags_to_riches 3 1 50 GLACITE 2 3.05|Rags to Riches",
+            "eager_adventurer 5 1 100 GLACITE 2 2.3|Eager Adventurer", "gemstone_infusion 0 0 1 GLACITE 2 0|Gemstone Infusion",
+            "crystalline 1 0 50 GLACITE 2 3.3|Crystalline", "gifts_from_the_departed 2 0 100 GLACITE 2 2.45|Gifts from the Departed",
+            "mining_master 3 0 10 GLACITE 8 5|Mining Master", "dead_mans_chest 4 0 50 GLACITE 2 3.2|Dead Man's Chest",
+            "vanguard_seeker 5 0 50 GLACITE 2 3.1|Vanguard Seeker", "sheer_force 6 0 1 GLACITE 2 0|Sheer Force"};
+        for (String row : rows) {
+            String[] name = row.split("[|]"), f = name[0].split(" ");
+            NODES.put(f[0], new Node(f[0], name[1], Integer.parseInt(f[1]), Integer.parseInt(f[2]), Integer.parseInt(f[3]), f[4],
+                    Double.parseDouble(f[5]), Double.parseDouble(f[6])));
+        }
+    }
 
     /** omelette: the evaluated drill holds a Blue Cheese Goblin Omelette, so HOTM perks count one level higher. */
     public static State state(JsonObject member, String tree, StatContext context, boolean omelette) {
@@ -165,21 +198,14 @@ public final class ProfileUpgrades {
         }
     }
     /**
-     * HOTM tree positions (NEU hotmlayout.json, x 0..6 and y 0..9; tier = 10 - y). A perk can be unlocked when it is next
-     * to an unlocked perk (same row or column, one step) and the HOTM tier reaches its row; each unlock costs one Token
-     * of the Mountain. Mining Speed (tier 1) is the first perk.
+     * HOTM tree positions (NODES plus Core of the Mountain at 3, 5). A perk can be unlocked when it is next to an unlocked
+     * perk (same row or column, one step) and the HOTM tier reaches its row; each unlock costs one Token of the Mountain.
+     * Mining Speed (tier 1) is the first perk.
      */
     private static final Map<String, int[]> LAYOUT = new HashMap<>();
     static {
-        String[] rows = {"mining_speed 3 9", "mining_speed_boost 1 8", "precision_mining 2 8", "mining_fortune 3 8", "titanium_insanium 4 8", "pickobulus 5 8",
-                "luck_of_the_cave 1 7", "efficient_miner 3 7", "quick_forge 5 7", "sky_mall 0 6", "old_school 1 6", "professional 2 6", "mole 3 6",
-                "gem_lover 4 6", "seasoned_mineman 5 6", "front_loaded 6 6", "daily_grind 1 5", "core_of_the_mountain 3 5", "daily_powder 5 5",
-                "anomalous_desire 0 4", "blockhead 1 4", "subterranean_fisher 2 4", "keep_it_cool 3 4", "lonesome_miner 4 4", "great_explorer 5 4",
-                "maniac_miner 6 4", "speedy_mineman 1 3", "powder_buff 3 3", "fortunate_mineman 5 3", "miners_blessing 0 2", "no_stone_unturned 1 2",
-                "strong_arm 2 2", "steady_hand 3 2", "warm_heart 4 2", "surveyor 5 2", "mineshaft_mayhem 6 2", "metal_head 1 1", "rags_to_riches 3 1",
-                "eager_adventurer 5 1", "gemstone_infusion 0 0", "crystalline 1 0", "gifts_from_the_departed 2 0", "mining_master 3 0",
-                "dead_mans_chest 4 0", "vanguard_seeker 5 0", "sheer_force 6 0"};
-        for (String row : rows) { String[] f = row.split(" "); LAYOUT.put(f[0], new int[]{Integer.parseInt(f[1]), Integer.parseInt(f[2])}); }
+        NODES.values().forEach(n -> LAYOUT.put(n.id(), new int[]{n.x(), n.y()}));
+        LAYOUT.put("core_of_the_mountain", new int[]{3, 5});
     }
     /** Tokens of the Mountain per HOTM tier 1..10; Core of the Mountain levels 1, 5, 7 add 1 and level 10 adds 2 (wiki Heart of the Mountain). */
     private static final int[] TIER_TOKENS = {1, 2, 2, 2, 2, 2, 3, 2, 2, 2};
@@ -209,11 +235,6 @@ public final class ProfileUpgrades {
         out.sort(null);
         return out;
     }
-    private static double powder(PerkCost cost, int from, int to) {
-        double amount = 0;
-        for (int l = from; l < to; l++) amount += Math.floor(Math.pow(l + cost.offset, cost.exponent));
-        return amount;
-    }
     private static void hotm(JsonObject member, String tree, StatContext context, Map<String, Map<Stat, Double>> chains, Map<String, Map<Stat, Double>> alternate,
                              Map<String, Double> available, Set<String> unlocked, List<Option> out) {
         JsonElement nodes = at(member, "skill_tree", "nodes", tree);
@@ -229,18 +250,13 @@ public final class ProfileUpgrades {
         open.forEach(n -> unlocked.add(tree + ":" + n));
         // Tokens: tier rewards plus Core of the Mountain levels, minus one per unlocked perk (Core of the Mountain itself
         // is free). Fixture check: tier 10, Core of the Mountain 10 and 26 unlocked perks give 25 = tokens_spent.mountain.
-        double xp = number(at(member, "skill_tree", "experience", "mining"), number(at(member, "mining_core", "experience"), -1));
-        int tier = 0;
-        if (xp >= 0) for (int i = 0; i < HOTM_XP.length; i++) if (xp >= HOTM_XP[i]) tier = i + 1;
-        int core = (int)number(at(nodes, "core_of_the_mountain"), 0), tokens = 0;
-        for (int i = 0; i < tier; i++) tokens += TIER_TOKENS[i];
-        tokens += (core >= 1 ? 1 : 0) + (core >= 5 ? 1 : 0) + (core >= 7 ? 1 : 0) + (core >= 10 ? 2 : 0);
+        int tokens = tokens(Math.max(0, hotmTier(member)), (int)number(at(nodes, "core_of_the_mountain"), 0));
         available.put("TOKEN", (double)Math.max(0, tokens - open.stream().filter(n -> !n.equals("core_of_the_mountain")).count()));
         for (StatBreakdown.Perk perk : StatBreakdown.PERKS) {
-            PerkCost cost = PERK_COSTS.get(perk.id());
+            Node cost = NODES.get(perk.id());
             if (cost == null) continue;
             int level = (int)number(at(nodes, perk.id()), 0);
-            String chain = "hotm:" + tree + ":" + perk.id(), resource = "POWDER_" + cost.powder;
+            String chain = "hotm:" + tree + ":" + perk.id(), resource = "POWDER_" + cost.powder();
             if (level > 0) {
                 chains.put(chain, one(perk.stat(), counted(perk.at(level), perk.condition(), context)));
                 alternate.put(chain, one(perk.stat(), counted(perk.at(level + 1), perk.condition(), context)));
@@ -262,13 +278,57 @@ public final class ProfileUpgrades {
             }
             for (int target : targets) {
                 if (target > perk.maxLevel() || target <= level) continue;
-                double amount = powder(cost, from, target);
+                double amount = cost.powder(from, target);
                 out.add(new Option(chain, target, prefix + target, "HOTM", one(perk.stat(), counted(perk.at(target), perk.condition(), context)), resource, amount, null,
                         how + String.format(Locale.ROOT, "%,.0f %s Powder; free if your unspent powder and tokens cover it, otherwise grind them.", amount,
-                                cost.powder.charAt(0) + cost.powder.substring(1).toLowerCase(Locale.ROOT)),
+                                cost.powder().charAt(0) + cost.powder().substring(1).toLowerCase(Locale.ROOT)),
                         one(perk.stat(), counted(perk.at(target + 1), perk.condition(), context)), unlock, needs));
             }
         }
+    }
+    /** HOTM tier from the HOTM XP, or -1 when the XP is missing. */
+    static int hotmTier(JsonObject member) {
+        double xp = number(at(member, "skill_tree", "experience", "mining"), number(at(member, "mining_core", "experience"), -1));
+        int tier = -1;
+        if (xp >= 0) for (int i = 0; i < HOTM_XP.length; i++) if (xp >= HOTM_XP[i]) tier = i + 1;
+        return tier;
+    }
+    /** Tokens of the Mountain earned by the tier and the Core of the Mountain level. */
+    static int tokens(int tier, int core) {
+        int tokens = 0;
+        for (int i = 0; i < Math.min(tier, TIER_TOKENS.length); i++) tokens += TIER_TOKENS[i];
+        return tokens + (core >= 1 ? 1 : 0) + (core >= 5 ? 1 : 0) + (core >= 7 ? 1 : 0) + (core >= 10 ? 2 : 0);
+    }
+    /**
+     * The HOTM tree as the planner needs it, or null when the profile has no tree or no HOTM XP (unknown, not empty).
+     * Powder budget per type = unspent (powder_<type>) + spent (powder_spent_<type>, which leaves out Core of the Mountain:
+     * the fixture's Mithril and Glacite match the perk formulas exactly without it); a reset refunds all of it (wiki Heart
+     * of the Mountain). A type with either field missing is left out (unknown).
+     */
+    public static HotmPlanner.Input hotmInput(JsonObject member, String tree, boolean omelette) {
+        JsonElement nodes = at(member, "skill_tree", "nodes", tree);
+        if (!nodes.isJsonObject()) nodes = at(member, "mining_core", "nodes");
+        int tier = hotmTier(member);
+        if (!nodes.isJsonObject() || tier < 0) return null;
+        Map<String, Integer> levels = new TreeMap<>();
+        Set<String> disabled = new TreeSet<>();
+        for (String id : NODES.keySet()) {
+            int level = (int)number(at(nodes, id), 0);
+            if (level <= 0) continue;
+            levels.put(id, level);
+            if ("false".equals(string(at(nodes, "toggle_" + id), "true"))) disabled.add(id);
+        }
+        Map<String, Double> unspent = new TreeMap<>(), budget = new TreeMap<>();
+        for (String powder : List.of("MITHRIL", "GEMSTONE", "GLACITE")) {
+            String p = powder.toLowerCase(Locale.ROOT);
+            JsonElement have = at(member, "mining_core", "powder_" + p), spent = at(member, "mining_core", "powder_spent_" + p);
+            if (have.isJsonNull()) continue;
+            unspent.put(powder, Math.max(0, number(have, 0)));
+            if (!spent.isJsonNull()) budget.put(powder, Math.max(0, number(have, 0)) + Math.max(0, number(spent, 0)));
+        }
+        int core = (int)number(at(nodes, "core_of_the_mountain"), 0);
+        return new HotmPlanner.Input(tree, tier, core, tokens(tier, core), levels, disabled, unspent, budget, omelette,
+                string(at(member, "skill_tree", "selected_ability", "mining"), ""));
     }
     private static String title(String perk) {
         StringBuilder b = new StringBuilder();
