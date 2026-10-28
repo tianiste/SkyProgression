@@ -357,7 +357,7 @@ public final class ProgressionEngine {
             Item display = new Item(); display.id = "pet:" + o.priceId(); display.name = o.label(); display.group = "Pet"; display.icon = UpgradeIcons.pet(o);
             display.source = o.heldItem() ? "Pet item; replaces the current pet item" : "Auction House, level 100; the current pet item is not carried over";
             Price quote = prices.get(o.priceId());
-            Double cost = o.owned() ? 0.0 : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? quote.buy : null;
+            Double cost = o.owned() ? Double.valueOf(0) : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? Double.valueOf(quote.buy) : null;
             String blocked = !o.owned() && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
             Resale.Credit credit = o.heldItem() ? null : Resale.credit("pet", null, resale(basis), prices);
             result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after).withResale(credit), null, Map.of(), o, null, null));
