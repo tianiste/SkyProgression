@@ -63,6 +63,7 @@ All calculations run inside the mod. The hosted SkyProgression API at `api.skypr
 ([source](https://github.com/tianiste/SkyProgression-API)) only supplies your raw SkyBlock profile and current prices,
 so no Hypixel key ever ships in the mod. Every formula and its source is documented in
 [docs/CALCULATIONS.md](docs/CALCULATIONS.md). Unknown values stay unknown and are never treated as zero or free.
+Everything it does not cover or has not verified yet is listed in [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 
 **Privacy.** The mod sends the UUID of the player you look up to the SkyProgression API. Profiles are cached there for up
 to 30 minutes to save requests and are not stored afterwards. Other players' names are looked up at Mojang, and once per
