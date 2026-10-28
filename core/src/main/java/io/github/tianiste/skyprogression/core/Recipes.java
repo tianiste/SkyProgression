@@ -8,8 +8,8 @@ import static io.github.tianiste.skyprogression.core.Model.*;
 
 /**
  * Buy or craft/forge: for an item that has a crafting or forge recipe (`mining-recipes.json`, generated from the NEU
- * repository), compares the current buy quote with the recipe's inputs (owned inputs first, the rest at their buy
- * quotes; an input without a quote is made from its own recipe, a few levels deep) and takes the cheaper known path. The forge
+ * repository), compares the current buy quote with the recipe's inputs (owned inputs first; each missing input at the
+ * cheaper of its buy quote and its own recipe, a few levels deep) and takes the cheaper known path. The forge
  * time and the unlock (HOTM tier, collection) are shown; a recipe whose unlock is not met or cannot be checked is used
  * only when the item has no buy quote, and the path names the missing unlock.
  */
@@ -38,10 +38,11 @@ public final class Recipes {
     static Recipe recipe(String id) { return RECIPES.get(id); }
     /**
      * coins: cheapest known way to get the items (null when neither path is known); detail explains the choice; locked:
-     * the unlock a recipe still needs when it is the only way to get the item ("" otherwise).
+     * the unlock a recipe still needs when it is the only way to get the item ("" otherwise); used: owned items the
+     * recipes use up (so a plan can take them out of what later steps may use); forge: forge seconds over the recipes used.
      */
-    public record Path(Double coins, String detail, String locked) {
-        public Path(Double coins, String detail) { this(coins, detail, ""); }
+    public record Path(Double coins, String detail, String locked, Map<String, Integer> used, long forge) {
+        public Path(Double coins, String detail) { this(coins, detail, "", Map.of(), 0); }
     }
     public static Set<String> inputIds() {
         Set<String> ids = new TreeSet<>();
@@ -62,13 +63,15 @@ public final class Recipes {
     private record Node(Double coins, String how, List<String> steps, long forge, Set<String> locked, String unknown, Map<String, Integer> used) {}
     /**
      * Cost of `amount` copies of the item: the buy quote or the recipe, whichever is cheaper and known. Recipe inputs are
-     * taken from owned items first (each owned item counted once over the whole chain); a missing input is bought at its
-     * quote, or, when it has none, made from its own recipe in turn, up to MAX_DEPTH recipe levels (a recipe that would
+     * taken from owned items first (each owned item counted once over the whole chain); a missing input costs the cheaper
+     * known of its quote and its own recipe in turn, up to MAX_DEPTH recipe levels (a recipe that would
      * repeat an item already being made is not followed). A recipe whose unlock is not met is used only when the item has no buy quote; the
      * path then names the missing unlock.
      */
-    public static Path acquire(String id, int amount, Profile profile, Map<String, Price> prices) {
-        Node n = resolve(id, amount, profile, prices, profile.owned, new HashSet<>(), 0);
+    public static Path acquire(String id, int amount, Profile profile, Map<String, Price> prices) { return acquire(id, amount, profile, prices, profile.owned); }
+    /** As above, with recipe inputs taken from `owned` (what earlier materials or plan steps left) instead of the profile's items. */
+    public static Path acquire(String id, int amount, Profile profile, Map<String, Price> prices, Map<String, Integer> owned) {
+        Node n = resolve(id, amount, profile, prices, owned, new HashSet<>(), 0);
         if (n.coins() == null) return new Path(null, RECIPES.containsKey(id) ? "Price unknown: " + n.unknown() + "." : "");
         if (n.how().equals("buy")) return new Path(n.coins(), n.steps().isEmpty() ? "" : n.steps().getFirst());
         String locked = String.join(", ", n.locked());
@@ -77,15 +80,13 @@ public final class Recipes {
                 ? String.format(Locale.ROOT, "No buy quote; %s for %,.0f coins", n.how(), n.coins())
                 : String.format(Locale.ROOT, "Cheaper to %s (%,.0f vs %,.0f to buy)", n.how(), n.coins(), buy * amount);
         return new Path(n.coins(), head + ": " + String.join("; ", n.steps()) + (n.forge() > 0 ? "; " + duration(n.forge()) + " forge time in total" : "")
-                + (locked.isEmpty() ? "" : "; needs " + locked + " first") + ".", locked);
+                + (locked.isEmpty() ? "" : "; needs " + locked + " first") + ".", locked, n.used(), n.forge());
     }
     private static Node resolve(String id, int amount, Profile profile, Map<String, Price> prices, Map<String, Integer> owned, Set<String> making, int depth) {
         Double quote = quote(id, prices);
         Double buy = quote == null ? null : quote * amount;
         Node bought = new Node(buy, "buy", List.of(), 0, Set.of(), "", Map.of());
         Recipe r = RECIPES.get(id);
-        // Below the requested item an input that can be bought is bought; only one without a quote is made in turn.
-        if (depth > 0 && buy != null) return bought;
         if (r == null) return buy != null ? bought : unknown("no buy quote and no recipe for " + id);
         if (depth > MAX_DEPTH || making.contains(id))
             return buy != null ? bought : unknown("no buy quote for " + id + " and its recipe is more than " + MAX_DEPTH + " levels deep");
@@ -95,7 +96,7 @@ public final class Recipes {
         else if (r.collection() != null && profile.collections.getOrDefault(r.collection(), 0.0) < r.collectionAmount()) blocked = r.requires();
         String how = r.type().equals("forge") ? "forge" : "craft";
         if (!blocked.isEmpty() && buy != null)
-            return new Node(buy, "buy", List.of("Buying; can't " + how + " it yet (needs " + blocked + ")."), 0, Set.of(), "", Map.of());
+            return depth > 0 ? bought : new Node(buy, "buy", List.of("Buying; can't " + how + " it yet (needs " + blocked + ")."), 0, Set.of(), "", Map.of());
         int crafts = (int)Math.ceil(amount / Math.max(1, r.count()));
         Map<String, Integer> left = new HashMap<>(owned), used = new HashMap<>();
         Set<String> locked = new LinkedHashSet<>();
@@ -123,7 +124,7 @@ public final class Recipes {
         String step = (depth == 0 ? how : id + ": " + how) + " from " + parts + (r.duration() > 0 ? " (" + duration(r.duration() * crafts) + ")" : "")
                 + (r.requires().isEmpty() ? "" : ", needs " + r.requires());
         if (!missing.isEmpty()) {
-            if (buy != null) return new Node(buy, "buy", List.of("Buying; " + step + ", but " + missing + "."), 0, Set.of(), "", Map.of());
+            if (buy != null) return depth > 0 ? bought : new Node(buy, "buy", List.of("Buying; " + step + ", but " + missing + "."), 0, Set.of(), "", Map.of());
             return unknown("can't " + how + " " + id + ": " + missing);
         }
         if (buy != null && craft >= buy)

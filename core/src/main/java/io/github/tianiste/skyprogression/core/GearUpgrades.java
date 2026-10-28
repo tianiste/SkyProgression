@@ -14,8 +14,11 @@ public final class GearUpgrades {
     private static final double[][] AMBER={{4,8,12,16,20,24,28},{6,10,14,18,24,30,36},{10,14,20,28,36,45,54},{14,20,30,44,58,75,92},{20,28,40,60,80,100,120}};
     private static final double[] REMOVAL={1,100,10000,100000,500000};
     public record Plan(Map<String,Integer> materials,double fees,String instruction) {}
-    /** locked: unlocks a recipe still needs where crafting is the only way to get a material ("" when none). */
-    public record Cost(Double coins,boolean materialsOwned,String detail,String locked) {}
+    /**
+     * locked: unlocks a recipe still needs where crafting is the only way to get a material ("" when none); used: owned items
+     * the upgrade uses up, its own materials and recipe inputs (each owned item counted once).
+     */
+    public record Cost(Double coins,boolean materialsOwned,String detail,String locked,Map<String,Integer> used) {}
     /** cooldownFactor: new / old pickaxe ability cooldown (fuel tanks); 1 when the ability is unchanged. */
     /**
      * One in-place upgrade. cooldownFactor: new / old pickaxe ability cooldown (fuel tanks), 1 when unchanged.
@@ -57,20 +60,22 @@ public final class GearUpgrades {
         double sum=plan.fees; boolean known=true,allOwned=true;
         StringJoiner detail=new StringJoiner("; ");
         Set<String> locked=new LinkedHashSet<>();
+        Map<String,Integer> left=new HashMap<>(profile.owned),used=new HashMap<>();
         for(var e:plan.materials.entrySet()) {
-            int owned=Math.min(e.getValue(),Math.max(0,profile.owned.getOrDefault(e.getKey(),0)));
+            int owned=Math.min(e.getValue(),Math.max(0,left.getOrDefault(e.getKey(),0)));
             int buy=e.getValue()-owned;allOwned &= buy==0;
+            if(owned>0){left.merge(e.getKey(),-owned,Integer::sum);used.merge(e.getKey(),owned,Integer::sum);}
             detail.add(e.getKey()+": "+owned+" owned, "+buy+" to get");
             if(buy>0) {
-                Recipes.Path path=Recipes.acquire(e.getKey(),buy,profile,prices);
+                Recipes.Path path=Recipes.acquire(e.getKey(),buy,profile,prices,left);
                 if(path.coins()==null)known=false;
-                else sum+=path.coins();
+                else{sum+=path.coins();path.used().forEach((k,v)->{left.merge(k,-v,Integer::sum);used.merge(k,v,Integer::sum);});}
                 if(!path.locked().isEmpty())locked.add(path.locked());
                 if(!path.detail().isEmpty())detail.add(path.detail().replaceAll("\\.$",""));
             }
         }
         if(plan.fees>0)detail.add("Fees: "+plan.fees+" coins");
-        return new Cost(known?Double.valueOf(sum):null,allOwned,detail+". "+plan.instruction,String.join(", ",locked));
+        return new Cost(known?Double.valueOf(sum):null,allOwned,detail+". "+plan.instruction,String.join(", ",locked),used);
     }
     public static List<Proposal> forItem(Item gear,MiningMethod method,Profile profile,Map<String,Price> prices) {return forItem(gear,method,profile,prices,Map.of());}
     /** omelette: mining stats the Blue Cheese Goblin Omelette's +1 HOTM perk levels add (ProfileUpgrades.State.omeletteGain). */

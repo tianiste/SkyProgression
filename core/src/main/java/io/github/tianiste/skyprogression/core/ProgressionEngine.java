@@ -149,8 +149,9 @@ public final class ProgressionEngine {
                 boolean omelette = StatBreakdown.blueCheese(u.current());
                 if (current != null && "DRILL".equals(u.current().category) && omelette != current.profile().omelette()) current = current.withOmelette(omelette);
                 u.delta().forEach((s, v) -> u.current().stats.merge(s, v, Double::sum));
-                best.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
             } else owned.put(u.item().group, u.item().copy());
+            // Owned items the step used (its materials, recipe inputs, an owned piece) are gone for later steps.
+            best.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
             stats = plus(stats, u.delta());
             if (u.cooldownFactor() != 1 && current != null && current.ability() != null && current.ability().cooldown() != null) {
                 var a = current.ability();
@@ -277,7 +278,7 @@ public final class ProgressionEngine {
             if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
             Resale.Credit credit=proposal.returned().isEmpty()?null:Resale.credit(null,proposal.returned(),Map.of(),prices);
             result.add(new Candidate(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after).withResale(credit),
-                    proposal.apply(),proposal.plan().materials()));
+                    proposal.apply(),cost.used()));
         }
         for (Item i : catalog) {
             if (!i.applies(m)) continue;
@@ -297,17 +298,19 @@ public final class ProgressionEngine {
             Double cost = null;
             Item shown = i;
             String locked = "";
+            Map<String, Integer> used = have ? Map.of(i.id, 1) : Map.of();
             if (have) cost = 0.0;
             else {
                 Recipes.Path path = Recipes.acquire(i.id, 1, p, prices);
                 cost = path.coins();
                 locked = path.locked();
+                used = path.used();
                 if (!path.detail().isEmpty()) { shown = i.copy(); shown.source = path.detail(); }
             }
             String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : locked.isEmpty() ? "" : "Craft needs " + locked + " first";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
             Resale.Credit credit = current == null ? null : Resale.credit(current.instance.isBlank() ? null : current.instance, current.id, resale(basis), prices);
-            result.add(new Candidate(new Upgrade(shown, current, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, Map.of()));
+            result.add(new Candidate(new Upgrade(shown, current, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, used));
         }
         // Full sets whose set bonus has mining stats: all four pieces at once.
         for (SetDef set : SETS) {
@@ -329,12 +332,15 @@ public final class ProgressionEngine {
             if (!Double.isFinite(gain) || gain <= 1e-9) continue;
             Double cost = 0.0; boolean have = true; int hotm = 0;
             Set<String> locked = new LinkedHashSet<>();
+            Map<String, Integer> left = new HashMap<>(p.owned), used = new HashMap<>();
             for (Item i : pieces) {
                 hotm = Math.max(hotm, i.hotm);
-                if (owned.get(i.group) != null && owned.get(i.group).id.equals(i.id) || p.owned.getOrDefault(i.id, 0) > 0) continue;
+                if (owned.get(i.group) != null && owned.get(i.group).id.equals(i.id)) continue;
+                if (left.getOrDefault(i.id, 0) > 0) { left.merge(i.id, -1, Integer::sum); used.merge(i.id, 1, Integer::sum); continue; }
                 have = false;
-                Recipes.Path path = Recipes.acquire(i.id, 1, p, prices);
+                Recipes.Path path = Recipes.acquire(i.id, 1, p, prices, left);
                 cost = cost == null || path.coins() == null ? null : cost + path.coins();
+                path.used().forEach((k, v) -> { left.merge(k, -v, Integer::sum); used.merge(k, v, Integer::sum); });
                 if (!path.locked().isEmpty()) locked.add(path.locked());
             }
             Item display = new Item(); display.id = pieces.getFirst().id; display.name = "Full " + set.name() + " set";
@@ -349,7 +355,7 @@ public final class ProgressionEngine {
                 credit = credit == null ? c : new Resale.Credit(credit.credit() == null || c.credit() == null ? null : credit.credit() + c.credit(),
                         credit.credit() == null ? credit.note() : c.credit() == null ? c.note() : "replaced pieces at their sale values");
             }
-            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, Map.of(), null, null, pieces));
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, used, null, null, pieces));
         }
         // Pets: option stats minus the evaluated pet's, both counted in the same context.
         if (basis != null && basis.pet() != null) for (PetUpgrades.Option o : basis.petOptions()) {

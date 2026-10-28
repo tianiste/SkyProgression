@@ -112,10 +112,8 @@ is "assumed" is labelled in the interface where it affects a number.
 
 - **Alternatives are independent.** Each upgrade is measured against the same current state; the list is not a shopping
   list. The step-by-step plan is greedy (up to 12 steps, cheapest per 1% first) at today's quotes, with no market impact.
-- **Buy vs craft:** an input is crafted in turn only when it has no buy quote (an input you could buy is never priced as
-  crafted even if that would be cheaper), up to 5 recipe levels. Materials a recipe uses are not removed from what later plan
-  steps can use; forge slots and the value of forge time are not modelled, and the forge time shown is the sum over the whole
-  chain. The buy-order cost mode assumes your order fills at today's top buy order (no queue time, no undercutting). A
+- **Buy vs craft** follows NEU recipes up to 5 levels deep; forge slots and the value of forge time are not modelled, and the
+  forge time shown is the sum over the whole chain. The buy-order cost mode assumes your order fills at today's top buy order (no queue time, no undercutting). A
   collection requirement with the Collections API off is not checked: the item is bought, or, when no one sells it, priced by
   its recipe and blocked until the unlock is confirmed.
 - **Items with no quote at all** stay "Price unknown" with the reason: no level-100 listing of a pet at that rarity right now

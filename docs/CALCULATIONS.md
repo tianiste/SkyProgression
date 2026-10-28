@@ -431,20 +431,25 @@ values as `INK_SACK-4`; the extractor stores them as `INK_SACK:4`, the ID the Ba
 quote for the dash form). Every recipe input is a price ID, so the hosted bundle quotes it.
 For each item or material to get, the cost is the cheaper known of:
 - buying: the buy quote x amount;
-- crafting/forging: ceil(amount / recipe count) crafts, each input from owned items first, the rest at its buy quote; an
-  input with no buy quote is made from its own recipe in turn (same rules), up to 5 levels below the item. An owned item is
-  counted once over the whole chain; a recipe that would make an item already being made higher up is not followed.
+- crafting/forging: ceil(amount / recipe count) crafts, each input from owned items first, the rest at the cheaper known of
+  its buy quote and its own recipe in turn (same rules), up to 5 levels below the item (`Recipes.MAX_DEPTH`). An owned item
+  is counted once over the whole chain; a recipe that would make an item already being made higher up is not followed.
 The recipe is used when its unlock is met (HOTM tier from the profile; collection count from `collection`). When it is not
 met (or is a collection with the Collections API off, so not checked), the item is bought if it has a quote; without a quote
 the recipe is still priced and the upgrade is blocked with "Craft needs <unlock> first", so the plan skips it until then.
-An input with neither a quote nor a usable recipe makes the recipe unknown; if both paths are unknown the price stays
+An input with neither a quote nor a usable recipe makes the recipe unknown (an input that can be bought is then bought); if both paths are unknown the price stays
 "Price unknown" with the item that has no quote and no recipe named. The card says which path was taken, both totals, each
 recipe used (one line per level) and the forge time summed over all forges in the chain (an upper bound: forge slots run in
 parallel). Example (fixture, Relic of Power, which no one sells): forge from an Artifact of Power, a Perfect Plate (bought)
 and 32 Glacite Amalgamation (bought); the Artifact is crafted from 32 Gemstone Mixture and the owned Ring of Power. Without
 the Ring, the Ring is crafted from 7 Fine Ruby, a Gemstone Mixture and a Talisman of Power, and the Talisman from 45 Flawed
-Ruby. Limits: inputs used by a recipe are not removed from the plan's owned materials; forge slots and forge time value are
-not modelled. Bazaar buy orders are a cost mode (below).
+Ruby. Owned items an upgrade uses (its own materials, recipe inputs at any level, an owned armor piece) are tracked: within one
+upgrade the materials share one pool, and in the plan they are removed from what later steps can use, so two steps never
+count the same owned Refined Mineral, gem or part. Fixture (2026-10-28 bundle): Mithril Lantern forge 0.42M (its Refined
+Mithril forged from Enchanted Mithril) vs 1.0M to buy, 0.74M when inputs with a quote were always bought; Titanium Lantern
+1.78M (forging its Mithril Lantern) vs 2.36M; each Glossy Mineral piece about 0.5M cheaper by crafting its Mineral piece from
+Refined Mineral. Limits: forge slots and forge time value are not modelled (forge time is shown, not priced). Bazaar buy
+orders are a cost mode (below).
 Prices change, so no guide's buy-vs-craft claim is assumed. Live check 2026-10-26: Gemstone Fuel Tank forge 48.3M vs
 buy 53.7M; Amber-Polished engine buy 260M vs forge 286M; Glossy Mineral Talisman craft 26.9M with an owned Mineral
 Talisman vs buy 32.0M.
