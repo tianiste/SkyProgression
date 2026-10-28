@@ -273,7 +273,7 @@ public final class ProgressionEngine {
             var cost=GearUpgrades.cost(proposal.plan(),p,prices);
             Item display=new Item();display.id="upgrade:"+gear.instance+":"+proposal.label();display.name=proposal.label();
             display.modification=true;display.source=cost.detail();display.icon=UpgradeIcons.proposal(proposal);
-            String blocked=proposal.blocked();
+            String blocked=proposal.blocked().isEmpty()&&!cost.locked().isEmpty()?"Craft needs "+cost.locked()+" first":proposal.blocked();
             if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
             Resale.Credit credit=proposal.returned().isEmpty()?null:Resale.credit(null,proposal.returned(),Map.of(),prices);
             result.add(new Candidate(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after).withResale(credit),
@@ -296,13 +296,15 @@ public final class ProgressionEngine {
             boolean have = p.owned.getOrDefault(i.id, 0) > 0;
             Double cost = null;
             Item shown = i;
+            String locked = "";
             if (have) cost = 0.0;
             else {
                 Recipes.Path path = Recipes.acquire(i.id, 1, p, prices);
                 cost = path.coins();
+                locked = path.locked();
                 if (!path.detail().isEmpty()) { shown = i.copy(); shown.source = path.detail(); }
             }
-            String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : "";
+            String blocked = p.hotm < i.hotm ? "Requires HOTM " + i.hotm : locked.isEmpty() ? "" : "Craft needs " + locked + " first";
             if ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) blocked = "No market purchases on " + p.mode;
             Resale.Credit credit = current == null ? null : Resale.credit(current.instance.isBlank() ? null : current.instance, current.id, resale(basis), prices);
             result.add(new Candidate(new Upgrade(shown, current, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, Map.of()));
@@ -326,16 +328,18 @@ public final class ProgressionEngine {
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
             if (!Double.isFinite(gain) || gain <= 1e-9) continue;
             Double cost = 0.0; boolean have = true; int hotm = 0;
+            Set<String> locked = new LinkedHashSet<>();
             for (Item i : pieces) {
                 hotm = Math.max(hotm, i.hotm);
                 if (owned.get(i.group) != null && owned.get(i.group).id.equals(i.id) || p.owned.getOrDefault(i.id, 0) > 0) continue;
                 have = false;
-                Double piece = Recipes.acquire(i.id, 1, p, prices).coins();
-                cost = cost == null || piece == null ? null : cost + piece;
+                Recipes.Path path = Recipes.acquire(i.id, 1, p, prices);
+                cost = cost == null || path.coins() == null ? null : cost + path.coins();
+                if (!path.locked().isEmpty()) locked.add(path.locked());
             }
             Item display = new Item(); display.id = pieces.getFirst().id; display.name = "Full " + set.name() + " set";
             display.group = pieces.getFirst().group; display.source = "All four pieces, for the set bonus; owned pieces cost nothing.";
-            String blocked = p.hotm < hotm ? "Requires HOTM " + hotm : "";
+            String blocked = p.hotm < hotm ? "Requires HOTM " + hotm : locked.isEmpty() ? "" : "Craft needs " + String.join(", ", locked) + " first";
             if (!have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode))) blocked = "No market purchases on " + p.mode;
             Resale.Credit credit = null;
             for (Item i : pieces) {
@@ -369,6 +373,8 @@ public final class ProgressionEngine {
             Price quote = prices.get(o.priceId());
             Double price = have ? Double.valueOf(0) : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? Double.valueOf(quote.buy) : null;
             Double cost = price == null || o.fees() == null ? null : price + o.fees();
+            if (price == null) display.source += quote == null ? " Price unknown: no quote for it yet." : o.heldItem()
+                    ? " Price unknown: nobody is selling one right now." : " Price unknown: no level-100 one of this rarity is listed right now.";
             String blocked = !have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
             Resale.Credit credit = o.heldItem() ? (o.returned().isEmpty() ? null : Resale.credit(null, o.returned(), Map.of(), prices))
                     : o.carried().isEmpty() ? Resale.credit("pet", null, resale(basis), prices)

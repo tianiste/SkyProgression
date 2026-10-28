@@ -193,14 +193,13 @@ public final class OtherUpgrades {
             Double g = gain.apply(delta);
             if (g == null || g <= 1e-9) continue;
             StringJoiner missing = new StringJoiner(", ");
-            Double materials = 0.0;
             for (var in : r.inputs().entrySet()) {
                 int need = (int)Math.ceil(in.getValue()), have = Math.min(need, Math.max(0, p.owned.getOrDefault(in.getKey(), 0)));
-                if (have >= need) continue;
-                missing.add((need - have) + " " + in.getKey());
-                Double q = Recipes.quote(in.getKey(), prices);
-                materials = materials == null || q == null ? null : materials + q * (need - have);
+                if (have < need) missing.add((need - have) + " " + in.getKey());
             }
+            // Missing inputs are bought or crafted in turn (an Artifact of Power from a Ring, a Ring from a Talisman).
+            Recipes.Path path = Recipes.acquire(i.id, 1, p, prices);
+            Double materials = path.coins();
             for (String gem : gems) {
                 Double q = Recipes.quote(gem, prices);
                 materials = materials == null || q == null ? null : materials + q;
@@ -211,7 +210,7 @@ public final class OtherUpgrades {
             String distance = (p.hotm < r.hotm() ? "HOTM " + p.hotm + " of " + r.hotm() + "; " : "") + (missing.length() == 0 ? "All forge inputs owned" : "Missing " + missing);
             out.add(new Entry("forge:" + i.id, i.name, i.group, delta, g, materials, statText(delta) + (gems.isEmpty() ? "" : " with Perfect " + String.join(", ",
                     gems.stream().map(x -> title(x.substring(8, x.length() - 4))).toList()) + " in its slots"), requirement, distance,
-                    "Forge from " + inputs + " (" + Recipes.duration(r.duration()) + "); not sold on the Auction House or Bazaar.",
+                    "Forge from " + inputs + " (" + Recipes.duration(r.duration()) + "); not sold on the Auction House or Bazaar." + (path.detail().isEmpty() ? "" : " " + path.detail()),
                     current == null ? "" : "Replaces " + current.name + "." + (gems.isEmpty() ? "" : " Gems in the old accessory can be moved over instead of bought.")));
         }
     }
