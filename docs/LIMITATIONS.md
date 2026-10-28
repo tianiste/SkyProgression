@@ -207,8 +207,10 @@ is "assumed" is labelled in the interface where it affects a number.
   companion with your own key avoids this ([SETUP.md](SETUP.md#local-companion)).
 - **Slow first loads.** The engine for the website runs on one small server (1/8 of a CPU core). A player's first page also
   waits for Hypixel and Mojang, so it can take a few seconds; the player's other tabs are built in the background while the
-  first one is read and then answer at once. Switching to a Glacite method (Tungsten, Umber, Shafting) on Upgrades takes
-  longest. Cached pages answer in well under a second.
+  first one is read and then answer at once. Pages for other options (another method, buy-order costs) are not built ahead
+  and take a few seconds the first time; Upgrades takes longest. Cached pages answer in well under a second. The website's
+  2-minute result cache is per Cloudflare location, so a repeat that lands in another location is answered from the relay's
+  own page cache instead (a fraction of a second).
 - **Caching.** Profiles are reused for 5 minutes (up to 30 while a refresh runs); website results for 2 minutes. Prices update
   in small steps every 3 minutes: Bazaar about every 15 minutes, NPC prices every 6 hours, the mayor every 20 minutes.
 - **Limits.** Per IP, per player and overall Hypixel limits apply (for example 20 website lookups per minute per IP); a busy

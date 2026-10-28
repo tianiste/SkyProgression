@@ -18,8 +18,11 @@ refused with 400). `POST /web` (the website's player pages: overview, gear, upgr
 same way: the Worker sends the profile and its price bundle, the relay decodes the profile once per player and fetch time
 (the last four are kept in memory) and answers the page's JSON; without both it answers 400 (bodies up to 18 MB). When the
 resent profile is one it has already decoded, its body is skipped, not parsed again. After a player's first page it builds
-that player's other pages in the background, one at a time, and keeps finished pages ten minutes (24 at most), so the next
-tab answers at once. For the 3D model it asks Mojang's session server for the player's skin (cached an hour), while the
+that player's other pages in the background on one thread (upgrades, methods, start, gear, hotm), and keeps finished pages
+ten minutes (24 at most), so the next tab answers at once. That background work pauses while a visitor's request is
+handled, so the page someone asked for gets the CPU; a page asked for while it is being built ahead is waited for, not built
+twice. A kept page is reused when the bundle sent is up to five minutes newer or older than the one it was built with
+(Cloudflare locations hold bundles a cron step apart); the page shows its own price time. For the 3D model it asks Mojang's session server for the player's skin (cached an hour), while the
 page is being built. Everything else answers 404. It fetches no prices.
 
 Tested target: Oracle Cloud Always Free `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB) with Ubuntu 24.04. Any small Linux VM
