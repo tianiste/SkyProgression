@@ -25,8 +25,9 @@ is "assumed" is labelled in the interface where it affects a number.
 
 ## What the Hypixel API does not tell us
 
-- **Held item.** The API has no held item. The tool is the best owned tool for the method unless you pick one; the
-  current loadout without a pick has no tool swap.
+- **Held item (website and companion only).** The API has no held item. On the website the tool is the best owned tool
+  for the method unless you pick one, and the current loadout without a pick has no tool swap. The mod reads the held
+  tool from the game (see "Live gear" below).
 - **Active HOTM tree and selected ability.** Profiles can hold up to five trees (Loadouts) and none is marked active. The
   engine uses the tree with the most value for the method. The selected pickaxe ability is read from the tool's lore only.
 - **Potions and most buffs.** The God Potion is assumed active (Spelunker V +25 Mining Fortune, Haste IV +200 Mining Speed)
@@ -139,9 +140,25 @@ is "assumed" is labelled in the interface where it affects a number.
 - **Other & progress:** Royal Riches' gain assumes you mine in the Mines of Divan, which has no zone; Compact's rate effect is
   not modelled; prices for essence perks whose level cannot be read assume level 0.
 
+## Live gear (mod)
+
+- Equipment is read only when you open the equipment menu, and the pet only from the pets menu, the tab list's Pet line
+  or summon/Autopet chat messages. Until then both come from the API (labelled "API" with its age). Captures are kept in
+  memory for this game session only, per profile (tab list "Profile:" line).
+- The tab list and chat give no pet item: it is kept from the pets menu read or the API. Pet rarity from the tab list or
+  chat is read from the name colour; pet XP is the API's (or the level's minimum XP for a pet the API does not list).
+- An item the API lists as worn or in the inventory, but the game no longer shows there, is kept as "moved since the API
+  read": it is somewhere the game does not show (storage) until the API catches up. Items moved into storage are not
+  seen live.
+- Live gear applies only to your own profile: the one the tab list names, else the one the API marks as selected.
+- The accessory bag, storage, the active HOTM tree and Upgrades ownership still come from the API.
+- Hypixel menu titles, the "Click to despawn" pet lore, the tab list layout and the chat texts were not checked in game
+  for this release.
+
 ## Start with
 
-- The held tool is your Tool choice, and the current HOTM tree is the best one, because the API has neither.
+- The held tool is your Tool choice, else the tool you hold in game (mod). The current HOTM tree is the best one,
+  because neither the API nor the game client shows the active tree.
 - Manual stat overrides (Type Stats) and temporary buffs are ignored on this tab by design.
 - Wardrobe slot and ender chest page numbering in the storage labels has not been checked in game.
 - With the Inventory API off only the pet can be compared.

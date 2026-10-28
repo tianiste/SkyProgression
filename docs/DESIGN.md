@@ -14,7 +14,10 @@ lines, and the existing flat palette (no blur).
   "Coins / hour by method" bar chart (best method cyan, selected gold, click selects the method).
 - **Gear** (old Start with + Breakdown): "Use this loadout" as an item-slot grid (tool outlined gold, pieces to fetch
   cyan, worn gray), a status line ("Wearing the best you own" or the swap count and rate change), the clicked slot's
-  detail (name, storage, swap) and the swaps as icon rows. "Stats use" holds the evaluated gear, notes and the
+  detail (name, storage, source, swap) and the swaps as icon rows. A source line under the grid ("Live: N of M from the
+  game | API: 4m old", green when any piece is live) and a "Source:" line in each slot tooltip say where each piece came
+  from (Live, Live seen N ago for menu reads, or API with its age); the labels refresh every 10 seconds. The Tool button
+  reads "Held, <tool>" when the live held tool is used. "Stats use" holds the evaluated gear, notes and the
   best-method hint in tooltips. Each stat card has one bar split by source category (Gear gold, HOTM cyan, Skill
   green, Pet purple, others muted) over the attainable total, a legend, the top four sources (check mark when maxed,
   "+ N more" expands) and one collapsed line for situational, temporary, missing and not-in-API sources.

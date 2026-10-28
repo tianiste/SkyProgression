@@ -130,8 +130,8 @@ method's usual location and the block target follows the method's fortune type (
 
 Loadouts:
 - **Equipped**: `inv_armor`, `equipment_contents`, the accessory bag and the active pet, plus a tool
-  the player selects (the API does not expose the held item). Without a selected tool, the ledger
-  carries a MANUAL "Mining tool" entry with no value. Stored items are never equipped implicitly.
+  the player selects (the API does not expose the held item; in the mod, the tool held in game, see "Live gear").
+  Without a tool, the ledger carries a MANUAL "Mining tool" entry with no value. Stored items are never equipped implicitly.
 - **Best owned**: a separate, hypothetical choice of one copy per slot from all readable storage.
   It also picks one accessory per family and the best catalogued pet. It is not what the player wears.
 - Accessories of one catalogued family do not stack. The highest-rarity copy counts; uncatalogued
@@ -1041,8 +1041,8 @@ official. No coefficient is encoded; the manual Rates scenario still accepts a u
   independently, so a set bonus can be broken (as in the Breakdown). Accessories are listed only when their unconditional stat
   lines add one of the method's weighted stats; the rest are counted, not listed.
 - Current loadout: `Loadout.equipped` (worn armor and equipment, accessory bag, active pet). The held tool is not in the API:
-  the player's Tool choice (shared with the Breakdown tab) is the held tool; without one the current loadout assumes the best
-  owned tool and no tool swap is listed (said so on the tab). The active HOTM tree is not in the API either: the current
+  the player's Tool choice (shared with the Breakdown tab) is the held tool, else (mod) the tool held in game (live gear);
+  without either the current loadout assumes the best owned tool and no tool swap is listed (said so on the tab). The active HOTM tree is not in the API either: the current
   loadout uses its own best tree, and a different best tree for the best loadout is listed as a "HOTM tree" swap.
 - Swaps: per armor/equipment slot, tool, pet and accessory family where the best loadout holds a different copy. Each swap is
   evaluated alone: the current loadout with only that piece changed, same tree and context, all supported stats recomputed with
@@ -1126,6 +1126,33 @@ all four Divan pieces, a DR-X555 or better, or HOTM 7; otherwise "Before the che
 checklist items (expandable), marking "(you own one)" only where the API shows the item. It is orientation, not a fixed
 order, and the checklist's unticked cells are not profile facts; personalized steps are the ranked lists. Fixture: Mid game
 (HOTM 10, Divan armor, DR-X655).
+
+## Live gear
+
+The mod reads the player's gear from the game client and merges it over the API profile (`core/LiveGear`, client
+`LiveGearWatcher`), so Gear, Home and Start with follow a swap without waiting for the API (a few minutes behind) and work
+with the Inventory API off for what the game shows.
+
+- **Read:** worn armor and the 36 inventory slots twice a second, by stack identity: only a changed stack that is gear (its
+  last lore lines name a rarity and a gear slot) is converted. Its custom data (Hypixel's former `ExtraAttributes`: id,
+  uuid, enchantments, modifier, gems, drill parts, rarity upgrades), name and lore become the inventory API's NBT shape and
+  go through the same `GearReader`. Equipment is read while the equipment menu (title containing "Equipment") is open, the
+  active pet from the pets menu (the pet whose lore says "Click to despawn", `petInfo` when present, else "[Lvl N] Name",
+  name colour for rarity and the "Held Item:" line), the tab list's line after "Pet:" and summon / despawn / Autopet chat.
+  Only while the SkyBlock menu item is in the inventory.
+- **Only on change:** a snapshot's version changes when a gear signature changes (custom data without fuel and counters
+  such as `drill_fuel`, `compact_blocks`), the held tool slot, the equipment capture, the pet or the tab list profile.
+  Reports recalculate on ClientData's worker with the version in their keys; stale requests are cancelled.
+- **Merge (`LiveGear.apply`):** live armor, inventory and equipment replace the API's copies of `inv_armor`,
+  `inv_contents` and `equipment_contents`; an API copy with the same UUID elsewhere is dropped; an API copy listed in a
+  live container but not shown live is kept as "moved since the API read". The live pet is matched to the API pet of the
+  same type (and rarity when known, nearest level) for XP and pet item; an unlisted pet uses the level's minimum XP.
+  Everything else (storage, accessory bag, HOTM, attributes) is the API's.
+- **Held tool:** the tool in the selected hotbar slot, or the last hotbar slot that held a tool; the player's Tool choice
+  wins. It replaces the "best owned tool" assumption in the ledger, Start with and the worn-gear method hint.
+- **Sources:** each loadout piece carries when the game showed it (`StatsReport.liveAt`, `StartWith.Report.liveAt`); Gear
+  labels it "Live" (armor, inventory, held tool), "Live, seen N ago" (equipment and pet menus) or "API, N old".
+- Live gear applies to the game user's own profile only (tab list "Profile:" name, else the API's selected profile).
 
 ## Session tracker
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Live gear
+
+- Gear, Home and Start with now use the gear the game shows: worn armor, the inventory and the held drill or pickaxe
+  (no more waiting for the API, and the held tool no longer needs picking), plus equipment and the active pet once you
+  open the equipment or pets menu (the pet also from the tab list and summon messages). The API fills the rest. Works
+  with the Inventory API off for what the game shows. Each piece is labelled Live or API with its age. Read only.
+
 ## 0.5.0 - 2026-10-28
 
 ### Session tracker

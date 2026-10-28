@@ -124,6 +124,13 @@ details; lines starting with + expand on click.
 
 Use the mouse wheel, Page Up/Down or footer arrows to scroll results. Selectors have search fields. Nothing purchases items, equips gear, or mines for you.
 
+## Live gear
+
+The mod reads your armor, inventory and held drill or pickaxe from the game, so Gear and Home follow a swap at once,
+even with the Inventory API off. Open your equipment menu (SkyBlock Menu > Your Equipment and Stats) and your pets menu
+once per game session so equipment and your pet are read too; until then they come from the API. On Gear, the line
+under the slots and each slot's tooltip say which pieces are Live and how old the API data is.
+
 ## Current limits
 
 This is not yet a full replacement for Mining Cat or SkyCompass. Stats are calculated from what the API shows; sources
