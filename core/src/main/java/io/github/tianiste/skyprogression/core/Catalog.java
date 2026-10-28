@@ -14,7 +14,14 @@ public final class Catalog {
             return List.of(GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Item[].class));
         } catch (IOException e) { throw new UncheckedIOException(e); }
     }
+    /** Parsed once (the ledger reads it for every stat); callers only read it. */
+    private static volatile JsonObject rules;
     public static JsonObject progressionRules() {
+        JsonObject r = rules;
+        if (r == null) rules = r = readRules();
+        return r;
+    }
+    private static JsonObject readRules() {
         try (var stream = Catalog.class.getResourceAsStream("/progression-rules.json")) {
             if (stream == null) return new JsonObject();
             return JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();

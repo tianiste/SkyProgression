@@ -283,7 +283,12 @@ public final class StatBreakdown {
                     "Potion-style effect on Mining System islands; not part of the item's stat line."));
     }
 
-    private static final Pattern TANK_LINE = Pattern.compile("^-([0-9.]+)% Pickaxe Ability Cooldown$");
+    /** Per-stat patterns, compiled once: a lore or perk amount ("+12 Mining Speed", "+5% Mining Fortune") and a collection reward line. */
+    private static final Map<Stat, Pattern> LORE_AMOUNT = new java.util.concurrent.ConcurrentHashMap<>(), REWARD = new java.util.concurrent.ConcurrentHashMap<>();
+    private static Pattern loreAmount(Stat stat) {
+        return LORE_AMOUNT.computeIfAbsent(stat, st -> Pattern.compile("\\+([0-9][0-9,]*(?:\\.[0-9]+)?)(%?)[^A-Za-z0-9+%]*" + Pattern.quote(st.label) + "\\b"));
+    }
+    private static final Pattern TANK_LINE =Pattern.compile("^-([0-9.]+)% Pickaxe Ability Cooldown$");
     /**
      * Tool sources outside the stat lines: the fuel tank's Pickaxe Ability Cooldown reduction (wiki Drill Parts, shown as
      * "-4% Pickaxe Ability Cooldown" in the tank paragraph) and an Amber Power Scroll (wiki Power Scrolls: +30 Mining Speed for
@@ -328,7 +333,7 @@ public final class StatBreakdown {
         for (List<String> paragraph : paragraphs(item.lore)) {
             String header = paragraph.getFirst(), text = String.join(" ", paragraph);
             if (header.startsWith("Ability:") || paragraph.stream().anyMatch(s -> STAT_LINE.matcher(s).find())) continue;
-            Matcher amount = Pattern.compile("\\+([0-9][0-9,]*(?:\\.[0-9]+)?)(%?)[^A-Za-z0-9+%]*" + Pattern.quote(b.stat.label) + "\\b").matcher(text);
+            Matcher amount = loreAmount(b.stat).matcher(text);
             if (!amount.find()) continue;
             double value = Double.parseDouble(amount.group(1).replace(",", ""));
             boolean percent = !amount.group(2).isEmpty();
@@ -669,7 +674,7 @@ public final class StatBreakdown {
         JsonElement counts = at(member, "collection");
         JsonElement rules = at(Catalog.progressionRules(), "collections");
         if (!rules.isJsonObject()) return;
-        Pattern reward = Pattern.compile("^\\+([0-9.]+)[^A-Za-z0-9]*" + Pattern.quote(b.stat.label) + "$");
+        Pattern reward = REWARD.computeIfAbsent(b.stat, st -> Pattern.compile("^\\+([0-9.]+)[^A-Za-z0-9]*" + Pattern.quote(st.label) + "$"));
         for (var entry : rules.getAsJsonObject().entrySet()) {
             double current = 0, maximum = 0;
             double count = counts.isJsonObject() ? number(at(counts, entry.getKey()), 0) : -1;
@@ -859,7 +864,7 @@ public final class StatBreakdown {
                     ? new Contribution(c.category(), c.source(), c.stat(), c.value(), c.maximum(), "During the Mining Fiesta (active now)", State.TEMPORARY,
                     c.confidence(), "The Fiesta runs now (election data); temporary buffs are not counted.") : c);
             String text = GearReader.clean(p.description());
-            Matcher m = Pattern.compile("\\+([0-9][0-9,]*(?:\\.[0-9]+)?)(%?)[^A-Za-z0-9+%]*" + Pattern.quote(b.stat.label) + "\\b").matcher(text);
+            Matcher m = loreAmount(b.stat).matcher(text);
             if (!m.find()) continue;
             boolean percent = !m.group(2).isEmpty() && !b.stat.percent;
             double value = Double.parseDouble(m.group(1).replace(",", ""));
