@@ -16,9 +16,11 @@ cache, the relay's `/profile`, or its own key as a fallback) together with the g
 the engine on that body and never calls Hypixel for a checklist (bodies up to 16.25 MB; a request without the profile is
 refused with 400). `POST /web` (the website's player pages: overview, gear, upgrades, methods, start, hotm) works the
 same way: the Worker sends the profile and its price bundle, the relay decodes the profile once per player and fetch time
-(the last four are kept in memory) and answers the page's JSON; without both it answers 400 (bodies up to 18 MB). For
-the 3D model it asks Mojang's session server for the player's skin (cached an hour). Everything else answers 404. It
-fetches no prices.
+(the last four are kept in memory) and answers the page's JSON; without both it answers 400 (bodies up to 18 MB). When the
+resent profile is one it has already decoded, its body is skipped, not parsed again. After a player's first page it builds
+that player's other pages in the background, one at a time, and keeps finished pages ten minutes (24 at most), so the next
+tab answers at once. For the 3D model it asks Mojang's session server for the player's skin (cached an hour), while the
+page is being built. Everything else answers 404. It fetches no prices.
 
 Tested target: Oracle Cloud Always Free `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB) with Ubuntu 24.04. Any small Linux VM
 with a fixed IP works the same way.
@@ -78,6 +80,11 @@ curl -s https://relay.skyprogression.dev/health        # {"ok":true,"ready":true
 ```
 
 Logs: `journalctl -u skyprogression-relay -e` (they never contain the key or the secret).
+
+At start the relay builds every page of a bundled sample profile a few times so the first visitor does not wait for the
+JIT compiler; the log then shows `Page engine warmed up in ... s` (about 4 s on a desktop, expect 30-60 s on the 1/8 OCPU
+VM, during which pages still answer, just more slowly). Each `/web` answer carries `Server-Timing` (`read`, `decode`,
+`build` in milliseconds; `build` is about 0 for a page built ahead), which the Worker passes on with its own phases.
 ### Updating the relay
 
 On your PC, build it (`./gradlew :service:installDist`) and copy it:

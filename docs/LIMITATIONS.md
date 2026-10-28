@@ -205,8 +205,10 @@ is "assumed" is labelled in the interface where it affects a number.
 - **Hypixel key.** The production (application) key is still awaiting approval, so the hosted API runs on a development key
   that must be renewed by hand every few days. When it lapses, lookups fail until it is renewed. Running the local
   companion with your own key avoids this ([SETUP.md](SETUP.md#local-companion)).
-- **Slow first loads.** The engine for the website runs on one small server. A player's first page can take 4-10 seconds
-  while the profile is decoded; cached pages answer in well under a second.
+- **Slow first loads.** The engine for the website runs on one small server (1/8 of a CPU core). A player's first page also
+  waits for Hypixel and Mojang, so it can take a few seconds; the player's other tabs are built in the background while the
+  first one is read and then answer at once. Switching to a Glacite method (Tungsten, Umber, Shafting) on Upgrades takes
+  longest. Cached pages answer in well under a second.
 - **Caching.** Profiles are reused for 5 minutes (up to 30 while a refresh runs); website results for 2 minutes. Prices update
   in small steps every 3 minutes: Bazaar about every 15 minutes, NPC prices every 6 hours, the mayor every 20 minutes.
 - **Limits.** Per IP, per player and overall Hypixel limits apply (for example 20 website lookups per minute per IP); a busy
