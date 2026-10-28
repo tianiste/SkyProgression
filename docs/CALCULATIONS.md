@@ -416,6 +416,34 @@ item; a new item in a slot whose item an earlier step enchanted, coated or repla
 Quick Claw), the earlier step is banned and the plan is recomputed, so the later choice is taken directly. Added
 levels (Efficiency, Prismatic, Polarvoid, HOTM, essence, attributes) build on each other and are not conflicts.
 
+Bundles and lookahead (2026-10-28):
+- Bundle candidates: each set with a mining set bonus as a full four-piece purchase (owned pieces free; Glossy Mineralworks
+  +150 Mining Spread per piece on ores and blocks, wiki Glossy Mineral Armor), and a full drill build: the best part of each
+  kind the evaluated drill can still take (engine, fuel tank, module, reforge, each gem slot; best = the largest rate gain on
+  its own, then the larger stat change), fitted as one upgrade with one shared pool of owned materials. Parts with no gain on
+  their own (Mining Speed short of a tick threshold) are included, since they can count together. Both appear in the
+  Upgrades list and as plan steps.
+- Pair lookahead: besides single upgrades, the plan scores pairs of independent upgrades (different slots, parts or level
+  chains; no two pets, no two HOTM/essence/attribute levels, no Recombobulator or Blue Cheese omelette, whose value depends on
+  the rest) from a bounded pool: the 10 best by cost per 1% and the 10 cheapest with no gain of their own. A pair is taken as
+  one step ("A + B") only when its gain is more than 1% above the two applied one after the other and its cost per 1% beats
+  every single upgrade. Owned materials both would use must be there twice.
+- "A then B" against "B alone": before a step A is taken, the plan simulates it and the greedy step after it; if that step
+  would throw A away (replace its slot, part or pet), B alone is better, so A is skipped for this step (up to 3 re-picks). The
+  ban-and-recompute rule above remains as a backstop.
+- Guard: the plan is computed twice, greedy and with lookahead, and the lookahead plan is shown only when, at each plan's
+  total spend, its running gain is at least the greedy plan's. Otherwise the greedy plan is shown.
+- Cost: about twice the candidate evaluations of the greedy plan (fixture: 14 methods' 12-step plans 4.1 s -> 6.8 s in one
+  JVM, including start-up); it runs on the mod's worker thread, never the game thread.
+- The plan state now carries the profile's collection counts and Mining level, as the Upgrades list always did, so a recipe
+  with a collection unlock and the Glacite set bonus are priced and counted the same in both.
+Fixture (2026-10-28 bundle): the greedy pass and the lookahead pick the same steps on all 14 methods; the change comes from
+the bundles: Grotto takes a full drill build (Perfectly-Cut tank, Amber-Polished engine, Lustrous reforge, Perfect Jade) for
++16.6% at 525M where the engine alone gave +7.3%, so its 12 steps reach +37.1% instead of +27.9%. Obsidian, Gold, Coal,
+Cobblestone and End Stone still start with the four Mineral pieces (0.49-0.98M, +45.5% together, resold at about their cost)
+because the Full Glossy Mineral set costs about 116M for +94.5%: at 12 steps and about 10M the plan never reaches it. Guides
+assume a larger budget.
+
 The Upgrades list shows one entry per level chain (each HOTM perk, essence perk, attribute, Efficiency, Prismatic,
 Polarvoid and gem slot): the lowest cost per 1% among its levels, with a note of how many were hidden. Different
 reforges, drill parts, items and pets stay separate entries.

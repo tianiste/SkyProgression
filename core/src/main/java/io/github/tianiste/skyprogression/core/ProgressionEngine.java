@@ -98,40 +98,108 @@ public final class ProgressionEngine {
     /**
      * Step-by-step plan: take the available upgrade with the lowest known cost per 1%, apply it (gear, stats, ability,
      * used materials), recompute every candidate from the new state, repeat. Blocked and unpriced upgrades are skipped.
+     * Two passes: the greedy one, and one with a two-step lookahead (pairs that pay off only together, and "A then B" against
+     * "B alone" before a step is taken). The lookahead plan is kept only when it is no worse at equal spend.
      */
     public List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps) {
         if (!p.inventoryEnabled) return List.of();
+        List<Step> greedy = plan(p, m, baseline, prices, basis, maxSteps, false);
+        if (maxSteps <= 0) return greedy;
+        List<Step> ahead = plan(p, m, baseline, prices, basis, maxSteps, true);
+        return noWorse(ahead, greedy) ? ahead : greedy;
+    }
+    private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, boolean lookahead) {
         // A step that replaces what an earlier step bought (a second reforge on one item, a new helmet after enchanting
         // the old one) would pay twice: ban the earlier step and plan again, so the later choice is taken directly.
         Set<String> banned = new HashSet<>();
         List<Step> steps;
         int restarts = 0;
-        while ((steps = plan(p, m, baseline, prices, basis, maxSteps, banned)) == null && ++restarts <= 2 * maxSteps) {}
-        return steps != null ? steps : plan(p, m, baseline, prices, basis, maxSteps, banned, true);
+        while ((steps = plan(p, m, baseline, prices, basis, maxSteps, banned, false, lookahead)) == null && ++restarts <= 2 * maxSteps) {}
+        return steps != null ? steps : plan(p, m, baseline, prices, basis, maxSteps, banned, true, lookahead);
     }
-    private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, Set<String> banned) {
-        return plan(p, m, baseline, prices, basis, maxSteps, banned, false);
+    /**
+     * Whether plan a is no worse than plan b at equal spend: at each plan's total cost, a's running gain (its last step within
+     * that spend) is at least b's.
+     */
+    static boolean noWorse(List<Step> a, List<Step> b) {
+        if (a.isEmpty()) return b.isEmpty();
+        for (double spend : new double[] {a.getLast().totalCost(), b.isEmpty() ? 0 : b.getLast().totalCost()})
+            if (gainAt(a, spend) < gainAt(b, spend) - 1e-9) return false;
+        return true;
     }
-    /** One greedy pass; null when a conflict was found (its earlier step is then added to banned). */
-    private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, Set<String> banned, boolean ignoreConflicts) {
-        Profile state = new Profile();
-        state.mode = p.mode; state.hotm = p.hotm; state.enchantingLevel = p.enchantingLevel; state.inventoryEnabled = true;
-        state.owned = new HashMap<>(p.owned);
-        Map<String, Item> owned = new LinkedHashMap<>();
-        bestOwned(p, m, null).forEach((group, item) -> owned.put(group, item.copy()));
-        Map<Stat, Double> stats = plus(baseline, Map.of());
-        RateBasis current = basis;
-        double start = metric(m, stats, current), total = 0, resale = 0;
+    private static double gainAt(List<Step> steps, double spend) {
+        double gain = 0;
+        for (Step s : steps) if (s.totalCost() <= spend * (1 + 1e-12) + 1e-6) gain = Math.max(gain, s.totalGain());
+        return gain;
+    }
+    /** What a plan pass changes as it goes: the profile copy (owned items), the gear by slot, the effective stats and the rate basis. */
+    private final class PlanState {
+        final Profile state; final Map<String, Item> owned; Map<Stat, Double> stats; RateBasis current;
+        PlanState(Profile state, Map<String, Item> owned, Map<Stat, Double> stats, RateBasis current) { this.state = state; this.owned = owned; this.stats = stats; this.current = current; }
+        PlanState copy() {
+            Profile p = new Profile();
+            p.mode = state.mode; p.hotm = state.hotm; p.enchantingLevel = state.enchantingLevel; p.inventoryEnabled = true;
+            p.owned = new HashMap<>(state.owned); p.collections = state.collections; p.milestones = state.milestones;
+            Map<String, Item> gear = new LinkedHashMap<>();
+            owned.forEach((group, item) -> gear.put(group, item.copy()));
+            return new PlanState(p, gear, plus(stats, Map.of()), current);
+        }
+        List<Candidate> candidates(MiningMethod m, Map<String, Price> prices, boolean keepZero) { return ProgressionEngine.this.candidates(state, owned, m, null, stats, prices, current, keepZero); }
+        /** Applies a step (each part of a pair or bundle in turn); the owned items it used are gone for later steps. */
+        void commit(Candidate c) {
+            if (c.parts() != null) c.parts().forEach(this::apply);
+            else apply(c);
+            c.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
+        }
+        private void apply(Candidate c) {
+            Upgrade u = c.upgrade();
+            if (c.pet() != null) current = current.withPet(c.pet());
+            else if (c.profile() != null) current = current.withProfile(c.profile());
+            else if (c.set() != null) c.set().forEach(i -> owned.put(i.group, i.copy()));
+            else if (c.apply() != null) {
+                c.apply().accept(u.current());
+                boolean omelette = StatBreakdown.blueCheese(u.current());
+                if (current != null && "DRILL".equals(u.current().category) && omelette != current.profile().omelette()) current = current.withOmelette(omelette);
+                u.delta().forEach((st, v) -> u.current().stats.merge(st, v, Double::sum));
+            } else owned.put(u.item().group, u.item().copy());
+            stats = plus(stats, u.delta());
+            if (u.cooldownFactor() != 1 && current != null && current.ability() != null && current.ability().cooldown() != null) {
+                var a = current.ability();
+                current = current.with(a.withCooldown(a.cooldown() * u.cooldownFactor()));
+            }
+        }
+    }
+    /** Lookahead bounds: candidates considered for pairs (best by cost per 1%, and cheapest without a gain of their own), and re-picks per step. */
+    private static final int PAIR_POOL = 10, RECHECKS = 3;
+    /** One plan pass; null when a conflict was found (its earlier step is then added to banned). */
+    private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, Set<String> banned,
+                            boolean ignoreConflicts, boolean lookahead) {
+        Profile profile = new Profile();
+        profile.mode = p.mode; profile.hotm = p.hotm; profile.enchantingLevel = p.enchantingLevel; profile.inventoryEnabled = true;
+        profile.owned = new HashMap<>(p.owned); profile.collections = p.collections; profile.milestones = p.milestones;
+        Map<String, Item> gear = new LinkedHashMap<>();
+        bestOwned(p, m, null).forEach((group, item) -> gear.put(group, item.copy()));
+        PlanState now = new PlanState(profile, gear, plus(baseline, Map.of()), basis);
+        double start = metric(m, now.stats, now.current), total = 0, resale = 0;
         int unpriced = 0;
         List<Step> steps = new ArrayList<>();
         List<Candidate> taken = new ArrayList<>();
         while (steps.size() < maxSteps) {
-            Candidate best = null;
-            for (Candidate c : candidates(state, owned, m, null, stats, prices, current)) {
-                Upgrade u = c.upgrade();
-                if (!u.blocked().isEmpty() || u.cost() == null || banned.contains(id(c))) continue;
-                if (best == null || u.costPerUnit() < best.upgrade().costPerUnit()
-                        || u.costPerUnit() == best.upgrade().costPerUnit() && u.gain() > best.upgrade().gain()) best = c;
+            List<Candidate> all = now.candidates(m, prices, lookahead);
+            Set<String> skipped = new HashSet<>(banned);
+            Candidate best = choose(all, skipped, m, now, lookahead);
+            // "A then B" against "B alone": if the step after A would throw A away, take the next choice instead.
+            for (int i = 0; lookahead && best != null && i < RECHECKS; i++) {
+                PlanState next = now.copy();
+                Candidate again = find(next.candidates(m, prices, true), best);
+                if (again == null) break;
+                next.commit(again);
+                Candidate after = choose(next.candidates(m, prices, false), banned, m, next, false);
+                if (after == null || Collections.disjoint(replaces(after), owns(best))) break;
+                skipped.add(id(best));
+                Candidate other = choose(all, skipped, m, now, true);
+                if (other == null) break;
+                best = other;
             }
             if (best == null) break;
             if (!ignoreConflicts) for (Candidate earlier : taken) {
@@ -141,28 +209,121 @@ public final class ProgressionEngine {
             }
             taken.add(best);
             Upgrade u = best.upgrade();
-            if (best.pet() != null) current = current.withPet(best.pet());
-            else if (best.profile() != null) current = current.withProfile(best.profile());
-            else if (best.set() != null) best.set().forEach(i -> owned.put(i.group, i.copy()));
-            else if (best.apply() != null) {
-                best.apply().accept(u.current());
-                boolean omelette = StatBreakdown.blueCheese(u.current());
-                if (current != null && "DRILL".equals(u.current().category) && omelette != current.profile().omelette()) current = current.withOmelette(omelette);
-                u.delta().forEach((s, v) -> u.current().stats.merge(s, v, Double::sum));
-            } else owned.put(u.item().group, u.item().copy());
-            // Owned items the step used (its materials, recipe inputs, an owned piece) are gone for later steps.
-            best.materials().forEach((id, n) -> state.owned.computeIfPresent(id, (k, have) -> Math.max(0, have - n)));
-            stats = plus(stats, u.delta());
-            if (u.cooldownFactor() != 1 && current != null && current.ability() != null && current.ability().cooldown() != null) {
-                var a = current.ability();
-                current = current.with(a.withCooldown(a.cooldown() * u.cooldownFactor()));
-            }
+            now.commit(best);
             total += u.cost();
             if (!u.resaleNote().isEmpty()) { if (u.resale() != null) resale += u.resale(); else unpriced++; }
-            double now = metric(m, stats, current);
-            steps.add(new Step(u, (now / start - 1) * 100, total, u.rateAfter(), resale, unpriced));
+            double rate = metric(m, now.stats, now.current);
+            steps.add(new Step(u, (rate / start - 1) * 100, total, u.rateAfter(), resale, unpriced));
         }
         return steps;
+    }
+    /** The candidate (or, for a pair or bundle, the same parts) in a list made from another copy of the state; null when gone. */
+    private static Candidate find(List<Candidate> list, Candidate c) {
+        if (c.parts() == null || c.upgrade().item().id.startsWith("bundle:")) return list.stream().filter(x -> id(x).equals(id(c))).findFirst().orElse(null);
+        List<Candidate> parts = new ArrayList<>();
+        for (Candidate part : c.parts()) {
+            Candidate x = find(list, part);
+            if (x == null) return null;
+            parts.add(x);
+        }
+        return new Candidate(c.upgrade(), null, c.materials(), null, null, null, parts);
+    }
+    /**
+     * The next step: the single upgrade with the lowest cost per 1% (ties: larger gain); with lookahead, also every pair of
+     * independent upgrades from a bounded pool, taken together when the pair's cost per 1% beats every single upgrade (an
+     * upgrade with no gain of its own, such as Mining Speed short of a tick threshold, can pay off with another).
+     */
+    private Candidate choose(List<Candidate> all, Set<String> skipped, MiningMethod m, PlanState now, boolean pairs) {
+        List<Candidate> usable = all.stream().filter(c -> c.upgrade().blocked().isEmpty() && c.upgrade().cost() != null && !skipped.contains(id(c))).toList();
+        Candidate best = null;
+        for (Candidate c : usable) {
+            Upgrade u = c.upgrade();
+            if (u.gain() <= 1e-9) continue;
+            if (best == null || u.costPerUnit() < best.upgrade().costPerUnit()
+                    || u.costPerUnit() == best.upgrade().costPerUnit() && u.gain() > best.upgrade().gain()) best = c;
+        }
+        if (!pairs) return best;
+        List<Candidate> pool = new ArrayList<>(usable.stream().filter(c -> c.upgrade().gain() > 1e-9 && c.parts() == null)
+                .sorted(Comparator.comparingDouble(c -> c.upgrade().costPerUnit())).limit(PAIR_POOL).toList());
+        pool.addAll(usable.stream().filter(c -> c.upgrade().gain() <= 1e-9 && c.parts() == null)
+                .sorted(Comparator.comparingDouble(c -> c.upgrade().cost())).limit(PAIR_POOL).toList());
+        double here = metric(m, now.stats, now.current), bestRatio = best == null ? Double.POSITIVE_INFINITY : best.upgrade().costPerUnit();
+        Candidate pair = null;
+        for (int i = 0; i < pool.size(); i++) for (int j = i + 1; j < pool.size(); j++) {
+            Candidate a = pool.get(i), b = pool.get(j);
+            if (!independent(a, b) || !materialsFit(a, b, now.state)) continue;
+            Map<Stat, Double> delta = plus(a.upgrade().delta(), b.upgrade().delta());
+            double factor = a.upgrade().cooldownFactor() * b.upgrade().cooldownFactor();
+            RateBasis basis = now.current;
+            if (factor != 1 && basis != null && basis.ability() != null && basis.ability().cooldown() != null)
+                basis = basis.with(basis.ability().withCooldown(basis.ability().cooldown() * factor));
+            double gain = (metric(m, plus(now.stats, delta), basis) / here - 1) * 100;
+            // Only pairs that gain clearly more together than one after the other (a tick threshold reached); others are two steps.
+            double apart = ((1 + Math.max(0, a.upgrade().gain()) / 100) * (1 + Math.max(0, b.upgrade().gain()) / 100) - 1) * 100;
+            if (!(gain > apart * 1.01 + 1e-6)) continue;
+            double cost = a.upgrade().cost() + b.upgrade().cost();
+            if (cost / gain < bestRatio * (1 - 1e-9)) { bestRatio = cost / gain; pair = combine(List.of(a, b), null, gain, cost, a.upgrade().owned() && b.upgrade().owned(), ""); }
+        }
+        return pair != null ? pair : best;
+    }
+    /** Two upgrades that can be added together: different slots, parts or level chains, no pet or HOTM-level pair, nothing that rescales the other. */
+    private static boolean independent(Candidate a, Candidate b) {
+        if (a.parts() != null || b.parts() != null) return false;
+        if (a.pet() != null && b.pet() != null || a.profile() != null && b.profile() != null) return false;
+        if (!Collections.disjoint(owns(a), owns(b)) && !(a.apply() != null && b.apply() != null)) return false;
+        if (!Collections.disjoint(replaces(a), owns(b)) || !Collections.disjoint(replaces(b), owns(a))) return false;
+        for (Candidate c : List.of(a, b)) {
+            String label = c.upgrade().item().name;
+            if (label.startsWith("Recombobulator") || label.contains(GearUpgrades.partName(GearUpgrades.BLUE_CHEESE))) return false; // rescales reforge/gems or HOTM levels
+        }
+        if (a.apply() != null && b.apply() != null && a.upgrade().current() == b.upgrade().current()) {
+            String ka = gearKind(a.upgrade().item().name), kb = gearKind(b.upgrade().item().name);
+            return !listKey(a).equals(listKey(b)) && (ka == null || !ka.equals(kb));
+        }
+        // A replacement item and an in-place upgrade of the item it replaces do not add up.
+        for (Candidate[] x : new Candidate[][] {{a, b}, {b, a}})
+            if (x[0].apply() != null && x[1].apply() == null && x[1].pet() == null && x[1].profile() == null && owns(x[1]).contains("slot:" + x[0].upgrade().current().group)) return false;
+        return true;
+    }
+    /** Owned items both upgrades count as theirs must be there twice. */
+    private static boolean materialsFit(Candidate a, Candidate b, Profile p) {
+        for (var e : a.materials().entrySet()) {
+            Integer other = b.materials().get(e.getKey());
+            if (other != null && e.getValue() + other > p.owned.getOrDefault(e.getKey(), 0)) return false;
+        }
+        return true;
+    }
+    /**
+     * Several upgrades taken as one step (a pair, or a bundle such as a full drill build): stats and cooldown factors
+     * add up, the cost is the sum (or the bundle's own cost), the sale credits add when all are known.
+     */
+    private static Candidate combine(List<Candidate> parts, String name, double gain, Double cost, boolean owned, String detail) {
+        Upgrade first = parts.getFirst().upgrade();
+        Map<Stat, Double> delta = new EnumMap<>(Stat.class);
+        double factor = 1;
+        Map<String, Integer> materials = new HashMap<>();
+        StringJoiner names = new StringJoiner(" + "), ids = new StringJoiner("+"), sources = new StringJoiner(" | ");
+        Double credit = 0.0; StringJoiner notes = new StringJoiner("; ");
+        boolean modification = true, anyResale = false;
+        for (Candidate c : parts) {
+            Upgrade u = c.upgrade();
+            u.delta().forEach((st, v) -> delta.merge(st, v, Double::sum));
+            factor *= u.cooldownFactor();
+            c.materials().forEach((k, v) -> materials.merge(k, v, Integer::sum));
+            names.add(u.item().name); ids.add(id(c)); sources.add(u.item().name + ": " + u.item().source);
+            modification &= u.item().modification;
+            if (!u.resaleNote().isEmpty()) { anyResale = true; notes.add(u.resaleNote()); credit = credit == null || u.resale() == null ? null : credit + u.resale(); }
+        }
+        delta.values().removeIf(v -> v == 0);
+        Item display = new Item();
+        display.id = (name == null ? "pair:" : "bundle:") + ids;
+        display.name = name == null ? names.toString() : name;
+        display.group = first.item().group; display.icon = first.item().icon; display.modification = modification;
+        display.source = (name == null ? "Taken together: each gains less on its own. " : "") + (detail.isEmpty() ? sources.toString() : detail);
+        Double after = first.rateBefore() == null ? null : first.rateBefore() * (1 + gain / 100);
+        Upgrade u = new Upgrade(display, first.current(), delta, cost, gain, owned, "", factor, first.rateBefore(), after);
+        if (anyResale) u = u.withResale(new Resale.Credit(credit, notes.toString()));
+        return new Candidate(u, null, materials, null, null, null, List.copyOf(parts));
     }
     /** Rate (MethodRates.unit) when the method has a usable rate model, else the drop multiplier. */
     private static double metric(MiningMethod m, Map<Stat, Double> stats, RateBasis basis) {
@@ -170,9 +331,16 @@ public final class ProgressionEngine {
         return r != null && r > 0 ? r : yieldMultiplier(m, stats);
     }
 
-    /** An upgrade plus what applying it needs: the gear change (null for a replacement item) and the materials used. */
-    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet, ProfileUpgrades.Option profile, List<Item> set) {
-        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null, null, null); }
+    /**
+     * An upgrade plus what applying it needs: the gear change (null for a replacement item), the owned items it uses, and
+     * for a pair or bundle the upgrades it is made of (parts, applied in turn; null otherwise).
+     */
+    private record Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet, ProfileUpgrades.Option profile, List<Item> set,
+                             List<Candidate> parts) {
+        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials) { this(upgrade, apply, materials, null, null, null, null); }
+        Candidate(Upgrade upgrade, java.util.function.Consumer<Item> apply, Map<String, Integer> materials, PetUpgrades.Option pet, ProfileUpgrades.Option profile, List<Item> set) {
+            this(upgrade, apply, materials, pet, profile, set, null);
+        }
     }
     /** Which part of an item an in-place upgrade replaces (null for added levels, recombobulation and coating). */
     private static String gearKind(String label) {
@@ -188,6 +356,7 @@ public final class ProgressionEngine {
     private static Set<String> owns(Candidate c) {
         Upgrade u = c.upgrade();
         Set<String> keys = new HashSet<>();
+        if (c.parts() != null) { c.parts().forEach(x -> keys.addAll(owns(x))); return keys; }
         if (c.apply() != null) {
             keys.add("slot:" + u.current().group);
             String kind = gearKind(u.item().name);
@@ -200,6 +369,7 @@ public final class ProgressionEngine {
     /** What a step throws away: a part it swaps out, the item in a slot it fills, or the current pet. */
     private static Set<String> replaces(Candidate c) {
         Upgrade u = c.upgrade();
+        if (c.parts() != null) { Set<String> keys = new HashSet<>(); c.parts().forEach(x -> keys.addAll(replaces(x))); return keys; }
         if (c.apply() != null) {
             String kind = gearKind(u.item().name);
             return kind == null ? Set.of() : Set.of(u.current().instance + "|" + kind);
@@ -264,21 +434,41 @@ public final class ProgressionEngine {
      * multiplier, which gives speed and cooldown no value.
      */
     private List<Candidate> candidates(Profile p, Map<String, Item> owned, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis) {
+        return candidates(p, owned, m, focus, baseline, prices, basis, false);
+    }
+    /** Whether a candidate is left out: no finite gain, or no gain (kept with keepZero when it improves a stat or the cooldown, for pairs). */
+    private static boolean skip(double gain, Map<Stat, Double> delta, double cooldownFactor, boolean keepZero) {
+        if (!Double.isFinite(gain)) return true;
+        if (gain > 1e-9) return false;
+        return !keepZero || gain < -1e-9 || delta.values().stream().noneMatch(v -> v > 0) && cooldownFactor >= 1;
+    }
+    /** keepZero: also return upgrades without a gain of their own (gain 0) that improve a stat, for the plan's pair lookahead. */
+    private List<Candidate> candidates(Profile p, Map<String, Item> owned, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis,
+                                       boolean keepZero) {
         List<Candidate> result = new ArrayList<>();
         Double before = focus == null && basis != null && rateModel(m) ? rate(m, baseline, basis, 1) : null;
         if (before != null && !(before > 0)) before = null; // No rate to compare against; fall back to drops.
-        for(Item gear:owned.values()) for(var proposal:GearUpgrades.forItem(gear,m,p,prices,basis==null?Map.of():basis.profile().omeletteGain())) {
+        for(Item gear:owned.values()) {
+          List<Candidate> parts=new ArrayList<>();
+          List<GearUpgrades.Plan> plans=new ArrayList<>();
+          for(var proposal:GearUpgrades.forItem(gear,m,p,prices,basis==null?Map.of():basis.profile().omeletteGain())) {
             Double after=before==null?null:rate(m,plus(baseline,proposal.delta()),basis,proposal.cooldownFactor());
             double gain=before!=null?(after==null?Double.NaN:(after/before-1)*100):focus==null?yieldGain(m,baseline,proposal.delta()):stat(proposal.delta(),focus);
-            if(!Double.isFinite(gain)||gain<=1e-9)continue;
+            boolean drillPart="DRILL".equals(gear.category)&&focus==null&&gearKind(proposal.label())!=null&&Double.isFinite(gain)&&gain>=-1e-9;
+            if(skip(gain,proposal.delta(),proposal.cooldownFactor(),keepZero)&&!drillPart)continue;
             var cost=GearUpgrades.cost(proposal.plan(),p,prices);
             Item display=new Item();display.id="upgrade:"+gear.instance+":"+proposal.label();display.name=proposal.label();
             display.modification=true;display.source=cost.detail();display.icon=UpgradeIcons.proposal(proposal);
             String blocked=proposal.blocked().isEmpty()&&!cost.locked().isEmpty()?"Craft needs "+cost.locked()+" first":proposal.blocked();
             if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
             Resale.Credit credit=proposal.returned().isEmpty()?null:Resale.credit(null,proposal.returned(),Map.of(),prices);
-            result.add(new Candidate(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after).withResale(credit),
-                    proposal.apply(),cost.used()));
+            Candidate c=new Candidate(new Upgrade(display,gear,proposal.delta(),cost.coins(),gain,cost.materialsOwned(),blocked,proposal.cooldownFactor(),before,after).withResale(credit),
+                    proposal.apply(),cost.used());
+            if(drillPart&&blocked.isEmpty()&&cost.coins()!=null){parts.add(c);plans.add(proposal.plan());}
+            if(!skip(gain,proposal.delta(),proposal.cooldownFactor(),keepZero))result.add(c);
+          }
+          Candidate build=drillBuild(parts,plans,m,p,prices,baseline,basis,before);
+          if(build!=null)result.add(build);
         }
         for (Item i : catalog) {
             if (!i.applies(m)) continue;
@@ -293,7 +483,7 @@ public final class ProgressionEngine {
             }
             Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
-            if (!Double.isFinite(gain) || gain <= 1e-9) continue;
+            if (skip(gain, delta, 1, keepZero)) continue;
             boolean have = p.owned.getOrDefault(i.id, 0) > 0;
             Double cost = null;
             Item shown = i;
@@ -366,7 +556,7 @@ public final class ProgressionEngine {
             }
             Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
-            if (!Double.isFinite(gain) || gain <= 1e-9) continue;
+            if (skip(gain, delta, 1, keepZero)) continue;
             Item display = new Item(); display.id = "pet:" + o.priceId(); display.name = o.label(); display.group = "Pet"; display.icon = UpgradeIcons.pet(o);
             boolean have = o.owned() || o.heldItem() && p.owned.getOrDefault(o.priceId(), 0) > 0;
             String fees = o.fees() == null ? "the pet item fee is unknown (rarity of " + o.returned() + " not known)"
@@ -397,7 +587,7 @@ public final class ProgressionEngine {
             }
             Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
-            if (!Double.isFinite(gain) || gain <= 1e-9) continue;
+            if (skip(gain, delta, 1, keepZero)) continue;
             Double cost = basis.profile().cost(o, prices);
             double have = basis.profile().available().getOrDefault(o.resource(), 0.0), need = basis.profile().remaining(o);
             Item display = new Item(); display.id = "profile:" + o.chain() + ":" + o.rank(); display.name = o.label(); display.group = o.group(); display.icon = UpgradeIcons.option(o);
@@ -413,6 +603,48 @@ public final class ProgressionEngine {
             result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, cost != null && cost == 0, blocked, 1, before, after), null, Map.of(), null, o, null));
         }
         return result;
+    }
+    /**
+     * Full drill build: the best part of each kind the drill can still take (engine, fuel tank, module, reforge, each gem
+     * slot; best = largest rate gain alone, then the larger stat change), fitted together as one upgrade. Parts that add
+     * nothing alone (Mining Speed short of a tick threshold) can count together. Owned materials are shared over the build.
+     */
+    private Candidate drillBuild(List<Candidate> parts, List<GearUpgrades.Plan> plans, MiningMethod m, Profile p, Map<String, Price> prices,
+                                 Map<Stat, Double> baseline, RateBasis basis, Double before) {
+        Map<String, Integer> pick = new LinkedHashMap<>();
+        for (int i = 0; i < parts.size(); i++) {
+            String kind = gearKind(parts.get(i).upgrade().item().name);
+            Integer old = pick.get(kind);
+            if (old == null || better(parts.get(i).upgrade(), parts.get(old).upgrade())) pick.put(kind, i);
+        }
+        if (pick.size() < 2) return null;
+        List<Candidate> chosen = new ArrayList<>();
+        Map<String, Integer> materials = new LinkedHashMap<>();
+        double fees = 0;
+        Map<Stat, Double> delta = new EnumMap<>(Stat.class);
+        double factor = 1;
+        for (int i : pick.values()) {
+            Candidate c = parts.get(i);
+            chosen.add(c);
+            plans.get(i).materials().forEach((k, v) -> materials.merge(k, v, Integer::sum));
+            fees += plans.get(i).fees();
+            c.upgrade().delta().forEach((st, v) -> delta.merge(st, v, Double::sum));
+            factor *= c.upgrade().cooldownFactor();
+        }
+        Double after = before == null ? null : rate(m, plus(baseline, delta), basis, factor);
+        double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : yieldGain(m, baseline, delta);
+        if (!Double.isFinite(gain) || gain <= 1e-9) return null;
+        var cost = GearUpgrades.cost(new GearUpgrades.Plan(materials, fees, "Fit each part in turn (drill anvil, Reforge Anvil, Gemstone Grinder)."), p, prices);
+        if (cost.coins() == null) return null;
+        Candidate build = combine(chosen, "Full drill build (" + chosen.size() + " parts)", gain, cost.coins(), cost.materialsOwned(),
+                chosen.stream().map(c -> c.upgrade().item().name).reduce((a, b) -> a + " + " + b).orElse("") + ". " + cost.detail());
+        return new Candidate(build.upgrade(), null, cost.used(), null, null, null, build.parts());
+    }
+    private static boolean better(Upgrade a, Upgrade b) {
+        if (Math.abs(a.gain() - b.gain()) > 1e-9) return a.gain() > b.gain();
+        double x = a.delta().values().stream().mapToDouble(Double::doubleValue).sum() + 1000 * (1 - a.cooldownFactor());
+        double y = b.delta().values().stream().mapToDouble(Double::doubleValue).sum() + 1000 * (1 - b.cooldownFactor());
+        return x > y;
     }
     private static Map<String, Price> resale(RateBasis basis) { return basis == null ? Map.of() : basis.resale(); }
     private static Map<Stat, Double> plus(Map<Stat, Double> baseline, Map<Stat, Double> delta) {
