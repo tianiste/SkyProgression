@@ -55,23 +55,38 @@ public final class PlayerData {
         throw new NoSuchElementException("Profile not found for " + player);
     }
 
+    /** The member with live gear merged over the API's ownership (live null = API only). */
+    public Member member(String profileId, LiveGear live) {
+        Member m = member(profileId);
+        return live == null ? m : new Member(m.member, live.apply(m.owned), m.id, m.name);
+    }
+
     /** Stat ledger for one method (the companion's former /stats); resale quotes are added by the caller. */
     public StatsReport stats(String profileId, MiningMethod method, String tool, boolean bestGear, StatContext context, List<StatBreakdown.MayorPerk> perks) {
-        Member m = member(profileId);
+        return stats(profileId, method, tool, bestGear, context, perks, null);
+    }
+    public StatsReport stats(String profileId, MiningMethod method, String tool, boolean bestGear, StatContext context, List<StatBreakdown.MayorPerk> perks, LiveGear live) {
+        Member m = member(profileId, live);
         StatsReport r = StatsReport.of(m.member, m.owned, method, tool, bestGear, context, perks);
         r.player = player; r.profileId = m.id; r.profile = m.name; r.fetchedAt = fetchedAt;
         return r;
     }
 
     public StartWith.Report start(String profileId, MiningMethod method, String tool, StatContext context) {
-        Member m = member(profileId);
+        return start(profileId, method, tool, context, null);
+    }
+    public StartWith.Report start(String profileId, MiningMethod method, String tool, StatContext context, LiveGear live) {
+        Member m = member(profileId, live);
         StartWith.Report r = StartWith.of(m.member, m.owned, method, tool, context);
         r.player = player; r.profileId = m.id; r.profile = m.name; r.fetchedAt = fetchedAt;
         return r;
     }
 
     public MethodComparison.Report compare(String profileId, boolean godPotion) {
-        Member m = member(profileId);
+        return compare(profileId, godPotion, null);
+    }
+    public MethodComparison.Report compare(String profileId, boolean godPotion, LiveGear live) {
+        Member m = member(profileId, live);
         MethodComparison.Report r = MethodComparison.of(m.member, m.owned, godPotion);
         r.player = player; r.profileId = m.id; r.profile = m.name; r.fetchedAt = fetchedAt;
         return r;

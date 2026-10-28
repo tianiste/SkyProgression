@@ -26,6 +26,9 @@ public final class Loadout {
         public final List<Pet> pets = new ArrayList<>();
         public final List<String> notes = new ArrayList<>();
         public boolean inventoryKnown, petsKnown;
+        /** Live held tool key (instance or item ID; "" = not known) and when the client saw the active pet (0 = from the API). */
+        public String heldTool = "";
+        public long petLiveAt;
         public List<Item> in(String container) { return items.stream().filter(i -> i.location.startsWith(container + " #")).toList(); }
         public List<Item> tools() { return items.stream().filter(i -> TOOLS.contains(i.category)).toList(); }
     }
@@ -99,23 +102,30 @@ public final class Loadout {
             int slot = 0;
             for (JsonElement nbt : items.getAsJsonArray()) {
                 int index = slot++;
-                JsonElement attributes = at(nbt, "tag", "ExtraAttributes");
-                String id = string(at(attributes, "id"), "");
-                if (id.isBlank()) continue;
-                String uuid = string(at(attributes, "uuid"), "");
+                String uuid = string(at(nbt, "tag", "ExtraAttributes", "uuid"), "");
                 if (!uuid.isBlank() && !uuids.add(uuid)) continue;
-                Item definition = catalog.stream().filter(i -> i.id.equals(id)).findFirst().orElseGet(() -> {
-                    Item stub = new Item(); stub.id = id; stub.name = id; stub.source = ""; return stub;
-                });
-                Item gear = GearReader.read(nbt, definition, label, index);
-                if (gear.category.isBlank()) gear.category = loreCategory(gear.lore);
-                if (gear.tier.isBlank()) gear.tier = loreRarity(gear.lore);
-                if (!gear.category.isBlank()) owned.items.add(gear);
+                Item gear = item(nbt, catalog, label, index);
+                if (gear != null) owned.items.add(gear);
             }
         } catch (Exception e) {
             owned.inventoryKnown = false;
             owned.notes.add("Could not read " + label + "; gear from it is unknown.");
         }
+    }
+    /**
+     * One item in the inventory API's NBT shape (`tag.ExtraAttributes`, `tag.display`) as gear, or null when it has no
+     * SkyBlock ID or no slot category. The client's live reader builds the same shape, so both share this.
+     */
+    static Item item(JsonElement nbt, List<Item> catalog, String label, int index) {
+        String id = string(at(nbt, "tag", "ExtraAttributes", "id"), "");
+        if (id.isBlank()) return null;
+        Item definition = catalog.stream().filter(i -> i.id.equals(id)).findFirst().orElseGet(() -> {
+            Item stub = new Item(); stub.id = id; stub.name = id; stub.source = ""; return stub;
+        });
+        Item gear = GearReader.read(nbt, definition, label, index);
+        if (gear.category.isBlank()) gear.category = loreCategory(gear.lore);
+        if (gear.tier.isBlank()) gear.tier = loreRarity(gear.lore);
+        return gear.category.isBlank() ? null : gear;
     }
     static String loreCategory(List<String> lore) {
         for (int i = lore.size() - 1; i >= 0; i--) {

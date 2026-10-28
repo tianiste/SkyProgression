@@ -18,6 +18,8 @@ public final class Model {
         public List<MiningMethod> methods = new ArrayList<>();
         /** Cleaned lore lines of an observed copy; kept for the stat ledger, not serialized. */
         public transient List<String> lore = new ArrayList<>();
+        /** When the game client showed this copy (epoch ms); 0 = read from the Hypixel API. Not serialized. */
+        public transient long liveAt;
         public boolean applies(MiningMethod m) { return methods.isEmpty() || methods.contains(m); }
         /** Copy whose stats, enchantments and extra attributes can change without touching this item. */
         public Item copy() {
@@ -25,7 +27,7 @@ public final class Model {
             c.id = id; c.name = name; c.group = group; c.source = source; c.hotm = hotm; c.tier = tier; c.category = category;
             c.instance = instance; c.location = location; c.modifier = modifier; c.icon = icon; c.observed = observed; c.modification = modification;
             c.recombobulated = recombobulated; c.stats.putAll(stats); c.enchantments.putAll(enchantments); c.extra = extra.deepCopy();
-            c.slots = slots; c.methods = methods; c.lore = lore;
+            c.slots = slots; c.methods = methods; c.lore = lore; c.liveAt = liveAt;
             return c;
         }
     }
