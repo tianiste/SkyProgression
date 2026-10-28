@@ -57,8 +57,8 @@ is "assumed" is labelled in the interface where it affects a number.
   model's speed differs from another reference by 130. None of these were tuned away.
 - **Not encoded:** Lapidary outside its lore line, Front Loaded's per-day count (shown as situational), Magic 8 Ball, Glacial
   talismans on Jerry's Workshop, the Goblin set's Smart Miner, Yog's per-kill speed, the Heated reforge's Heat bonus, and
-  the Crow pet (the wiki gives it weapon cooldown only, so the community claim that it beats Bal for pickaxe cooldown is
-  not used). Snail's Slow and Steady (Block Fortune per Speed above 100) is listed without a value.
+  the Crow pet (wiki: since 0.27, 4 Aug 2026, it lowers weapon ability cooldowns only; guides that recommend it for pickaxe
+  cooldown predate that patch). Snail's Slow and Steady (Block Fortune per Speed above 100) is listed without a value.
 - **Conditional reforge abilities are not counted:** Heated, Glacial, Stellar, Lustrous, Mithraic and Scraped. Fleet's Spread
   counts only on block methods.
 - **Glacite Golem Mining Speed** is counted everywhere as the wiki gives it; a community guide says it applies only in
@@ -76,15 +76,22 @@ is "assumed" is labelled in the interface where it affects a number.
 
 - **Efficiency is an assumption:** 82.5% for instamined blocks and 65% otherwise by default (route travel, lobby hops and
   water trips are folded into it). You can change it.
-- **Gaps against the guides, not explained:** Obsidian's estimated hypermax is about 25% below the guide (about 2.6M vs
-  3.5M/h); Gold, End Stone and Cobblestone reach about 8.5M/h against the guides' 11-16M.
+- **Gaps against the guides** (checked 2026-10-28, [GUIDE-COMPARISON.md](references/GUIDE-COMPARISON.md)): at the guides' own
+  setups Obsidian comes to 4.4-5.5M/h at our default 65% against the guide's 3.5M (the route is walking-limited, so 65% is
+  probably too high for it), and Mycelium/Red Sand to about 10.7M/h against 4.6-4.8M (unexplained; Glossy Mineral Spread
+  may not apply there or may not find enough adjacent blocks). Cobblestone and End Stone now match (14.2M/h in 11-16M).
+  The Gold guide has not posted rates yet.
 - **Block strength unknown:** Mycelium and Red Sand have no wiki strength and are assumed instamined.
-- **Dwarven metals** (Tungsten, Umber, Glacite) are rated per one base drop: veins drop 1-3 per block and their mix is
-  unknown, and Glacite's base drop is not on the wiki (assumed 1). All mining is assumed on the ground; only Coal has an
+- **Dwarven metals:** Tungsten and Umber are rated at 3 per block, the Dwarven Metal guide's route (only Clay for Tungsten
+  outside mineshafts, mainly Smooth Red Sandstone for Umber). That is an assumption, a little high for Umber (Brown
+  Terracotta drops 2). Glacite's base drop is not on the wiki (assumed 1). All mining is assumed on the ground; only Coal has an
   airborne share (8%).
 - **Spread blocks** are assumed to be the same block (Coal Spread blocks are Coal, gem Spread blocks are gems).
 - **Fairy Grotto** assumes all mining on Jasper; the other gems around a grotto are valued at the cheapest of four, from a
   guide ratio.
+- **One pet and one loadout per method:** guide routes that swap pets or loadouts within an ability cycle (Obsidian:
+  Scatha for the ability, Snail otherwise; Gold: an ability loadout) are rated with one pet and one loadout. Movement speed
+  (Rogue Sword, Tuba, Speed tuning) is part of the efficiency.
 - **Pickaxe abilities:** Mining Speed Boost is assumed to apply to all counted Mining Speed. Whether the tool lore's cooldown
   already includes the fuel tank is unknown (it only shifts the baseline). Whether exactly 32,000 Mining Speed reaches 4
   ticks on Jasper is unconfirmed. Maniac Miner's level is read with an assumed lore pattern (no lore observed); only the

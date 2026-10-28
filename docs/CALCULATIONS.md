@@ -692,10 +692,14 @@ Mining Cat Coal pages (comparison only; `docs/references/MININGCAT.md`):
   otherwise, Rogue Sword / Weirder Tuba movement speed (walking, not Mining Speed), and Will-o'-wisp uptime. Movement
   belongs in the efficiency.
 
-Guide check (Obsidian guide, owner-supplied `service-data/guides/obsidian.txt`: "around 3.5m/h" with max Magical Power
-and decent skill). An assumed hypermax (Mining Speed 9,700, so instamine during a 15 s / 97 s ability; Spread 400;
-Mining + Block Fortune about 2,950) gives about 2.6M / hour at 65%, about 25% below the guide. The gap is not explained;
-skilled routes may run above 65% efficiency, or Spread may be higher. Not tuned.
+Guide check (Obsidian guide by Mycelium Larper, last edit 2026-10-25: "around 3.5m/h" with max Magical Power and decent
+skill). The earlier check assumed Spread 400 and got 2.6M. The guide's gear has much more Spread: full Glossy Mineral
+armor +600 on ores and blocks (wiki Glossy Mineral Armor), a Fleet drill +100 on blocks, 310 general (General Mining Stat
+guide), and Snail +400 on blocks outside the ability. With that setup (Fortune about 2,090 incl. 450 Block, Mining Speed
+Boost 3, 108 s cooldown) the engine gives 4.4M (Scatha the whole cycle) to 5.5M (Snail the whole cycle) at 65%, above the
+guide. The route is walking-limited (floor and walls, Rogue Sword and Tuba for movement speed), so 65% is probably too high
+for it; the guide's 3.5M matches about 50%. Not tuned: the efficiency stays the player's input. See
+[GUIDE-COMPARISON.md](references/GUIDE-COMPARISON.md).
 
 Fixture (Debotes, best owned gear, DR-X655, Crystal Hollows, 65%): Mining Speed 7,250 (4 ticks, 25,375 during the
 ability, still 4 ticks), Fortune 1,767 + Block 115, Spread 300: about 0.93M Obsidian / hour, 27,800 per 108 s cycle.
@@ -712,16 +716,20 @@ Metals), default efficiency 65%, all blocks mined on the ground (airborne share 
 - Fortune: Mining Fortune + Dwarven Metal Fortune (wiki Dwarven Metal Fortune lists Mithril, Titanium, Umber, Tungsten and
   Glacite; every 100 adds 100% drops). Mining Spread applies to Dwarven Metals (wiki Mining Spread).
 - Base drops are not one number. Tungsten: Cobblestone 1, Clay 3; Umber: Terracotta 1, Brown Terracotta 2, Smooth Red
-  Sandstone 3 (wiki). The share of each block in a vein is unknown, and the wiki states no base drop for Glacite. The rate
-  is shown per 1 base drop and labelled so; upgrade gains are ratios and do not depend on it. Coins are not an
-  exact income for that reason: Tungsten and Umber coins are a lower bound (see "Coins per hour across methods").
+  Sandstone 3 (wiki). The Dwarven Metal guide (flora, Mining Cult, 16 Aug 2026, last edit 27 Oct) says to mine only Clay
+  for Tungsten outside mineshafts and mainly Smooth Red Sandstone for Umber (Brown Terracotta too during Mining Speed
+  Boost), so both are rated at **3 per block**, labelled a guide route assumption (2026-10-28; before: 1 per block, shown
+  as a lower bound). Umber's real average is a little lower; Cobblestone mined in Tungsten shafts lowers Tungsten's.
+  Upgrade gains are ratios and do not depend on it. The wiki states no base drop for Glacite (shown per 1).
 - Cold applies in both zones (wiki Cold; "Rates: pickaxe abilities, Heat and Cold"). Shafting adds Frozen Corpse loot from the mineshafts
   its Glacite spawns ("Rates: secondary drops"); mineshaft gemstones are not counted. Hard Stone: amount unknown.
 - No guide rate was supplied for these methods (`METHOD-GUIDES.md`, "Missing guides").
 
 Fixture (Debotes, best owned gear, DR-X655, 65%): Glacite Tunnels, Mining Speed 7,255 (23 ticks, 7 during the ability),
 Fortune 1,767 + Dwarven Metal 5, Spread 300: about 200,700 Tungsten or Umber / hour per base drop. Glacite Mineshafts
-(Glacite): 25 ticks, 7 during the ability, Fortune 1,771: about 190,600 / hour per base drop. Not validated.
+(Glacite): 25 ticks, 7 during the ability, Fortune 1,771: about 190,600 / hour per base drop. Not validated. With the
+2026-10-28 base drop of 3 and the Cold rules, the fixture shows about 496,000 Tungsten or Umber / hour (27M and 34M coins
+/ hour at instant-sell quotes of that day), so they now rank above the gem methods on that profile; unvalidated.
 
 ## Rates: Gold, End Stone, Cobblestone
 
@@ -741,10 +749,13 @@ Fortune 1,767 + Dwarven Metal 5, Spread 300: about 200,700 Tungsten or Umber / h
 - Maniac Miner, which both guides use (Blue Cheese on the main drill), is modelled from the wiki table ("Rates: pickaxe abilities, Heat
   and Cold"); with the fixture's level 2 instead of Mining Speed Boost it adds 6.9% on End Stone and Cobblestone.
 
-Guide check: End Stone guide 11-16M / hour, Cobblestone guide 13-16M / hour (owner-supplied `service-data/guides/`).
-An assumed hypermax (Fortune + Block Fortune about 2,750, Spread 400) gives about 8.5M / hour at 82.5%, well below both
-guides. Unexplained; Maniac Miner (level 3: about +6%) closes only a small part. Other candidates are higher Spread (full Glossy Mineral set) or a block rate above
-our 20 blocks per second x efficiency. Not tuned.
+Guide check: End Stone guide 11-16M / hour, Cobblestone guide 13-16M / hour (FazeHunter(Ji), last edit 2026-09-30).
+The earlier check assumed Spread 400 and got about 8.5M. The General Mining Stat guide's Cobblestone setup (KoenigBooHoo,
+2026-08-25: 1,902 Fortune incl. 450 Block Fortune; Spread 310 general + 600 full Glossy Mineral + 100 Fleet = 1,010; wiki
+Glossy Mineral Armor confirms +600 on ores and blocks) gives **14.2M / hour** at 82.5% with Maniac Miner 3 (13.2M without),
+inside both guide ranges. No rule was changed; the gap was the assumed Spread. The Gold guide (flora, 2026-10-26) has
+not posted rates; its full-Glossy Goblin setup (1,992 Fortune incl. 340 Ore, Spread 1,010) gives about 16-17M Gold / hour
+at 65%, unchecked.
 
 Fixture (Debotes, best owned gear, DR-X655): Gold (Crystal Hollows default context, 65%): Mining Speed 7,250 (4 ticks,
 25,375 during the ability, still 4), Fortune 1,767 + Ore 100, Spread 300: about 5.5M Gold / hour. End Stone and
@@ -766,7 +777,11 @@ and Titanium armor set bonuses) no longer count for them; the fixture wears neit
 
 Guide check (Mycelium/Red Sand guide, owner-supplied: Mycelium 4.6M / hour, Red Sand 4.8M / hour, "max fortune is 1522
 including block fortune"): with Fortune 1,522 and Spread 400 the model gives 59,400 x 5 x 16.22 = about 4.8M / hour at
-82.5%, matching the guide. Fixture (Crimson Isle as "other" zone): Fortune 1,429.5 + Block 115, Spread 300: about
+82.5%, matching the guide. But the guide's gear is full Glossy Mineral armor (+600 Spread on ores and blocks, wiki) on a
+shovel, about Spread 910 with the general sources, and at that Spread (with Maniac Miner 3) the model gives about 10.7M,
+more than twice the guide (2026-10-28 check). Unexplained: Glossy's Spread may not count on Mycelium/Red Sand, Spread may
+not find enough adjacent blocks on a flat surface (the wiki says it breaks adjacent blocks and not the one below you), or
+the run is slower than 20 blocks / second. Not tuned; see [GUIDE-COMPARISON.md](references/GUIDE-COMPARISON.md). Fixture (Crimson Isle as "other" zone): Fortune 1,429.5 + Block 115, Spread 300: about
 3.9M / hour.
 
 ## Rates: pickaxe abilities, Heat and Cold
@@ -895,8 +910,8 @@ through its own ratio, by construction. The Grotto's other gems match the guide'
   Gold 16.6M, End Stone 9.4M; Glacite, Mycelium, Red Sand and Gold Ingot sell higher to an NPC than instant-sell.
 - Priced product: the Flawless gem for gem methods (Rough converted at 512,000 Rough per Flawless, as in the rate model);
   the block product otherwise (`MethodRates.Block.product`). Secondary drops (Coal's Hard Stone, the Grotto's other gems, Shafting's
-  corpse loot) add their known coins to the total, which Compare ranks by ("Rates: secondary drops"). Tungsten and Umber are
-  shown as "at least": the rate counts 1 base drop while vein blocks drop 1-3 (wiki; mix unknown). Glacite's base drop is
+  corpse loot) add their known coins to the total, which Compare ranks by ("Rates: secondary drops"). Tungsten and Umber use
+  the Dwarven Metal guide route's base drop of 3 (a labelled assumption; before 2026-10-28 they were "at least" at 1). Glacite's base drop is
   assumed 1 (not on the wiki). Gold uses the average base drop 6.
 - Value windows (Mining Cat developer's notes, MININGCAT.md) normalized to one hour: Coal is valued per 30 minutes with two
   lobby hops; the model has no hop time of its own (hops are inside the efficiency), so per hour = 2 x the 30-minute value.

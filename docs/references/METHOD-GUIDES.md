@@ -2,7 +2,8 @@
 
 Owner-supplied Mining Cult guide texts, received 2026-10-26. Raw copies are kept privately
 in Git-ignored `service-data/guides/` (third-party community content; do not commit).
-This file extracts what the engine needs per method. Guides are orientation, not verified
+This file extracts what the engine needs per method. The full forum export (2026-10-28) is compared with the engine in
+[GUIDE-COMPARISON.md](GUIDE-COMPARISON.md). Guides are orientation, not verified
 mechanics: they go stale after patches and some values are explicitly bugs. Verify each
 threshold/formula against the wiki or in-game before encoding it, and keep it editable.
 
