@@ -34,8 +34,7 @@ is "assumed" is labelled in the interface where it affects a number.
   Mall, lanterns, Better Together) are listed but never counted. `active_effects` and `temp_stat_buffs` entries are shown
   as temporary with unknown values because their mapping is not verified; a few potion effects are mapped by assumed key.
 - **Consumables.** Dwarven O's cereals (Gemstone Grahams, Ore Oats, Block Bran, Metallic Minis), the Chilled Pristine Potato,
-  Will-o'-wisp's Gemstone Spread, lanterns, Cut Loose stacks and the Corpse-Flavored Century Cake are not in the API. Reaper
-  Peppers are read from an assumed field. A cereal's active buff is not readable, so the checklist only sees stored copies.
+  Will-o'-wisp's Gemstone Spread, lanterns, Cut Loose stacks and the Corpse-Flavored Century Cake are not in the API. A cereal's active buff is not readable, so the checklist only sees stored copies.
 - **Where you are.** Zone, height (Heat below Y 64 in the Crystal Hollows), Heat, Cold, Mineshaft type and today's Sky Mall
   Fortune buff (its code has not been observed) are not known. You pick the zone; each method defaults to its usual one.
 - **Storage that is not read.** The museum, minions, forge slots, your auction listings, the Rift and the Hunting Box (so
@@ -46,14 +45,6 @@ is "assumed" is labelled in the interface where it affects a number.
   send are unknown too.
 - **Data age.** Hypixel's profile data lags the game by a few minutes, and our caches add up to 5 minutes (up to 30 while
   a refresh runs). Gear you swapped a moment ago may not show yet; every page shows when its data was fetched.
-
-### API keys taken from names (not yet seen in a real response)
-
-A wrong key makes the source show as missing ("No shards found") even when you own it. Assumed keys: attributes
-`ultimate_dna`, `sleepy_spread`, `gold_box`, `royal_riches`, `greedy_goblin`, `freezing_spread`, `echo_of_boxes`,
-`echo_of_wisdom`, `echo_of_atomized`, `echo_of_echoes`, `cold_resistance`, `atomized_glacite`; essence perks
-`dwarven_expertise`, `cut_loose`, `fungus_fortuna`, `harena_fortuna`, `frozen_skin`; HOTM `front_loaded`,
-`mineshaft_mayhem`; `player_data.reaper_peppers_eaten`. Field notes: [references/API-FIELDS.md](references/API-FIELDS.md).
 
 ## Stat breakdown
 
@@ -71,8 +62,7 @@ A wrong key makes the source show as missing ("No shards found") even when you o
 - **Conditional reforge abilities are not counted:** Heated, Glacial, Stellar, Lustrous, Mithraic and Scraped. Fleet's Spread
   counts only on block methods.
 - **Glacite Golem Mining Speed** is counted everywhere as the wiki gives it; a community guide says it applies only in
-  Mineshafts. **Fiesta Fortune's rarity** is Uncommon in the engine and Epic in the website's attribute table; one of them
-  is wrong.
+  Mineshafts.
 - **Mixed Mineral and Glossy Mineral armor** is counted per set; whether the two sets combine is unknown.
 - **Attainable maximum** keeps your loadout (one tool, pet, armor set and tree). Gear stat lines have no maximum from a
   primary source (it depends on reforge, gems, enchantments and recombobulation), so most stats show "unknown, at least X".

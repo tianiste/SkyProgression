@@ -223,8 +223,8 @@ Rules (fetched 2026-10-26):
   Blockhead 5/level Block Fortune; Metal Head 5/level Dwarven Metal Fortune; Efficient Miner 3/level Mining
   Spread; Mole 50 + (level - 1) x 350/199 Mining Spread on Hard Stone; Mining Master 0.1/level Pristine.
   Front Loaded (+150 Gemstone Fortune, +250 Mining Speed for the first 2,500 Gemstones each day) is
-  situational; its node key is assumed to be `front_loaded` and has not been observed, so absence is shown
-  as missing with that caveat. Sky Mall applies to Fortune/Speed only.
+  situational; node key `front_loaded` (NEU `hotmlayout.json`, see [API-FIELDS](references/API-FIELDS.md#key-verification-2026-10-28)),
+  so absence is shown as missing. Sky Mall applies to Fortune/Speed only.
   Sources: <https://hypixelskyblock.minecraft.wiki/w/Template:Heart_of_the_Mountain/List/Tier_3>, `/Tier_4`,
   `/Tier_6`, `/Tier_9`, `/Tier_10`; perk names from <https://hypixelskyblock.minecraft.wiki/w/Gemstone_Fortune>,
   <https://hypixelskyblock.minecraft.wiki/w/Block_Fortune>, <https://hypixelskyblock.minecraft.wiki/w/Ore_Fortune>,
@@ -246,8 +246,8 @@ Rules (fetched 2026-10-26):
 - God Potion and Booster Cookie lines appear on Fortune/Speed only.
 - Not in the API (untrackable, listed with ranges): Dwarven O's cereals (Gemstone Grahams, Ore Oats, Block
   Bran, Metallic Minis; +2 per bowl), Chilled Pristine Potato, Will-o'-wisp Gemstone Spread, Sheer Force (ability uptime, not a stat).
-- Added 2026-10-27 (wiki shard, pet and essence pages; API keys taken from the names and not yet observed, so a
-  wrong key shows the source as missing): attributes Ultimate DNA +1/level Mining Fortune, Sleepy Spread +1/level
+- Added 2026-10-27 (wiki shard, pet and essence pages; API keys confirmed 2026-10-28 against NEU `attribute_shards.json`,
+  `essenceshops.json` and `hotmlayout.json`, see [API-FIELDS](references/API-FIELDS.md#key-verification-2026-10-28)): attributes Ultimate DNA +1/level Mining Fortune, Sleepy Spread +1/level
   Spread, Gold Box +5/level Ore Fortune, Royal Riches +5 Speed / +2.5 Ore Fortune per level (Mines of Divan,
   situational), Greedy Goblin +1/level Ore Fortune with a Goblin pet, Freezing Spread +0.5 Gemstone Spread per
   (30 - level) Cold Resistance in Mineshafts; Echo of Boxes / Wisdom / Atomized +2%/level of their family, times
@@ -282,26 +282,27 @@ Sources (wiki pages fetched 2026-10-27 through the wiki API; <https://hypixelsky
 - Pickaxe Ability Cooldown (wiki Heart of the Mountain, "Cooldown Reductions": reductions stack **multiplicatively**, so the
   total is 1 - product(1 - r)): fuel tank by `drill_part_fuel_tank` (wiki Drill Parts 2/4/6/10%, checked against the tank
   paragraph `-4% Pickaxe Ability Cooldown`), Pickaxe Cooldown attribute (Abyssal Miner Shard, Epic, 1% per level), Sky Mall
-  -20% (situational, or temporary on its day), Mineshaft Mayhem -25% (situational; key `mineshaft_mayhem` assumed). Fixture:
+  -20% (situational, or temporary on its day), Mineshaft Mayhem -25% (situational; key `mineshaft_mayhem`). Fixture:
   Titanium-Infused tank 4% and attribute 10 -> 13.6% (SkyCompass shows the plain sum, 14%).
 - Mining Wisdom (wiki Mining Wisdom): Seasoned Mineman 5 + 0.1/level (Tier 4 template, max 100); Cavern Wisdom (Cavernshade,
   Epic, 0.5/level); Dwarven Training (Gold Essence, `dwarven_training`, 3 / 5 / 10 on Mining Islands, wiki Essence
   Shops/Gold); Silverfish Experienced Burrower 0.2 / 0.25 / 0.3 per level (Rare / Epic / Legendary); God Potion Mining XP
   Boost III +20 (assumed with the God Potion toggle); Booster Cookie +25 when `profile.cookie_buff_active` (owner decision:
   the cookie is read from the API, so it counts). Fixture: 9 drill + 15 + 5 + 10 = 39 (= SkyCompass) + God Potion 20 + Cookie
-  25 = 84. Not encoded: Echo of Wisdom / Echo of Echoes (keys unobserved), Magic 8 Ball, Glacial talismans on Jerry's Workshop.
+  25 = 84. Echo of Wisdom / Echo of Echoes boost Cavern Wisdom (see the
+  attribute echoes below). Not encoded: Magic 8 Ball, Glacial talismans on Jerry's Workshop.
 - Breaking Power (wiki Breaking Power): the tool's line; Maniac Miner +1 while active when it is the selected ability
   (`skill_tree.selected_ability.mining`, situational). The Breakdown tab says whether the method's requirement is met.
 - Heat Resistance (wiki Heat Resistance): gear lines (Divan +10 each, Blazing reforge +2), Keep It Cool 0.4/level (Tier 6,
   max 50), Bal 1.5 per level (also NEU petnums), Yog Membrane (Yog Shard, Common, 1/level). Fixture 204.5 (= SkyCompass).
   Lanterns are untrackable.
 - Cold Resistance (wiki Cold Resistance): gear lines (Dwarven Handwarmers +5), Warm Heart 0.4/level (Tier 8, max 50), Glacite
-  Golem 0.1/level, Cold Resistance attribute (Wumpa Shard, Legendary, 0.5/level; key `cold_resistance` assumed), Frozen Skin
-  (Ice Essence, 1/level up to 5; key `frozen_skin` assumed), Reaper Pepper (+1 each up to 5; `player_data.reaper_peppers_eaten`
-  assumed, absent on the fixture), Mineshaft Mayhem +10 (situational). Fixture 5.4 (= SkyCompass). Lanterns, potions, Cut
+  Golem 0.1/level, Cold Resistance attribute (Wumpa Shard, Legendary, 0.5/level; key `cold_resistance`), Frozen Skin
+  (Ice Essence, 1/level up to 5; key `frozen_skin`), Reaper Pepper (+1 each up to 5; `player_data.reaper_peppers_eaten`, omitted until
+  the first pepper, so absent counts as 0 eaten), Mineshaft Mayhem +10 (situational). Fixture 5.4 (= SkyCompass). Lanterns, potions, Cut
   Loose stacks and the Corpse-Flavored Century Cake are untrackable.
 - Powder buffs (wiki Powder Sources tables, Tier 7 template): Powder Buff 1%/level (All Powder, max 50); Atomized Mithril
-  (Star Sentry, Rare), Atomized Crystals (Thyst, Rare), Atomized Glacite (Stalagmight, Rare; key `atomized_glacite` assumed)
+  (Star Sentry, Rare), Atomized Crystals (Thyst, Rare), Atomized Glacite (Stalagmight, Rare; key `atomized_glacite`)
   at 1%/level, with the sources each one boosts in the note; Mithril Golem The Smell Of Powder 0.2%/level (Legendary+), Scatha
   Bejeweled Eyes 0.2%/level (Legendary+), Glacite Golem Powder-powered 0.1 / 0.15 / 0.2 %/level (NEU petnums and item lore);
   Sky Mall +15% Powder (`current_daily_effect` `powder_bonus`, mapped by name, temporary). Fixture 25 / 10 / 10 / 0
@@ -970,13 +971,14 @@ as hidden. Sources (wiki pages fetched 2026-10-27 through the wiki API, <https:/
   Nucleus 0.47% (Grahams), Dwarven Mines Mining Events (Oats), Scatha 10% (Bran), Umber/Tungsten 0.31% and Vanguard 3.41%
   corpses (Minis).
 - Gold Box (Hideonsun Shard, Common): +5 to +50 Ore Fortune; level 10 = 96 shards (`SHARD_HIDEONSUN`, cumulative Common
-  table above). Mining Cat's "Hideosun" is this shard. Attributes are in the API (`attributes.stacks`), but `gold_box` has never
-  been observed (the owner's profile lists 84 attribute keys without it), so it stays unchecked.
+  table above). Mining Cat's "Hideosun" is this shard. Read from `attributes.stacks.gold_box` (key confirmed
+  2026-10-28) and offered in Upgrades with the shards still needed.
 - Royal Riches (Nilbog Shard, Epic, Hunting 15): +5 to +50 Mining Speed and +2.5 to +25 Ore Fortune in the Mines of Divan;
   level 10 = 32 shards (`SHARD_NILBOG`). Listed only for methods whose usual zone is the Crystal Hollows (Coal, Gold, Grotto,
   Obsidian); the gain assumes the player mines in the Mines of Divan, which the engine has no zone for.
 - Dwarven Expertise (Essence Shops/Fossil): +2 Dwarven Metal Fortune per level on Mining Islands, 5,500 Fossil Essence for
-  levels 1-10 (`ESSENCE_FOSSIL`). The perk key is not identified, so the level is not read and the price assumes level 0.
+  levels 1-10 (`ESSENCE_FOSSIL`). Read from `player_data.perks.dwarven_expertise` (key
+  confirmed 2026-10-28) and offered in Upgrades from the current level.
 - Left out after checking: Refined Dark Cacao Truffle (the checklist's "Dark Cocoa Truffles") gives Cocoa Beans Fortune, a
   farming stat; Chilled Pristine Potato is a 1-hour buff (+0.1 Pristine in the Glacite Mineshafts), not permanent; Reaper
   Pepper is read from the API (stat ledger).
