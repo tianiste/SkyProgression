@@ -241,6 +241,7 @@ public final class MethodComparison {
         r.godPotion = godPotion;
         for (MiningMethod m : MiningMethod.values()) {
             if (!MethodRates.supported(m)) continue;
+            Pause.point();
             StatContext usual = m.usualContext();
             StatContext context = new StatContext(usual.zone(), usual.target(), godPotion);
             Loadout best = Loadout.bestFor(owned, m, Loadout.bestTool(owned, m));

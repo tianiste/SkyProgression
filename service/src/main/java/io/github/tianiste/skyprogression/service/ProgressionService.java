@@ -71,6 +71,7 @@ public final class ProgressionService {
         server.createContext("/", this::handle);
         server.setExecutor(Executors.newFixedThreadPool(4));
         server.start();
+        Pause.hook = this::holdBack; // pages built ahead wait while a visitor's request is handled
         System.out.println("SkyProgression service listening on http://localhost:" + PORT + (RELAY_SECRET != null ? " (profile relay mode)" : " (local access only)"));
         if (FIXTURE != null) System.out.println("Serving the profile fixture " + FIXTURE + " for every player.");
         else if (apiKey == null || apiKey.isBlank()) System.out.println("HYPIXEL_API_KEY is not set. Profile lookup is unavailable; price lookup still works.");
@@ -318,7 +319,9 @@ public final class ProgressionService {
     });
     private volatile ProgressionEngine engine;
     private record WebPrices(String updatedAt, Map<String, Price> prices, List<StatBreakdown.MayorPerk> mayor) {}
-    private volatile WebPrices webPrices;
+    private final Map<String, WebPrices> webPrices = Collections.synchronizedMap(new LinkedHashMap<>(4, .75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, WebPrices> eldest) { return size() > 3; }
+    });
     /** A /web request: its small fields, the profile (or the already decoded copy, whose resent body is then skipped) and the bundle. */
     private record WebRequest(Map<String, JsonElement> fields, JsonElement data, PlayerData known, JsonElement bundle) {
         String text(String name, String fallback) { return string(fields.get(name), fallback); }
@@ -332,6 +335,11 @@ public final class ProgressionService {
      * After the first page of a profile copy, the player's other pages are built in the background (see AHEAD).
      */
     private WebAnswer web(HttpExchange x) throws Exception {
+        visiting(1);
+        try { return visit(x); }
+        finally { visiting(-1); }
+    }
+    private WebAnswer visit(HttpExchange x) throws Exception {
         long start = System.nanoTime();
         String length = x.getRequestHeaders().getFirst("Content-Length");
         if (length != null && length.matches("[0-9]{1,12}") && Long.parseLong(length) > MAX_WEB_BYTES) throw new LookupException(413, "Request too large");
@@ -370,8 +378,8 @@ public final class ProgressionService {
         else if (d.report.profiles.stream().noneMatch(pr -> pr.selected)) profileId = d.report.profiles.getFirst().id;
         var q = new WebViews.Query(view, profileId, method, mode, god, best, cost);
         long decodedAt = System.nanoTime();
-        // Pages are kept only for a versioned bundle (the hosted API's), so one key always means the same prices.
-        boolean keep = bundle != null && !p.updatedAt().isEmpty();
+        // Pages are kept only for a dated bundle (the hosted API's).
+        boolean keep = bundle != null && pricesTime(p) != null;
         String json = page(keep, q, d, e, p, skin);
         long built = System.nanoTime();
         if (keep && firstPage) {
@@ -443,19 +451,50 @@ public final class ProgressionService {
             System.out.printf(Locale.ROOT, "Page engine warmed up in %.1f s%n", (System.nanoTime() - start) / 1e9);
         } catch (Exception e) { System.out.println("Page engine warm-up failed: " + e); }
     }
-    /** Pages built ahead after a player's first page, most visited first. */
-    private static final List<String> AHEAD = List.of("upgrades", "overview", "methods", "start", "gear", "hotm");
+    /** Pages built ahead after a player's first page, in the order visitors usually open them. */
+    private static final List<String> AHEAD = List.of("upgrades", "methods", "start", "gear", "hotm", "overview");
     /**
-     * One thread for pages built ahead (the relay VM has a fraction of one core, so they run one at a time); when a new player's
-     * pages are queued, older queued ones are dropped.
+     * One thread for pages built ahead and the warm-up (the relay VM has a fraction of one core, so they run one at a time); when a
+     * new player's pages are queued, older queued ones are dropped. Its work waits at core Pause points while a visitor's
+     * request is handled (holdBack).
      */
     private final ThreadPoolExecutor ahead = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(AHEAD.size()),
-            Thread.ofPlatform().daemon().name("SkyProgression pages").factory(), new ThreadPoolExecutor.DiscardOldestPolicy());
-    private record Page(Instant time, FutureTask<String> task) {}
-    /** Finished or running pages by everything they depend on, for ten minutes; a page asked for while it runs is waited for, not built twice. */
+            r -> Thread.ofPlatform().daemon().name("SkyProgression pages").unstarted(() -> { BUILDING_AHEAD.set(true); r.run(); }),
+            new ThreadPoolExecutor.DiscardOldestPolicy());
+    private static final ThreadLocal<Boolean> BUILDING_AHEAD = ThreadLocal.withInitial(() -> false);
+    /** Visitor requests being handled, except while one waits for a page the ahead thread is building. */
+    private int visitors;
+    private final Object visitorLock = new Object();
+    private void visiting(int change) {
+        synchronized (visitorLock) {
+            visitors += change;
+            if (visitors == 0) visitorLock.notifyAll();
+        }
+    }
+    /** Core Pause hook: work on the ahead thread waits while visitors are handled (at most 20 s per point, so it cannot hang). */
+    private void holdBack() {
+        if (!BUILDING_AHEAD.get()) return;
+        long until = System.nanoTime() + 20_000_000_000L;
+        synchronized (visitorLock) {
+            while (visitors > 0 && System.nanoTime() < until) {
+                try { visitorLock.wait(100); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+            }
+        }
+    }
+    /** prices: when the bundle the page was built with was made. */
+    private record Page(Instant time, Instant prices, FutureTask<String> task) {}
+    /**
+     * Finished or running pages by everything they depend on, for ten minutes; a page asked for while it runs is waited for, not
+     * built twice. Its bundle may differ from the one sent by up to five minutes: the Worker's copies in different Cloudflare
+     * locations hold bundles a cron step or two apart, and the page shows the price time it was built with.
+     */
     private final Map<String, Page> pages = Collections.synchronizedMap(new LinkedHashMap<>(16, .75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, Page> eldest) { return size() > 24; }
     });
+    private static Instant pricesTime(WebPrices p) {
+        try { return Instant.parse(p.updatedAt()); } catch (RuntimeException e) { return null; }
+    }
     private String page(boolean keep, WebViews.Query q, PlayerData d, ProgressionEngine e, WebPrices p, Future<WebViews.Skin> skin) throws Exception {
         Callable<String> build = () -> {
             WebViews.Skin s;
@@ -466,17 +505,25 @@ public final class ProgressionService {
         String key = null;
         if (!keep) task = new FutureTask<>(build);
         else {
-            // Gear is the only view that shows the gear choice; the profile copy, bundle and options fix everything else.
+            // Gear is the only view that shows the gear choice; the profile copy, the bundle's time and the options fix everything else.
             key = String.join("|", d.uuid + "@" + d.fetchedAt, q.profileId(), q.view(), q.method().name(), q.mode().name(), String.valueOf(q.god()),
-                    String.valueOf(!q.view().equals("gear") || q.bestGear()), q.cost().name(), p.updatedAt());
+                    String.valueOf(!q.view().equals("gear") || q.bestGear()), q.cost().name());
+            Instant prices = pricesTime(p);
             synchronized (pages) {
                 Page hit = pages.get(key);
-                if (hit == null || hit.time().plusSeconds(600).isBefore(Instant.now())) pages.put(key, hit = new Page(Instant.now(), new FutureTask<>(build)));
+                if (hit == null || hit.time().plusSeconds(600).isBefore(Instant.now()) || Math.abs(Duration.between(hit.prices(), prices).toSeconds()) > 300)
+                    pages.put(key, hit = new Page(Instant.now(), prices, new FutureTask<>(build)));
                 task = hit.task();
             }
         }
         task.run(); // Builds here unless it is already built or being built on another thread.
-        try { return task.get(); }
+        try {
+            if (task.isDone() || BUILDING_AHEAD.get()) return task.get();
+            // Built on the ahead thread right now: wait for it without holding it back.
+            visiting(-1);
+            try { return task.get(); }
+            finally { visiting(1); }
+        }
         catch (ExecutionException ex) {
             if (key != null) pages.remove(key);
             if (ex.getCause() instanceof NoSuchElementException) throw new LookupException(404, "Profile not found");
@@ -523,18 +570,21 @@ public final class ProgressionService {
         decoded.put(key, d);
         return d;
     }
-    /** Prices and mayor perks from the sent bundle (parsed once per bundle version), or this companion's own in local mode. */
+    /**
+     * Prices and mayor perks from the sent bundle (parsed once per bundle version; the last three are kept, as Cloudflare
+     * locations may send different ones), or this companion's own in local mode.
+     */
     private WebPrices webPrices(JsonElement bundle) throws Exception {
         if (bundle == null) return new WebPrices(quotedAt.toString(), prices(), mayorPerks());
         String updatedAt = string(at(bundle, "updatedAt"), "");
-        WebPrices hit = webPrices;
-        if (hit != null && !updatedAt.isEmpty() && hit.updatedAt().equals(updatedAt)) return hit;
+        WebPrices hit = updatedAt.isEmpty() ? null : webPrices.get(updatedAt);
+        if (hit != null) return hit;
         Map<String, Price> parsedPrices = Catalog.GSON.fromJson(at(bundle, "prices"), new com.google.gson.reflect.TypeToken<Map<String, Price>>(){}.getType());
         List<StatBreakdown.MayorPerk> perks = null;
         JsonElement m = at(bundle, "mayor");
         if (m.isJsonArray()) perks = List.copyOf(Catalog.GSON.<List<StatBreakdown.MayorPerk>>fromJson(m, new com.google.gson.reflect.TypeToken<List<StatBreakdown.MayorPerk>>(){}.getType()));
         hit = new WebPrices(updatedAt, parsedPrices == null ? Map.of() : Map.copyOf(parsedPrices), perks);
-        webPrices = hit;
+        if (!updatedAt.isEmpty()) webPrices.put(updatedAt, hit);
         return hit;
     }
     private final Map<String, Timed<WebViews.Skin>> skins = new ConcurrentHashMap<>();

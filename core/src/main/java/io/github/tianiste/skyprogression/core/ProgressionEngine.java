@@ -521,6 +521,7 @@ public final class ProgressionEngine {
     /** keepZero: also return upgrades without a gain of their own (gain 0) that improve a stat, for the plan's pair lookahead. */
     private List<Candidate> candidates(Profile p, Map<String, Item> owned, MiningMethod m, Stat focus, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis,
                                        boolean keepZero) {
+        Pause.point();
         List<Candidate> result = new ArrayList<>();
         Double before = focus == null && basis != null && rateModel(m) ? rate(m, baseline, basis, 1) : null;
         if (before != null && !(before > 0)) before = null; // No rate to compare against; fall back to drops.

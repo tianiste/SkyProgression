@@ -54,6 +54,7 @@ public final class HotmPlanner {
      * ability: the tool's pickaxe ability as rated (null when none). Null when the method has no rate model or the HOTM data is missing.
      */
     public static Plan plan(MiningMethod m, Input in, Map<Stat, Double> baseline, double efficiency, MethodRates.Ability ability, StatContext context) {
+        Pause.point();
         if (in == null || in.tier() < 1 || !MethodRates.supported(m) || baseline == null) return null;
         Eval ev = new Eval(m, in, baseline, efficiency, context);
         Map<String, Integer> current = new TreeMap<>(in.levels());

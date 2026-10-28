@@ -109,6 +109,7 @@ public final class StartWith {
 
         for (MiningMethod other : MiningMethod.values()) {
             if (!MethodRates.supported(other)) continue;
+            Pause.point();
             StatContext usual = other.usualContext();
             StatContext c = new StatContext(usual.zone(), usual.target(), context.godPotion());
             Loadout l = Loadout.equipped(owned, r.toolKnown ? heldTool : Loadout.bestTool(owned, other));
