@@ -99,10 +99,14 @@ public final class MethodRates {
             case OBSIDIAN -> new Block("Obsidian", 500, 60, 0, 1, "OBSIDIAN", "Obsidian", 1, "hour", true,
                     "Obsidian guide: around 3.5M Obsidian / hour with max Magical Power and decent skill");
             // Wiki Tungsten / Umber / Glacite: 5,600 / 5,600 / 6,000 strength, Breaking Power 9; Dwarven Metal Fortune applies.
-            case TUNGSTEN -> new Block("Tungsten", 5600, 60, 0, 1, "TUNGSTEN", "Tungsten", 1, "hour", false, "No Tungsten guide rate supplied",
-                    "Base drops: Cobblestone 1, Clay 3 (wiki Tungsten); the vein mix is unknown, so the rate is per 1 base drop");
-            case UMBER -> new Block("Umber", 5600, 60, 0, 1, "UMBER", "Umber", 1, "hour", false, "No Umber guide rate supplied",
-                    "Base drops: Terracotta 1, Brown Terracotta 2, Smooth Red Sandstone 3 (wiki Umber); the vein mix is unknown, so the rate is per 1 base drop");
+            // Dwarven Metal guide (flora, Mining Cult, 16 Aug 2026, edited 27 Oct): mine only Clay for Tungsten outside shafts and
+            // mainly Smooth Red Sandstone for Umber; with the wiki drops per block that is 3 per block (a route assumption).
+            case TUNGSTEN -> new Block("Tungsten", 5600, 60, 0, 3, "TUNGSTEN", "Tungsten", 1, "hour", false, "No Tungsten guide rate supplied",
+                    "Base drop 3: the Dwarven Metal guide (flora, Aug-Oct 2026) mines only Clay (3, wiki Tungsten) outside mineshafts; Cobblestone (1) "
+                            + "mined in shafts lowers it. A guide route assumption, not measured");
+            case UMBER -> new Block("Umber", 5600, 60, 0, 3, "UMBER", "Umber", 1, "hour", false, "No Umber guide rate supplied",
+                    "Base drop 3: the Dwarven Metal guide (flora, Aug-Oct 2026) mines mainly Smooth Red Sandstone (3, wiki Umber); Brown Terracotta (2) "
+                            + "mined during Mining Speed Boost and stray Terracotta (1) make the real average a little lower. A guide route assumption, not measured");
             case SHAFTING -> new Block("Glacite (Packed Ice)", 6000, 60, 0, 1, "GLACITE", "Glacite", 1, "hour", false, "No Glacite guide rate supplied",
                     "Base drop per Packed Ice is not stated on the wiki; shown per 1 base drop. Mineshaft loot and gemstones are not counted");
             // Wiki Block Strength: Pure Gold 600 (instamine above 36,000); wiki Mines of Divan changelog (Oct 2023): base Gold 5-7.

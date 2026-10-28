@@ -91,13 +91,15 @@ public final class MethodComparison {
             case MF_GEMS, MF_RUBY, MF_TOPAZ -> "Rough gems from Fortune and Pristine, counted as Flawless (512,000 Rough)";
             case GROTTO -> "Jasper, plus the route's other Breaking Power 7 Flawless gems at the guide's ratio (secondary)";
             case COAL -> "Coal, plus Hard Stone at the Coal guide's ratio (secondary)";
-            case TUNGSTEN, UMBER -> "at least: shown per 1 base drop, while vein blocks drop 1-3 (wiki; mix unknown); Hard Stone amount unknown";
+            case TUNGSTEN -> "at base drop 3: the guide's route mines only Clay (3 per block, wiki) outside mineshafts; Hard Stone amount unknown";
+            case UMBER -> "at base drop 3: the guide's route mines mainly Smooth Red Sandstone (3 per block, wiki), so a little high; Hard Stone amount unknown";
             case SHAFTING -> "Glacite, base drop assumed 1 (not on the wiki), plus Frozen Corpse loot from the mineshafts it spawns (secondary)";
             case GOLD -> "Gold at the average base drop of 6 (5-7, wiki Mines of Divan)";
             default -> "the mined block only (base drop 1)";
         };
     }
-    public static boolean lowerBound(MiningMethod m) { return m == MiningMethod.TUNGSTEN || m == MiningMethod.UMBER; }
+    /** No rated product is a lower bound now that Tungsten and Umber use the guide route's base drop; kept for the interface. */
+    public static boolean lowerBound(MiningMethod m) { return false; }
 
     /** Coins per item in the mode, or null when there is no usable figure (never 0). */
     public static Double coinsPerItem(Price p, PriceMode mode) {
