@@ -33,8 +33,9 @@ public final class Loadout {
         public List<Item> tools() { return items.stream().filter(i -> TOOLS.contains(i.category)).toList(); }
     }
 
-    static final Set<String> ARMOR = Set.of("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS");
-    static final Set<String> EQUIPMENT = Set.of("NECKLACE", "CLOAK", "BELT", "GLOVES", "BRACELET");
+    /** In slot order (Set.of iterates in a per-run order, which reordered the best-gear pieces and their ledger rows between restarts). */
+    static final Set<String> ARMOR = Collections.unmodifiableSequencedSet(new LinkedHashSet<>(List.of("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS")));
+    static final Set<String> EQUIPMENT = Collections.unmodifiableSequencedSet(new LinkedHashSet<>(List.of("NECKLACE", "CLOAK", "BELT", "GLOVES", "BRACELET")));
     static final Set<String> TOOLS = Set.of("DRILL", "PICKAXE", "GAUNTLET");
     private static final List<String> RARITIES = List.of("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "SPECIAL", "VERY SPECIAL");
     private static final Pattern RARITY_LINE = Pattern.compile("(COMMON|UNCOMMON|RARE|EPIC|LEGENDARY|MYTHIC|DIVINE|VERY SPECIAL|SPECIAL)(?: DUNGEON)? ([A-Z][A-Z ]*?)(?: a)?$");
