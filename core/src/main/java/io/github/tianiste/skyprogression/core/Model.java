@@ -9,6 +9,8 @@ public final class Model {
         public Map<Stat, Double> stats = new EnumMap<>(Stat.class);
         public int hotm;
         public String tier = "", category = "", instance = "", location = "", modifier = "";
+        /** Upgrade entries: the item the entry is about (UpgradeIcons); "" = the item's own icon. */
+        public String icon = "";
         public boolean observed, modification, recombobulated;
         public Map<String, Integer> enchantments = new HashMap<>();
         public com.google.gson.JsonObject extra = new com.google.gson.JsonObject();
@@ -21,7 +23,7 @@ public final class Model {
         public Item copy() {
             Item c = new Item();
             c.id = id; c.name = name; c.group = group; c.source = source; c.hotm = hotm; c.tier = tier; c.category = category;
-            c.instance = instance; c.location = location; c.modifier = modifier; c.observed = observed; c.modification = modification;
+            c.instance = instance; c.location = location; c.modifier = modifier; c.icon = icon; c.observed = observed; c.modification = modification;
             c.recombobulated = recombobulated; c.stats.putAll(stats); c.enchantments.putAll(enchantments); c.extra = extra.deepCopy();
             c.slots = slots; c.methods = methods; c.lore = lore;
             return c;

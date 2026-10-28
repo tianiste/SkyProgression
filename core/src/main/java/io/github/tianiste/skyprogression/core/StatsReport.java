@@ -41,7 +41,7 @@ public final class StatsReport {
     /** id: the item ID (the pet type for the pet), for icons. */
     public record Tool(String key, String name, String location, String id) {}
     /** The evaluated pet now and at level 100: XP held and needed (pet level table), and its counted stats there. */
-    public record PetLevel(String label, int level, double exp, double expAtMax, Map<Stat, Double> statsAtMax) {}
+    public record PetLevel(String label, int level, double exp, double expAtMax, Map<Stat, Double> statsAtMax, String type) {}
     public static final class Ledger {
         public Stat stat;
         public double flat, multiplier = 1, total;
@@ -100,7 +100,7 @@ public final class StatsReport {
             Loadout.Pet pet = main.pet;
             if (r.petStats != null && pet != null && pet.level() < 100) {
                 Map<Stat, Double> max = StatBreakdown.petStats(new Loadout.Pet(pet.type(), pet.tier(), pet.exp(), 100, pet.heldItem(), pet.active()), context, drill);
-                if (max != null) r.petLevel = new PetLevel(pet.label(), pet.level(), pet.exp(), Loadout.petExp(100, pet.tier()), max);
+                if (max != null) r.petLevel = new PetLevel(pet.label(), pet.level(), pet.exp(), Loadout.petExp(100, pet.tier()), max, pet.type());
             }
         }
         for (Stat stat : StatBreakdown.SUPPORTED) {

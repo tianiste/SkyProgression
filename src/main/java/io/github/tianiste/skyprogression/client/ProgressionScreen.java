@@ -684,7 +684,9 @@ public final class ProgressionScreen extends Screen {
     }
 
     // Upgrades
+    /** The item the upgrade is about (part, stone, gem, book, shard, pet), else the gear piece it changes. */
     private ItemStack upgradeIcon(Upgrade u){
+        ItemStack own=Icons.of(u.item().icon);if(own!=null)return own;
         return icon(u.item().modification&&u.current()!=null?u.current().id:u.item().id,u.current()!=null?u.current().group:u.item().group);
     }
     private static String changes(Upgrade u){
@@ -804,7 +806,7 @@ public final class ProgressionScreen extends Screen {
         }
     }
     private ItemStack otherIcon(OtherUpgrades.Entry e){
-        String id=e.id().startsWith("forge:")?e.id().substring(6):e.id();
+        String id=UpgradeIcons.other(e,data.stats(method));
         return icon(id,switch(e.group()){case "Skill","Collection"->"HOTM";default->e.group();});
     }
     private String otherTip(OtherUpgrades.Entry e,String model){

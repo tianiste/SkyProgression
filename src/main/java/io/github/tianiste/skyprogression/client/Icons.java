@@ -20,7 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 final class Icons {
     private Icons() {}
-    private record Entry(String material, int durability, String color, String texture) {}
+    /** id: custom_data id when it differs from the key (pets are "PET"); pet: the petInfo JSON of a pet. */
+    private record Entry(String material, int durability, String color, String texture, String id, String pet) {}
     private static volatile Map<String, Entry> table = Map.of();
     private static final Map<String, ItemStack> STACKS = new ConcurrentHashMap<>();
     /** Bukkit 1.8 material names that differ from current item IDs; key "NAME:durability" wins over "NAME". */
@@ -44,15 +45,22 @@ final class Icons {
             for (var e : items.entrySet()) {
                 JsonObject o = e.getValue().getAsJsonObject();
                 loaded.put(e.getKey(), new Entry(o.get("m").getAsString(), o.has("d") ? o.get("d").getAsInt() : 0,
-                        o.has("c") ? o.get("c").getAsString() : "", o.has("t") ? o.get("t").getAsString() : ""));
+                        o.has("c") ? o.get("c").getAsString() : "", o.has("t") ? o.get("t").getAsString() : "",
+                        o.has("i") ? o.get("i").getAsString() : e.getKey(), o.has("p") ? o.get("p").getAsString() : ""));
             }
             table = Map.copyOf(loaded);
         } catch (Exception ignored) { /* Generic icons remain. */ }
     }
 
-    /** Icon for a SkyBlock item ID, or null when the item is not in the table. */
+    /** Icon for a SkyBlock item ID or a vanilla "minecraft:" item, or null when the item is not known. */
     static ItemStack of(String id) {
-        if (id == null || id.isEmpty() || !table.containsKey(id)) return null;
+        if (id == null || id.isEmpty()) return null;
+        if (id.startsWith("minecraft:")) {
+            Identifier key = Identifier.tryParse(id);
+            Optional<Item> item = key == null ? Optional.empty() : BuiltInRegistries.ITEM.getOptional(key);
+            return item.isEmpty() ? null : STACKS.computeIfAbsent(id, k -> new ItemStack(item.get()));
+        }
+        if (!table.containsKey(id)) return null;
         return STACKS.computeIfAbsent(id, Icons::build);
     }
 
@@ -62,8 +70,10 @@ final class Icons {
         Item item = BuiltInRegistries.ITEM.getOptional(Identifier.withDefaultNamespace(name)).orElse(Items.PAPER);
         ItemStack stack = new ItemStack(item);
         CompoundTag data = new CompoundTag();
-        data.putString("id", id);
+        data.putString("id", e.id);
+        if (!e.pet.isEmpty()) data.putString("petInfo", e.pet);
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
+        if (item == Items.ENCHANTED_BOOK) stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         if (!e.color.isEmpty()) {
             String[] rgb = e.color.split(",");
             try { stack.set(DataComponents.DYED_COLOR, new DyedItemColor(Integer.parseInt(rgb[0].strip()) << 16 | Integer.parseInt(rgb[1].strip()) << 8 | Integer.parseInt(rgb[2].strip()))); }

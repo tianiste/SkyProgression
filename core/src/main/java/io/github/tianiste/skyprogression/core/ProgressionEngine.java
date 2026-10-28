@@ -269,7 +269,7 @@ public final class ProgressionEngine {
             if(!Double.isFinite(gain)||gain<=1e-9)continue;
             var cost=GearUpgrades.cost(proposal.plan(),p,prices);
             Item display=new Item();display.id="upgrade:"+gear.instance+":"+proposal.label();display.name=proposal.label();
-            display.modification=true;display.source=cost.detail();
+            display.modification=true;display.source=cost.detail();display.icon=UpgradeIcons.proposal(proposal);
             String blocked=proposal.blocked();
             if(!cost.materialsOwned()&&("ironman".equalsIgnoreCase(p.mode)||"bingo".equalsIgnoreCase(p.mode)))blocked="Gather missing materials on "+p.mode;
             Resale.Credit credit=proposal.returned().isEmpty()?null:Resale.credit(null,proposal.returned(),Map.of(),prices);
@@ -354,7 +354,7 @@ public final class ProgressionEngine {
             Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
             if (!Double.isFinite(gain) || gain <= 1e-9) continue;
-            Item display = new Item(); display.id = "pet:" + o.priceId(); display.name = o.label(); display.group = "Pet";
+            Item display = new Item(); display.id = "pet:" + o.priceId(); display.name = o.label(); display.group = "Pet"; display.icon = UpgradeIcons.pet(o);
             display.source = o.heldItem() ? "Pet item; replaces the current pet item" : "Auction House, level 100; the current pet item is not carried over";
             Price quote = prices.get(o.priceId());
             Double cost = o.owned() ? 0.0 : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? quote.buy : null;
@@ -375,7 +375,7 @@ public final class ProgressionEngine {
             if (!Double.isFinite(gain) || gain <= 1e-9) continue;
             Double cost = basis.profile().cost(o, prices);
             double have = basis.profile().available().getOrDefault(o.resource(), 0.0), need = basis.profile().remaining(o);
-            Item display = new Item(); display.id = "profile:" + o.chain() + ":" + o.rank(); display.name = o.label(); display.group = o.group();
+            Item display = new Item(); display.id = "profile:" + o.chain() + ":" + o.rank(); display.name = o.label(); display.group = o.group(); display.icon = UpgradeIcons.option(o);
             display.modification = true;
             if (o.grinding() && cost == null) display.category = "GRIND";
             display.source = o.note() + (o.resource().startsWith("ESSENCE_") || o.resource().startsWith("SHARD_") || o.resource().startsWith("POWDER_")
