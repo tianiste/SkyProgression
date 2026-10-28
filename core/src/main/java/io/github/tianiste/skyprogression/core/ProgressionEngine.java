@@ -58,9 +58,12 @@ public final class ProgressionEngine {
             if (resale == null) resale = Map.of();
         }
         RateBasis with(MethodRates.Ability a) { return new RateBasis(efficiency, a, pet, petOptions, profile, resale); }
-        /** After taking a pet option: it becomes the pet; a new pet drops the pet-item options for the old one. */
+        /**
+         * After taking a pet option: it becomes the pet; a new pet drops the pet-item options for the old one, and a pet-item
+         * swap drops every pet option (their fees and carried item assume the old item).
+         */
         RateBasis withPet(PetUpgrades.Option taken) {
-            return new RateBasis(efficiency, ability, taken.stats(), petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList(), profile, resale);
+            return new RateBasis(efficiency, ability, taken.stats(), taken.heldItem() ? List.of() : petOptions.stream().filter(o -> o != taken && !o.heldItem()).toList(), profile, resale);
         }
         RateBasis withProfile(ProfileUpgrades.Option taken) { return new RateBasis(efficiency, ability, pet, petOptions, profile.take(taken), resale); }
         RateBasis withOmelette(boolean held) { return new RateBasis(efficiency, ability, pet, petOptions, profile.withOmelette(held), resale); }
@@ -355,12 +358,22 @@ public final class ProgressionEngine {
             double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : focus == null ? yieldGain(m, baseline, delta) : stat(delta, focus);
             if (!Double.isFinite(gain) || gain <= 1e-9) continue;
             Item display = new Item(); display.id = "pet:" + o.priceId(); display.name = o.label(); display.group = "Pet"; display.icon = UpgradeIcons.pet(o);
-            display.source = o.heldItem() ? "Pet item; replaces the current pet item" : "Auction House, level 100; the current pet item is not carried over";
+            boolean have = o.owned() || o.heldItem() && p.owned.getOrDefault(o.priceId(), 0) > 0;
+            String fees = o.fees() == null ? "the pet item fee is unknown (rarity of " + o.returned() + " not known)"
+                    : o.fees() > 0 ? String.format(Locale.ROOT, "%,.0f coins in fees", o.fees()) : "";
+            display.source = o.heldItem()
+                    ? (have ? "Pet item you own" : "Pet item") + (o.returned().isEmpty() ? "" : "; replacing gives the current " + StartWith.petItem(o.returned()) + " back")
+                            + (fees.isEmpty() ? "." : " (" + fees + ").")
+                    : "Auction House, level 100" + (o.carried().isEmpty() ? "." : "; keeps your " + StartWith.petItem(o.carried())
+                            + ", moved with a Super Scrubber (" + fees + ").");
             Price quote = prices.get(o.priceId());
-            Double cost = o.owned() ? Double.valueOf(0) : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? Double.valueOf(quote.buy) : null;
-            String blocked = !o.owned() && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
-            Resale.Credit credit = o.heldItem() ? null : Resale.credit("pet", null, resale(basis), prices);
-            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, o.owned(), blocked, 1, before, after).withResale(credit), null, Map.of(), o, null, null));
+            Double price = have ? Double.valueOf(0) : quote != null && quote.available && quote.buy > 0 && Double.isFinite(quote.buy) ? Double.valueOf(quote.buy) : null;
+            Double cost = price == null || o.fees() == null ? null : price + o.fees();
+            String blocked = !have && ("ironman".equalsIgnoreCase(p.mode) || "bingo".equalsIgnoreCase(p.mode)) ? "No market purchases on " + p.mode : "";
+            Resale.Credit credit = o.heldItem() ? (o.returned().isEmpty() ? null : Resale.credit(null, o.returned(), Map.of(), prices))
+                    : o.carried().isEmpty() ? Resale.credit("pet", null, resale(basis), prices)
+                    : new Resale.Credit(null, "No sale price for the replaced pet without its " + StartWith.petItem(o.carried()));
+            result.add(new Candidate(new Upgrade(display, null, delta, cost, gain, have, blocked, 1, before, after).withResale(credit), null, Map.of(), o, null, null));
         }
         // Essence perks, attribute shards and HOTM perk levels: target level stats minus the chain's current stats.
         if (basis != null) for (ProfileUpgrades.Option o : basis.profile().options()) {

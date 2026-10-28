@@ -48,7 +48,7 @@ summarizes. Rules and sources are in [CALCULATIONS.md](../CALCULATIONS.md), open
 | Gold instamining | Goblin +250 and a bugged Strong Arm +505 on Gold: 35,246 during Mining Speed Boost | Not modelled | Bugs; not encoded. |
 | Goblin pet speed | 12.5 per level (1,250) on non-pure ores, "bugged" | Wiki value | Bug; not encoded. |
 | Glacite Golem | 175 Speed, 150 Fortune "(only 50 outside a Mineshaft)" | Wiki values everywhere | The guide's wording is ambiguous; kept as before. |
-| Pet items on swap | Gear progression guide: pet items now come back when swapped | New pets assumed to come without a pet item; the old item is not credited | Lead, not verified. |
+| Pet items on swap | Gear progression guide: pet items now come back when swapped | Was: new pets without a pet item, old item not credited | **Changed** (wiki Pet Items, 0.24.1): a replaced pet item comes back for a fee by rarity; a new pet keeps the mining pet item via a Super Scrubber. |
 
 ## New mechanics we lack
 

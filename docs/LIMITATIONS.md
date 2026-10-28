@@ -117,8 +117,10 @@ is "assumed" is labelled in the interface where it affects a number.
   collection requirement with the Collections API off is not checked, so that recipe is not used.
 - **Resale credit** is the lowest matching auction listing (an asking price before fees; a sale may get less). Gems and
   enchantments are not used as filters; without a matching listing the plain item's value is used and labelled.
-- **Pets:** a new pet is assumed to come without a pet item; pet items are not carried over from the replaced pet and are
-  not credited. Pets that need other pet items or perks stay unknown.
+- **Pets:** a new pet keeps only a catalogued mining pet item (Quick Claw, Hephaestus Relic, Bejeweled Collar); which item's
+  rarity sets a replacement fee is not on the wiki (the higher is used), and applying an item to an empty pet is assumed free.
+  The replaced pet's sale price without its item is not quoted, so that net cost is unknown. Pet items held by your other pets
+  are not offered. Pets that need other pet items or perks stay unknown.
 - **Not offered as upgrades:** scrolls, levelling Core of the Mountain for tokens, resetting the HOTM tree, Quartz Speed and
   Deep Technique (situational), and modifiers on a newly bought base item (it is treated as having none).
 - **Assumed:** every drill accepts every part (not stated on the wiki); the fuel tank removal fee equals the engine's 9,999.

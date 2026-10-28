@@ -448,7 +448,8 @@ replaces. Ranking and the plan's choices use the outlay; the net is shown beside
   modifiers not priced". A pet without a matching listing has no sale price.
 - Returned drill parts and removed gems: Coflnet's `sell` value for that item ID (bazaar instant sell; for auction items
   the value Coflnet reports).
-- No sale price: the card says so and shows no net cost. Pet items moved off a replaced pet are not credited.
+- No sale price: the card says so and shows no net cost. A pet item replaced on the current pet comes back (0.24.1) and is
+  credited at its sell value; a replaced pet whose mining pet item moves to the new pet has no sale price (see "Pets and pet items").
 
 ## Item catalog
 
@@ -550,11 +551,25 @@ value / stored count for other tiered sets.
 The stat report carries the evaluated pet's counted stats (same ledger rules as the Breakdown, in the method's zone and
 target) and the alternatives. Alternatives are each catalogued pet at level 100, one option per rarity whose
 catalogued stats differ from the rarity below (Bal Epic/Legendary, Scatha Rare/Epic/Legendary, Bee Rare/Epic/Mythic,
-Glacite Golem Common/Rare/Epic, Mithril Golem, Silverfish, Armadillo and Mole one each), and a Quick Claw for the
-current pet (+1 Mining Fortune and Speed per 2 levels). delta = option stats - current pet stats. A new pet is
-assumed to come without a pet item (the current item is not credited), so a Quick Claw pet can lose to a bare one.
+Glacite Golem Common/Rare/Epic, Mithril Golem, Silverfish, Armadillo and Mole one each), and the mining pet items for the
+current pet: Quick Claw (+1 Mining Fortune and Speed per 2 levels, Legendary), Hephaestus Relic (+50% of the pet's stats,
+Legendary) and Bejeweled Collar (+25 Mining Speed, +10 Mining Fortune, Rare; wiki Pet Items, ID `BEJEWELED_COLLAR` in the NEU
+repository). delta = option stats - current pet stats.
+Pet items on swap (wiki Pet Items, <https://hypixelskyblock.minecraft.wiki/w/Pet_Items>: "Doing so refunds the previous Pet
+Item and costs Coins to apply", reworked in 0.24.1; wiki Super Scrubber, <https://hypixelskyblock.minecraft.wiki/w/Super_Scrubber>):
+- Replacing a pet item gives the old one back and costs a fee by rarity: Common 25,000, Uncommon 50,000, Rare 100,000, Epic
+  250,000, Legendary 500,000, Mythic 1,000,000, Divine 2,500,000. The wiki does not say whether the old or the new item's
+  rarity sets a replacement fee, so the higher of the two is used. A pet-item option costs the item's buy quote (nothing when
+  you own one) plus that fee, and the returned item is credited at its sell value in the net cost. Between owned items a swap
+  therefore costs only the fee. An old item of unknown rarity makes the fee, and so the cost, unknown.
+- A new pet keeps the current pet's mining pet item (Quick Claw, Hephaestus Relic, Bejeweled Collar): it is removed with a
+  Super Scrubber (25,000 coins at Plumber Joe) plus the removal fee by the item's rarity, and put on the new pet (applying to a
+  pet without an item is assumed free; the wiki only prices replacing and removing). The new pet's stats include the item.
+  The replaced pet's sale price with its item no longer applies, so that credit is unknown. Other held items stay on the old
+  pet and are sold with it.
 Price: lowest Auction House BIN at that rarity and level 100 (Coflnet `/api/item/price/PET_<TYPE>/bin?Rarity=..&PetLevel=100`);
-an owned level-100 copy of that rarity costs nothing. After a pet step, the plan drops pet-item options for the old pet.
+an owned level-100 copy of that rarity costs nothing. After a pet step, the plan drops pet-item options for the old pet;
+after a pet-item step it drops every pet option (their fees assume the old item).
 New pet stats (NEU petnums, linear between level 1 and 100): Bee Mining Fortune 0.2/0.3/0.3/0.4 per level (Rare/Epic/
 Legendary/Mythic) plus the same again from Busy Buzz Buzz ("Grants +X of each to your pet"); Glacite Golem Mining
 Speed 1.25 per level, Iceborn Mining Fortune 0.75 (Rare) or 1 (Epic/Legendary) per level in the Glacite Mineshafts;

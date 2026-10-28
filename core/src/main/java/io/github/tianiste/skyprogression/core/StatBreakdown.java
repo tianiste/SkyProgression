@@ -228,6 +228,8 @@ public final class StatBreakdown {
                     Condition.unchecked("Per player within 30 blocks, up to 10 (one player shown)")));
     /** Wiki Hephaestus Relic (Legendary pet item): +50% to the pet's stats; counted on base stats (the community guide totals match). */
     static final String HEPHAESTUS = "HEPHAESTUS_RELIC";
+    /** Wiki Pet Items, Bejeweled Collar (Rare pet item): +25 Mining Speed and +10 Mining Fortune. */
+    static final String BEJEWELED_COLLAR = "BEJEWELED_COLLAR";
     /** Wiki Snail Pet, Slow and Steady (Rare+): +1 Block Fortune per N Speed above 100; N at level 100 by rarity, -0.03 per level. */
     static final Map<String, Double> SNAIL_SPEED_PER_FORTUNE = Map.of("RARE", 3.0, "EPIC", 3.0, "LEGENDARY", 2.0, "MYTHIC", 2.0);
     private static final List<String> TIERS = List.of("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC");
@@ -532,6 +534,10 @@ public final class StatBreakdown {
         if (held.equals("PET_ITEM_QUICK_CLAW")) {
             if (b.stat == Stat.MINING_FORTUNE || b.stat == Stat.MINING_SPEED) b.contributions.add(new Contribution("Pet", "Quick Claw (pet item)", b.stat, (double)(pet.level() / 2), 50.0, "",
                     State.COUNTED, Confidence.KNOWN, "+1 per 2 pet levels."));
+        } else if (held.equals(BEJEWELED_COLLAR)) {
+            double v = b.stat == Stat.MINING_SPEED ? 25 : 10;
+            if (b.stat == Stat.MINING_FORTUNE || b.stat == Stat.MINING_SPEED) b.contributions.add(new Contribution("Pet", "Bejeweled Collar (pet item)", b.stat,
+                    v, v, "", State.COUNTED, Confidence.KNOWN, "Flat bonus (wiki Pet Items)."));
         } else if (!held.isEmpty() && !held.contains("_SKILL_BOOST_"))
             b.contributions.add(new Contribution("Pet", held + " (pet item)", b.stat, null, null, "", State.COUNTED,
                     Confidence.UNKNOWN, "Held item effect is not catalogued yet."));
