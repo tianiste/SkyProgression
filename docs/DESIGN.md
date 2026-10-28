@@ -49,6 +49,12 @@ Implemented as native Minecraft widgets and drawing calls, not embedded HTML.
 Palette: background #0D0D13, panels #1B1B22, gold #FFC665, cyan #49F6F6,
 green #40ED45, warm gray labels. Minecraft's font and illustrative vanilla item
 icons preserve readability and avoid remote font/image work during gameplay.
+Item icons come from a bundled table (`./gradlew :core:extractIcons`): the item's base material,
+leather colour or head texture, with its SkyBlock ID in custom_data so texture packs retexture it.
+An upgrade card shows the item the entry is about (`UpgradeIcons`): the drill part, reforge stone,
+gem, enchanted book, Recombobulator, coating, essence, shard, pet or pet item; HOTM perks show their
+powder (prismarine crystals, pink dye, packed ice), the Mining skill a stone pickaxe, collections
+their item. Unknown IDs fall back to the gear piece's or slot's icon. Stacks are cached per ID.
 Wide layouts split cards into two columns; compact layouts stack them. Small-height
 layouts omit the summary strip to leave room for scrolling. Selectors are searchable.
 

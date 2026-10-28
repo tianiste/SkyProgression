@@ -140,6 +140,12 @@ is "assumed" is labelled in the interface where it affects a number.
 - Supported: Minecraft 26.1.1, 26.1.2 and 26.2 on Fabric, Java 25. Other versions (26.3 included) are not targets.
 - The update notice only says a newer release exists; it does not download anything.
 - Item icons carry their SkyBlock ID so texture packs can retexture them; that has not been confirmed with a pack in game.
+  Upgrade icons (drill parts, reforge stones, gems, books, shards, essences, pets) are new and also unchecked in game.
+- Many items (drill engines, fuel tanks, omelettes, reforge stones, gems, Tungsten, Umber) are PAPER in the official items
+  resource, which draws them with Hypixel's own item models; without a texture pack these icons look like paper.
+- Essence, attribute shard and pet heads come from the NEU repository (the items resource lacks them). Shards and pets keep
+  our IDs (`SHARD_FLITTER`; pets as `PET` with petInfo) in custom_data, which a pack may not match. The Miner Zombie shard
+  has no head there and shows the generic icon.
 - The Modrinth listing may not be public yet; GitHub Releases always has the jars.
 
 ## Hosted API and relay
