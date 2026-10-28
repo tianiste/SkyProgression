@@ -49,6 +49,29 @@ public final class Model {
         public Price() {}
         public Price(double buy, String source) { this.buy = buy; this.source = source; available = true; }
     }
+    /**
+     * How purchases are priced. INSTANT_BUY: the buy quote (Bazaar lowest sell offer, Auction House lowest BIN). BUY_ORDER:
+     * Bazaar items at the highest buy order (the quote's sell field, Hypixel Bazaar sell_summary top), which fills only when
+     * a seller accepts your order; Auction House items keep the lowest BIN.
+     */
+    public enum CostMode {
+        INSTANT_BUY("instant-buy", "Buying now: the lowest Bazaar sell offer or the lowest Auction House BIN"),
+        BUY_ORDER("buy order", "Bazaar items at the highest buy order: fills only when a seller accepts your order. Auction House items stay at the lowest BIN");
+        public final String label, meaning;
+        CostMode(String label, String meaning) { this.label = label; this.meaning = meaning; }
+        /** Quotes to cost purchases with: unchanged for instant-buy; Bazaar buy quotes replaced by the top buy order (sale values untouched). */
+        public Map<String, Price> apply(Map<String, Price> prices) {
+            if (this == INSTANT_BUY) return prices;
+            Map<String, Price> out = new HashMap<>(prices);
+            prices.forEach((id, p) -> {
+                if (p == null || !p.source.startsWith("Bazaar") || !(p.sell > 0) || !Double.isFinite(p.sell) || p.buy > 0 && p.sell >= p.buy) return;
+                Price q = new Price(p.sell, p.source + ", buy order");
+                q.sell = p.sell; q.updatedAt = p.updatedAt; q.npc = p.npc; q.npcUpdatedAt = p.npcUpdatedAt;
+                out.put(id, q);
+            });
+            return out;
+        }
+    }
     public static class Profile {
         public String id = "", name = "", player = "", mode = "";
         public boolean selected, inventoryEnabled;

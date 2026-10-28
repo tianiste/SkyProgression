@@ -426,10 +426,26 @@ The recipe is used only when its unlock is met (HOTM tier from the profile; coll
 collection requirement with the Collections API off is not checked and the recipe is not used). An unknown input price
 makes the recipe unknown; if both paths are unknown the price stays unknown. The card says which path was taken, both
 totals and the forge time. Limits: one recipe level (inputs are bought, not crafted in turn); inputs used by a recipe
-are not removed from the plan's owned materials; forge slots, forge time value and bazaar order prices are not modelled.
+are not removed from the plan's owned materials; forge slots and forge time value are not modelled. Bazaar buy orders are a
+cost mode (below).
 Prices change, so no guide's buy-vs-craft claim is assumed. Live check 2026-10-26: Gemstone Fuel Tank forge 48.3M vs
 buy 53.7M; Amber-Polished engine buy 260M vs forge 286M; Glossy Mineral Talisman craft 26.9M with an owned Mineral
 Talisman vs buy 32.0M.
+
+## Cost mode: instant-buy or buy order
+
+Purchases are priced in one of two labelled modes (mod Upgrades tab "Cost:", website `/web` body `"cost"`; the ranked
+list, the plan, Other & progress and the Home tab's next step use it):
+- instant-buy (default): the buy quote, the lowest Bazaar sell offer or the lowest Auction House BIN.
+- buy order: Bazaar items (quote source "Bazaar ...": shards, gems, Dwarven O's, refined materials, reforge stones and other
+  Bazaar products) at the highest current buy order, which is the quote's `sell` field: the top of Hypixel's Bazaar
+  `sell_summary` (the hosted bundle, <https://api.hypixel.net/v2/skyblock/bazaar>) or Coflnet's instant-sell figure. A new
+  order at that price fills only when a seller accepts your order, so the mode says so; queue time is not modelled.
+  Auction House items (engines, tanks and other AH items in the bundle, pets) keep the lowest BIN. A Bazaar item with no
+  buy orders, or whose top order is not below the buy quote, keeps the buy quote. Recipe inputs are priced the same way.
+Sale values (resale credit, coins per hour) never change with the cost mode. Fixture (2026-10-28 bundle): Obsidian plan
+steps cost about 2-20% less (Fleet stone 2.36M -> 2.19M, Hideonleaf shards 37.5k -> 29.6k each); MF Gems' Lustrous
+reforge 57.6M -> 50.2M; the plan order barely moves.
 
 ## Replacement resale credit
 

@@ -317,7 +317,7 @@ public final class ProgressionService {
     private record WebPrices(String updatedAt, Map<String, Price> prices, List<StatBreakdown.MayorPerk> mayor) {}
     private volatile WebPrices webPrices;
     /**
-     * POST /web {"uuid", "player"?, "view", "profile"?, "method"?, "price"?, "god"?, "gear"?, "data"?, "fetchedAt"?, "bundle"?}: one
+     * POST /web {"uuid", "player"?, "view", "profile"?, "method"?, "price"?, "cost"?, "god"?, "gear"?, "data"?, "fetchedAt"?, "bundle"?}: one
      * website page (WebViews) for a player. Like /checklist, "data" is the raw profiles response and "bundle" the hosted API's
      * price bundle; relay mode requires both (it fetches neither), the local companion fetches whatever is not sent.
      */
@@ -331,11 +331,12 @@ public final class ProgressionService {
         catch (RuntimeException e) { throw new LookupException(400, "Body must be a JSON object"); }
         String view = string(request.get("view"), "");
         if (!WebViews.VIEWS.contains(view)) throw new LookupException(400, "view must be one of " + String.join(", ", new TreeSet<>(WebViews.VIEWS)));
-        MiningMethod method; MethodComparison.PriceMode mode;
+        MiningMethod method; MethodComparison.PriceMode mode; Model.CostMode cost;
         try {
             method = MiningMethod.valueOf(string(request.get("method"), "MF_GEMS"));
             mode = MethodComparison.PriceMode.valueOf(string(request.get("price"), "INSTANT_SELL"));
-        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method or price mode"); }
+            cost = Model.CostMode.valueOf(string(request.get("cost"), "INSTANT_BUY"));
+        } catch (IllegalArgumentException e) { throw new LookupException(400, "Unknown method, price mode or cost mode"); }
         boolean god = !"false".equals(string(request.get("god"), "true")), best = !"equipped".equals(string(request.get("gear"), "best"));
         String uuid = string(request.get("uuid"), "").replace("-", "").toLowerCase(Locale.ROOT), player = string(request.get("player"), "");
         JsonElement data = request.get("data"), bundle = request.get("bundle");
@@ -354,7 +355,7 @@ public final class ProgressionService {
                 .orElseThrow(() -> new LookupException(404, "Profile not found"));
         else if (d.report.profiles.isEmpty()) throw new LookupException(404, "This player has no SkyBlock profiles");
         else if (d.report.profiles.stream().noneMatch(pr -> pr.selected)) profileId = d.report.profiles.getFirst().id;
-        var q = new WebViews.Query(view, profileId, method, mode, god, best);
+        var q = new WebViews.Query(view, profileId, method, mode, god, best, cost);
         try { return WebViews.GSON.toJson(WebViews.build(q, d, e, p.prices(), p.mayor(), p.updatedAt(), skin(uuid))); }
         catch (NoSuchElementException ex) { throw new LookupException(404, "Profile not found"); }
     }

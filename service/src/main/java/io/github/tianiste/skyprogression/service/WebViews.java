@@ -27,7 +27,12 @@ final class WebViews {
     }
 
     /** What the page asked for: profile id ("" = selected), method, price mode, God Potion, best owned gear or what is worn. */
-    record Query(String view, String profileId, MiningMethod method, MethodComparison.PriceMode mode, boolean god, boolean bestGear) {}
+    /** cost: how purchases are priced (instant-buy by default). */
+    record Query(String view, String profileId, MiningMethod method, MethodComparison.PriceMode mode, boolean god, boolean bestGear, CostMode cost) {
+        Query(String view, String profileId, MiningMethod method, MethodComparison.PriceMode mode, boolean god, boolean bestGear) {
+            this(view, profileId, method, mode, god, bestGear, CostMode.INSTANT_BUY);
+        }
+    }
     /** Skin texture hash and model ("slim" or "classic"); null when Mojang could not be asked. */
     record Skin(String hash, boolean slim) {}
 
@@ -49,6 +54,8 @@ final class WebViews {
         out.put("methods", Arrays.stream(MiningMethod.values()).map(m -> Map.of("id", m.name(), "label", m.label)).toList());
         out.put("priceMode", q.mode().name());
         out.put("priceModes", Arrays.stream(MethodComparison.PriceMode.values()).map(m -> Map.of("id", m.name(), "label", m.label, "meaning", m.meaning)).toList());
+        out.put("costMode", q.cost().name());
+        out.put("costModes", Arrays.stream(CostMode.values()).map(m -> Map.of("id", m.name(), "label", m.label, "meaning", m.meaning)).toList());
         out.put("godPotion", q.god());
         out.put("efficiency", q.method().defaultEfficiency());
         out.put("model", model(member.member(), skin));
@@ -101,8 +108,9 @@ final class WebViews {
         out.put("tool", toolName(r));
         out.put("loadout", loadout(r));
         var basis = basis(m, r);
-        var plan = p.inventoryEnabled ? engine.plan(p, m, stats, prices, basis, 1) : List.<ProgressionEngine.Step>of();
-        out.put("next", plan.isEmpty() ? null : step(plan.getFirst(), prices));
+        var costs = q.cost().apply(prices);
+        var plan = p.inventoryEnabled ? engine.plan(p, m, stats, costs, basis, 1) : List.<ProgressionEngine.Step>of();
+        out.put("next", plan.isEmpty() ? null : step(plan.getFirst(), costs));
         out.put("comparison", comparison(d, q, prices));
     }
 
@@ -141,9 +149,10 @@ final class WebViews {
         Map<Stat, Double> stats = totals(r);
         var basis = basis(m, r);
         boolean inventory = p.inventoryEnabled;
-        var ranked = inventory ? engine.upgrades(p, m, null, stats, prices, basis) : List.<Upgrade>of();
-        var plan = inventory ? engine.plan(p, m, stats, prices, basis, PLAN_STEPS) : List.<ProgressionEngine.Step>of();
-        var other = OtherUpgrades.of(engine, p, m, r, stats, m.defaultEfficiency(), prices, basis);
+        var costs = q.cost().apply(prices); // purchases at the chosen cost mode; sale values and method coins keep the quotes
+        var ranked = inventory ? engine.upgrades(p, m, null, stats, costs, basis) : List.<Upgrade>of();
+        var plan = inventory ? engine.plan(p, m, stats, costs, basis, PLAN_STEPS) : List.<ProgressionEngine.Step>of();
+        var other = OtherUpgrades.of(engine, p, m, r, stats, m.defaultEfficiency(), costs, basis);
         // The best method by coins / hour, to show what each upgrade is worth there too.
         var compare = d.compare(q.profileId(), q.god());
         var rows = rows(compare, prices, q.mode());
@@ -158,7 +167,7 @@ final class WebViews {
         out.put("bestMethod", best == null ? null : Map.of("id", best.method().name(), "label", best.method().label, "coinsPerHour", best.coinsPerHour() == null ? 0 : best.coinsPerHour()));
         List<Map<String, Object>> list = new ArrayList<>();
         for (Upgrade u : ranked) {
-            Map<String, Object> row = upgrade(u, prices);
+            Map<String, Object> row = upgrade(u, costs);
             if (best != null && best.method() != m && bestEntry != null && bestEntry.stats != null) {
                 Double g = MethodComparison.gain(best.method(), bestEntry.stats, best.method().defaultEfficiency(), bestEntry.ability, u.delta(), u.cooldownFactor());
                 row.put("bestGain", g);
@@ -166,7 +175,7 @@ final class WebViews {
             list.add(row);
         }
         out.put("ranked", list);
-        out.put("plan", plan.stream().map(s -> step(s, prices)).toList());
+        out.put("plan", plan.stream().map(s -> step(s, costs)).toList());
         out.put("other", other);
     }
 

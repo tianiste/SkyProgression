@@ -161,6 +161,7 @@ public final class ProgressionScreen extends Screen {
     private void typeStats(){Compat.setScreen(minecraft,new InputsScreen(this,data.inputs(method),method));}
     private void persist(){data.save(minecraft::execute,ignored->{});}
     private boolean live(){return data.profile()!=null&&!data.demo;}
+    private void cycleCost(){var modes=Model.CostMode.values();data.costMode=modes[(data.costMode.ordinal()+1)%modes.length];scroll=0;refresh();}
     private void cyclePrice(){var modes=MethodComparison.PriceMode.values();data.priceMode=modes[(data.priceMode.ordinal()+1)%modes.length];refresh();}
 
     // ---- Controls ----
@@ -183,6 +184,7 @@ public final class ProgressionScreen extends Screen {
         list.add(new Control(byStat?"Rank: "+stat.label+" points":"Rank: rate gain",byStat,true,()->{byStat=!byStat;scroll=0;refresh();}));
         if(byStat)list.add(new Control("Stat: "+stat.label+" v",false,true,this::selectStat));
         list.add(new Control("Price: "+data.priceMode.label,true,true,this::cyclePrice));
+        list.add(new Control("Cost: "+data.costMode.label,data.costMode==Model.CostMode.BUY_ORDER,true,this::cycleCost));
         list.add(new Control("Type Stats",false,data.ready,this::typeStats));
         return list;
     }
@@ -247,7 +249,7 @@ public final class ProgressionScreen extends Screen {
         if(p==null||!data.ready||!needed||!p.inventoryEnabled&&!(tab==UPGRADES&&otherView)){calculating=false;buildCards();return;}
         calculating=true;buildCards();
         var selectedMethod=method;var selectedStat=stat;int selectedTab=tab;boolean focused=byStat,others=tab==UPGRADES&&otherView;
-        var effective=data.effective(method);var quotes=new HashMap<>(data.prices);
+        var effective=data.effective(method);var quotes=data.costMode.apply(new HashMap<>(data.prices));
         boolean ranks=selectedTab==UPGRADES&&!others,plans=selectedTab==HOME||ranks&&!focused;
         var rows=ranks&&!focused?data.comparisonRows():List.<MethodComparison.Row>of();
         var best=rows.isEmpty()||rows.getFirst().totalCoinsPerHour()==null?null:rows.getFirst();
@@ -708,7 +710,8 @@ public final class ProgressionScreen extends Screen {
         if(u.owned())tip.add("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned");
         if(!u.blocked().isEmpty())tip.add(u.blocked());
         var quote=data.prices.get(u.item().id);
-        if(quote!=null&&!u.item().modification)tip.add(quote.source);
+        if(quote!=null&&!u.item().modification)tip.add(quote.source+(data.costMode==Model.CostMode.BUY_ORDER&&quote.source.startsWith("Bazaar")?", buy order":""));
+        if(data.costMode==Model.CostMode.BUY_ORDER)tip.add("Cost: Bazaar items at buy-order prices; fills only when a seller accepts your order.");
         if(quote==null||u.item().modification||u.item().source.matches("^(Cheaper|Buying|No buy|Price unknown).*"))tip.add(u.item().source);
         return tip.toString();
     }

@@ -47,6 +47,8 @@ final class ClientData {
     StartWith.Report start;
     String startKey = "", startPending = "", startError = "";
     MethodComparison.PriceMode priceMode = MethodComparison.PriceMode.INSTANT_SELL;
+    /** How upgrade purchases are priced (Upgrades tab); instant-buy by default. */
+    Model.CostMode costMode = Model.CostMode.INSTANT_BUY;
     boolean compareGodPotion = true;
     /** Method selected in /sp; kept while the screen is closed, so the session tracker follows it. */
     MiningMethod method = MiningMethod.MF_GEMS;

@@ -113,7 +113,8 @@ is "assumed" is labelled in the interface where it affects a number.
 - **Alternatives are independent.** Each upgrade is measured against the same current state; the list is not a shopping
   list. The step-by-step plan is greedy (up to 12 steps, cheapest per 1% first) at today's quotes, with no market impact.
 - **Buy vs craft** goes one recipe level deep (inputs are bought, not crafted in turn); materials a recipe uses are not removed
-  from what later plan steps can use; forge slots, the value of forge time and Bazaar order prices are not modelled. A
+  from what later plan steps can use; forge slots and the value of forge time are not modelled. The buy-order cost mode
+  assumes your order fills at today's top buy order (no queue time, no undercutting). A
   collection requirement with the Collections API off is not checked, so that recipe is not used.
 - **Resale credit** is the lowest matching auction listing (an asking price before fees; a sale may get less). Gems and
   enchantments are not used as filters; without a matching listing the plain item's value is used and labelled.
