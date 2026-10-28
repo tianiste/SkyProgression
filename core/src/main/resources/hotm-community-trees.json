@@ -1,0 +1,316 @@
+{
+ "source": "Mining Cult Heart of the Mountain Tree Guide (KoenigBooHoo, last update 2026-10-22), tree pictures by TheUltimateNon, NotWil and Meow; transcribed cell by cell. The pictures show maxed and unlocked perks, not levels: a maxed perk is at its maximum, an unlocked one at level 1. Community guidance, not verified mechanics; used only to compare with the HOTM planner.",
+ "trees": [
+  {
+   "id": "gold-maniac-miner",
+   "title": "Gold, Maniac Miner",
+   "methods": [
+    "GOLD"
+   ],
+   "tier": 7,
+   "ability": "maniac_miner",
+   "levels": {
+    "mining_speed": 50,
+    "mining_fortune": 50,
+    "efficient_miner": 100,
+    "sky_mall": 1,
+    "old_school": 20,
+    "professional": 1,
+    "mole": 1,
+    "gem_lover": 1,
+    "seasoned_mineman": 100,
+    "daily_grind": 1,
+    "daily_powder": 1,
+    "blockhead": 1,
+    "keep_it_cool": 50,
+    "great_explorer": 1,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50
+   },
+   "disabled": []
+  },
+  {
+   "id": "gold-msb",
+   "title": "Gold, Mining Speed Boost",
+   "methods": [
+    "GOLD"
+   ],
+   "tier": 9,
+   "ability": "mining_speed_boost",
+   "levels": {
+    "mining_speed": 50,
+    "precision_mining": 1,
+    "mining_fortune": 50,
+    "efficient_miner": 100,
+    "sky_mall": 1,
+    "old_school": 20,
+    "professional": 1,
+    "mole": 1,
+    "gem_lover": 1,
+    "seasoned_mineman": 100,
+    "daily_grind": 1,
+    "daily_powder": 1,
+    "blockhead": 1,
+    "keep_it_cool": 50,
+    "great_explorer": 1,
+    "powder_buff": 50,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50,
+    "no_stone_unturned": 1,
+    "strong_arm": 100
+   },
+   "disabled": []
+  },
+  {
+   "id": "coal",
+   "title": "Coal",
+   "methods": [
+    "COAL"
+   ],
+   "tier": 7,
+   "ability": "maniac_miner",
+   "levels": {
+    "mining_speed": 50,
+    "mining_fortune": 50,
+    "efficient_miner": 100,
+    "sky_mall": 1,
+    "old_school": 20,
+    "professional": 1,
+    "mole": 200,
+    "gem_lover": 1,
+    "seasoned_mineman": 100,
+    "blockhead": 20,
+    "subterranean_fisher": 1,
+    "keep_it_cool": 50,
+    "lonesome_miner": 1,
+    "great_explorer": 1,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50
+   },
+   "disabled": [
+    "great_explorer"
+   ]
+  },
+  {
+   "id": "mf-gems-msb",
+   "title": "Magma Fields Gemstones, Mining Speed Boost",
+   "methods": [
+    "MF_GEMS",
+    "MF_RUBY",
+    "MF_TOPAZ",
+    "GROTTO"
+   ],
+   "tier": 10,
+   "ability": "mining_speed_boost",
+   "levels": {
+    "mining_speed": 50,
+    "precision_mining": 1,
+    "mining_fortune": 50,
+    "efficient_miner": 1,
+    "sky_mall": 1,
+    "old_school": 1,
+    "professional": 140,
+    "mole": 1,
+    "gem_lover": 20,
+    "seasoned_mineman": 1,
+    "front_loaded": 1,
+    "blockhead": 1,
+    "subterranean_fisher": 1,
+    "keep_it_cool": 50,
+    "lonesome_miner": 1,
+    "great_explorer": 1,
+    "powder_buff": 1,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50,
+    "steady_hand": 1,
+    "rags_to_riches": 1,
+    "mining_master": 10
+   },
+   "disabled": []
+  },
+  {
+   "id": "mf-gems-maniac",
+   "title": "Magma Fields Gemstones, Maniac Miner",
+   "methods": [
+    "MF_GEMS",
+    "MF_RUBY",
+    "MF_TOPAZ"
+   ],
+   "tier": 10,
+   "ability": "maniac_miner",
+   "levels": {
+    "mining_speed": 50,
+    "mining_fortune": 50,
+    "efficient_miner": 1,
+    "sky_mall": 1,
+    "old_school": 1,
+    "professional": 140,
+    "mole": 1,
+    "gem_lover": 20,
+    "seasoned_mineman": 1,
+    "front_loaded": 1,
+    "blockhead": 1,
+    "subterranean_fisher": 1,
+    "keep_it_cool": 50,
+    "lonesome_miner": 1,
+    "great_explorer": 1,
+    "powder_buff": 1,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50,
+    "steady_hand": 1,
+    "rags_to_riches": 1,
+    "mining_master": 10
+   },
+   "disabled": []
+  },
+  {
+   "id": "dwarven-metals-msb",
+   "title": "Dwarven Metals, Mining Speed Boost",
+   "methods": [
+    "UMBER",
+    "TUNGSTEN",
+    "SHAFTING"
+   ],
+   "tier": 10,
+   "ability": "mining_speed_boost",
+   "levels": {
+    "mining_speed": 50,
+    "precision_mining": 1,
+    "mining_fortune": 50,
+    "luck_of_the_cave": 1,
+    "efficient_miner": 100,
+    "sky_mall": 1,
+    "old_school": 1,
+    "daily_grind": 1,
+    "blockhead": 20,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50,
+    "warm_heart": 50,
+    "miners_blessing": 1,
+    "no_stone_unturned": 50,
+    "strong_arm": 100,
+    "steady_hand": 1,
+    "mineshaft_mayhem": 1,
+    "surveyor": 20,
+    "metal_head": 20,
+    "rags_to_riches": 50,
+    "eager_adventurer": 100,
+    "gifts_from_the_departed": 100,
+    "mining_master": 1,
+    "dead_mans_chest": 50
+   },
+   "disabled": []
+  },
+  {
+   "id": "cobblestone",
+   "title": "Cobblestone",
+   "methods": [
+    "COBBLESTONE"
+   ],
+   "tier": 7,
+   "ability": "maniac_miner",
+   "levels": {
+    "mining_speed": 1,
+    "mining_fortune": 50,
+    "efficient_miner": 100,
+    "sky_mall": 1,
+    "old_school": 1,
+    "professional": 1,
+    "mole": 1,
+    "blockhead": 20,
+    "subterranean_fisher": 1,
+    "keep_it_cool": 1,
+    "lonesome_miner": 1,
+    "great_explorer": 1,
+    "fortunate_mineman": 50
+   },
+   "disabled": []
+  },
+  {
+   "id": "blocks",
+   "title": "Blocks",
+   "methods": [
+    "END_STONE",
+    "MYCELIUM",
+    "RED_SAND"
+   ],
+   "tier": 7,
+   "ability": "maniac_miner",
+   "levels": {
+    "mining_speed": 1,
+    "mining_fortune": 50,
+    "efficient_miner": 100,
+    "mole": 1,
+    "blockhead": 20,
+    "subterranean_fisher": 1,
+    "keep_it_cool": 1,
+    "lonesome_miner": 1,
+    "great_explorer": 1,
+    "fortunate_mineman": 50
+   },
+   "disabled": []
+  },
+  {
+   "id": "obsidian",
+   "title": "Obsidian",
+   "methods": [
+    "OBSIDIAN"
+   ],
+   "tier": 7,
+   "ability": "mining_speed_boost",
+   "levels": {
+    "mining_speed": 50,
+    "precision_mining": 1,
+    "mining_fortune": 50,
+    "efficient_miner": 100,
+    "mole": 1,
+    "gem_lover": 1,
+    "seasoned_mineman": 100,
+    "blockhead": 20,
+    "subterranean_fisher": 1,
+    "keep_it_cool": 1,
+    "lonesome_miner": 1,
+    "great_explorer": 1,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50
+   },
+   "disabled": []
+  },
+  {
+   "id": "shafting-bp7-msb",
+   "title": "Shafting 3, Breaking Power 7 gems and Mining Speed Boost Peridot",
+   "methods": [
+    "SHAFTING"
+   ],
+   "tier": 10,
+   "ability": "mining_speed_boost",
+   "levels": {
+    "mining_speed": 50,
+    "precision_mining": 1,
+    "mining_fortune": 50,
+    "efficient_miner": 1,
+    "sky_mall": 1,
+    "old_school": 1,
+    "professional": 140,
+    "mole": 1,
+    "gem_lover": 20,
+    "daily_grind": 1,
+    "blockhead": 20,
+    "speedy_mineman": 50,
+    "fortunate_mineman": 50,
+    "warm_heart": 50,
+    "no_stone_unturned": 1,
+    "mineshaft_mayhem": 1,
+    "surveyor": 20,
+    "metal_head": 1,
+    "eager_adventurer": 1,
+    "crystalline": 50,
+    "gifts_from_the_departed": 100,
+    "mining_master": 10,
+    "dead_mans_chest": 50,
+    "vanguard_seeker": 50
+   },
+   "disabled": []
+  }
+ ]
+}

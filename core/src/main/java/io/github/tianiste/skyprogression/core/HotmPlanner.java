@@ -1,5 +1,8 @@
 package io.github.tianiste.skyprogression.core;
 
+import com.google.gson.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import io.github.tianiste.skyprogression.core.ProfileUpgrades.Node;
 
@@ -27,6 +30,14 @@ public final class HotmPlanner {
                         Map<String, Double> unspent, Map<String, Double> budget, boolean omelette, String selected) {}
     /** A planned tree: node levels, the pickaxe ability, the hourly rate (null when the rate model fails), powder and tokens it uses. */
     public record Tree(Map<String, Integer> levels, String ability, Double rate, Map<String, Double> powder, int tokens) {}
+    /**
+     * A community tree for the method (hotm-community-trees.json, from the Mining Cult HOTM tree guide), rated like the plan
+     * with its maxed perks at their maximum and unlocked ones at 1 (without an ability when the tool shows none, as the plan);
+     * rate null when its ability is not rated. fits: within the player's tier and tokens; missing: powder per type over the
+     * budget after a reset (null = unknown). Shown for comparison only; the planner does not copy it.
+     */
+    public record Reference(String id, String title, String ability, Double rate, Map<String, Double> powder, int tokens, int tier, boolean fits,
+                            Map<String, Double> missing) {}
     /** One node whose level changes (0 = locked); disabled: toggled off now, so it has to be switched on. */
     public record Change(String id, String name, int from, int to, boolean disabled) {}
     /**
@@ -35,9 +46,10 @@ public final class HotmPlanner {
      * reset: the plan lowers or removes something, so it starts from a reset (all powder back); otherwise it only adds levels
      * from the unspent powder. need / have: powder per type the plan uses and what pays for it (budget after a reset, else
      * unspent); missing: what the target tree still needs on top (null = unknown). A type missing from have is unknown.
+     * community: the method's community trees rated with the same stats.
      */
     public record Plan(String unit, Double before, Tree now, Tree target, Tree other, Map<String, Double> need, Map<String, Double> have,
-                       Map<String, Double> missing, int tokens, List<Change> changes, boolean reset, List<String> notes) {
+                       Map<String, Double> missing, int tokens, List<Change> changes, boolean reset, List<String> notes, List<Reference> community) {
         /** Rate gain of the plan the powder covers (else the target) over the current tree, in %; null when unknown. */
         public Double gain() { return gain(now != null ? now : target); }
         public Double targetGain() { return gain(target); }
@@ -70,12 +82,13 @@ public final class HotmPlanner {
         } else if (ability == null) notes.add("No pickaxe ability is shown on the tool, so the planner rates the tree without one.");
         else if (selectedNode == null || ability.level() == 0) notes.add("The tool's ability (" + ability.name() + ") has no rated alternative, so only it is planned.");
         if (best == null) return null;
+        List<Reference> community = community(m, ev, in, selectedNode, ability, other);
         Tree now = best.now(), target = best.target(), shown = best.shown();
         if (before != null && (shown.rate() == null || shown.rate() <= before * (1 + 1e-6))) {
             // Nothing beats the current tree: keep it rather than propose a reset for no gain.
             Tree kept = new Tree(Collections.unmodifiableMap(current), ability == null ? "" : ability.name(), before, powder(current), tokens(current.keySet()));
             notes.add(0, "Your current tree is already the best the planner finds for this method.");
-            return new Plan(unit(m), before, kept, kept, alt == null ? null : alt.shown(), Map.of(), Map.of(), Map.of(), in.tokens(), List.of(), false, notes);
+            return new Plan(unit(m), before, kept, kept, alt == null ? null : alt.shown(), Map.of(), Map.of(), Map.of(), in.tokens(), List.of(), false, notes, community);
         }
         boolean reset = lowers(current, shown.levels()), targetReset = lowers(current, target.levels());
         Map<String, Double> need = need(current, shown.levels(), reset), have = reset ? in.budget() : in.unspent(), missing = new TreeMap<>();
@@ -94,7 +107,41 @@ public final class HotmPlanner {
         if (now == null) notes.add("Your powder is not in the API (or a type is missing), so only the full target tree is shown.");
         int spare = in.tokens() - shown.tokens();
         if (spare > 0) notes.add(spare + " Token" + (spare > 1 ? "s" : "") + " of the Mountain left: no perk the rate model values is in reach; spend them on what you like.");
-        return new Plan(unit(m), before, now, target, alt == null ? null : alt.shown(), need, have, missing, in.tokens(), changes, reset, notes);
+        return new Plan(unit(m), before, now, target, alt == null ? null : alt.shown(), need, have, missing, in.tokens(), changes, reset, notes, community);
+    }
+    /** Community trees for the method, rated with the ability whose node they select (the tool's, or the other one at its level). */
+    private static List<Reference> community(MiningMethod m, Eval ev, Input in, String selectedNode, MethodRates.Ability ability, MethodRates.Ability other) {
+        List<Reference> out = new ArrayList<>();
+        for (Community c : COMMUNITY) {
+            if (!c.methods().contains(m)) continue;
+            MethodRates.Ability a = c.ability() == null ? null : c.ability().equals(selectedNode) ? ability
+                    : selectedNode != null && c.ability().equals(selectedNode.equals(MSB_NODE) ? MANIAC_NODE : MSB_NODE) ? other : null;
+            Double rate = c.ability() != null && a == null && ability != null ? null : ev.rate(c.levels(), c.disabled(), a);
+            int tokens = c.levels().size() + (c.ability() == null ? 0 : 1);
+            Map<String, Double> powder = powder(c.levels()), missing = new TreeMap<>();
+            powder.forEach((type, amount) -> { Double h = in.budget().get(type); missing.put(type, h == null ? null : Math.max(0, amount - h)); });
+            out.add(new Reference(c.id(), c.title(), c.ability() == null ? "" : abilityName(c.ability()), rate, powder, tokens, c.tier(),
+                    c.tier() <= in.tier() && tokens <= in.tokens(), missing));
+        }
+        return out;
+    }
+    private record Community(String id, String title, Set<MiningMethod> methods, int tier, String ability, Map<String, Integer> levels, Set<String> disabled) {}
+    /** Mining Cult HOTM tree guide trees (source note in the file), transcribed from the pictures; only methods the engine rates. */
+    private static final List<Community> COMMUNITY = new ArrayList<>();
+    static {
+        try (var stream = HotmPlanner.class.getResourceAsStream("/hotm-community-trees.json")) {
+            if (stream != null) for (JsonElement e : JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonArray("trees")) {
+                JsonObject t = e.getAsJsonObject();
+                Set<MiningMethod> methods = EnumSet.noneOf(MiningMethod.class);
+                for (JsonElement x : t.getAsJsonArray("methods")) methods.add(MiningMethod.valueOf(x.getAsString()));
+                Map<String, Integer> levels = new TreeMap<>();
+                for (var l : t.getAsJsonObject("levels").entrySet()) levels.put(l.getKey(), l.getValue().getAsInt());
+                Set<String> disabled = new HashSet<>();
+                for (JsonElement x : t.getAsJsonArray("disabled")) disabled.add(x.getAsString());
+                COMMUNITY.add(new Community(t.get("id").getAsString(), t.get("title").getAsString(), methods, t.get("tier").getAsInt(),
+                        t.get("ability").isJsonNull() ? null : t.get("ability").getAsString(), levels, disabled));
+            }
+        } catch (IOException e) { throw new UncheckedIOException(e); }
     }
     private static boolean lowers(Map<String, Integer> from, Map<String, Integer> to) {
         return from.entrySet().stream().anyMatch(e -> to.getOrDefault(e.getKey(), 0) < e.getValue());

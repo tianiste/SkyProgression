@@ -641,6 +641,20 @@ levels, and balances shrink by what was used.
   used, whether a reset is needed (the plan lowers or removes something; otherwise it only adds levels from unspent
   powder), powder needed per type against what pays for it, and what the target still misses; changed nodes with old
   and new levels. Unknown HOTM data (no tree or no HOTM XP) means no plan; an unknown powder type means only the target.
+- Community comparison (`community` in the plan): the method's trees from the Mining Cult Heart of the Mountain tree guide
+  (KoenigBooHoo, last update 2026-10-22; pictures by TheUltimateNon, NotWil and Meow), transcribed cell by cell into
+  `core/src/main/resources/hotm-community-trees.json` (Coal, Gold MSB and Maniac Miner, MF Gems MSB and Maniac Miner, Grotto
+  on the MF Gems tree, Dwarven Metals MSB for Umber, Tungsten and Shafting, Shafting tree 3, Cobblestone, the block tree for
+  End Stone, Mycelium and Red Sand, Obsidian). The pictures show maxed and unlocked perks, not levels: a maxed perk is
+  rated at its maximum and an unlocked one at 1. Each is rated with the same stats as the plan, with the tool's ability when
+  it selects that ability's node and the other one at the same level otherwise (none when the tool shows no ability;
+  Pickobulus trees are left out). Also: tokens, tier, whether they fit the player's tier and tokens, and powder over the
+  budget after a reset. Comparison only; the planner does not copy them. Fixture (Debotes, 2026-10-28): the planned rate
+  equals the community tree's for Coal, Gold Maniac Miner, Grotto, MF Gems / Ruby / Topaz, Umber, Tungsten, End Stone,
+  Cobblestone and Red Sand / Mycelium (the community trees reach it with 11-23 tokens, the plan keeps the player's other
+  nodes); Shafting's Dwarven Metals tree equals the plan's target (+0.5% over what the powder covers now); Obsidian's tree
+  selects Mining Speed Boost, which the model rates 5.1% below Maniac Miner; Gold MSB is 5.2% below Gold Maniac Miner at the
+  tool's ability level 2.
 
 ## Set bonuses
 

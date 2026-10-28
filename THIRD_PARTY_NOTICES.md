@@ -13,6 +13,12 @@ MIT License, Copyright (c) 2020 Moulberry. The full license text ships in the mo
 `licenses/NotEnoughUpdates-REPO-LICENSE.txt` and is in
 [core/src/main/resources/licenses](core/src/main/resources/licenses/NotEnoughUpdates-REPO-LICENSE.txt).
 
+## Mining Cult HOTM tree guide
+
+`hotm-community-trees.json` is our transcription of the Heart of the Mountain trees in the Mining Cult Discord's HOTM
+tree guide by KoenigBooHoo (tree pictures by TheUltimateNon, NotWil and Meow), used with the authors' permission and
+credited here. The planner only compares with these trees.
+
 ## Other data sources
 
 Official Hypixel API resources (items, collections, skills, election, Bazaar), Coflnet price data and the Hypixel

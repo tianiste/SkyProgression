@@ -121,11 +121,12 @@ is "assumed" is labelled in the interface where it affects a number.
 - **Same ability level and cooldown.** Maniac Miner and Mining Speed Boost are compared at the tool's ability level and
   cooldown; Sky Mall's and Mineshaft Mayhem's cooldown buffs are not counted.
 - **One tree, default efficiency and zone.** It plans the tree the engine evaluates (the best of your Loadouts trees), at
-  the method's usual zone. The community tree pictures are not used as presets; their methods were confirmed on 2026-10-28, but they are
-  only a sanity check, not wired in yet.
+  the method's usual zone. The community trees are rated next to the plan for comparison only; their pictures show maxed
+  and unlocked perks, not levels (unlocked is rated at level 1), and methods without a rate model or a Pickobulus tree
+  have no comparison.
 - **Core of the Mountain stays.** Its levels are kept by a reset (wiki); the planner never levels it for more tokens.
 - **Not checked in game.** Powder costs reproduce one profile's `powder_spent` exactly; the reset refund is from the wiki
-  only, and the website does not draw the plan yet (the relay returns it).
+  only.
 
 ## Upgrades and costs
 
@@ -223,9 +224,9 @@ is "assumed" is labelled in the interface where it affects a number.
 
 ## Website
 
-- **HOTM trees:** only four trees are published (MF Gems MSB and Maniac Miner, Dwarven Metals MSB, Gold MSB); the rest say
-  "coming soon". Player HOTM pages compare against those only. The other trees' methods were confirmed on 2026-10-28 and
-  are waiting to be transcribed and published.
+- **HOTM trees:** the community trees are transcribed from pictures that show maxed, unlocked and turned-off perks but not
+  levels; several pictures disagree with the guide's token or powder numbers (each tree's note says where). Not published:
+  three owner-supplied pictures with no known method.
 - **Guides** are community guides with the date they were posted; rates and setups age as the game changes. Known stale
   parts carry a dated notice (an author's "outdated" mark, the Bal cooldown swap removed in patch 0.27); the authors' text
   itself is not rewritten.
