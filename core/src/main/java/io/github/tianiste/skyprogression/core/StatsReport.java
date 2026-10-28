@@ -15,6 +15,10 @@ public final class StatsReport {
     public String tool = "", zone = "", target = "";
     /** True when the tool was picked automatically; false when the player chose it. */
     public boolean toolAuto, bestGear = true, godPotion = true;
+    /** True when the tool is the one the game client shows held (live gear) rather than a choice or the best owned. */
+    public boolean toolLive;
+    /** When the game client showed each loadout piece (key as in {@link #loadout}, "pet" for the pet; epoch ms); absent = from the API. */
+    public Map<String, Long> liveAt = new HashMap<>();
     public List<Tool> tools = new ArrayList<>();
     /** Armor, equipment, tool and pet of the evaluated loadout, with where each copy is stored. */
     public List<Tool> loadout = new ArrayList<>();
@@ -72,7 +76,8 @@ public final class StatsReport {
         for (Item item : owned.tools()) r.tools.add(new Tool(key(item), item.name, item.location, item.id));
         r.tools.sort(Comparator.comparing(Tool::name).thenComparing(Tool::location));
         r.toolAuto = tool == null || tool.isBlank();
-        String chosen = r.toolAuto ? Loadout.bestTool(owned, method) : tool;
+        r.toolLive = r.toolAuto && !owned.heldTool.isBlank();
+        String chosen = r.toolLive ? owned.heldTool : r.toolAuto ? Loadout.bestTool(owned, method) : tool;
         Loadout equipped = Loadout.equipped(owned, chosen), best = Loadout.bestFor(owned, method, chosen);
         Loadout main = bestGear ? best : equipped;
         r.hotmTree = StatBreakdown.chooseTree(member, main, context, method);
@@ -85,8 +90,12 @@ public final class StatsReport {
         r.godPotion = context.godPotion();
         List<Item> pieces = new ArrayList<>(main.armor); pieces.addAll(main.equipment);
         if (main.tool != null) pieces.add(main.tool);
-        for (Item item : pieces) r.loadout.add(new Tool(key(item), item.name, item.location, item.id));
+        for (Item item : pieces) {
+            r.loadout.add(new Tool(key(item), item.name, item.location, item.id));
+            if (item.liveAt > 0) r.liveAt.put(key(item), item.liveAt);
+        }
         if (main.pet != null) r.loadout.add(new Tool("pet", main.pet.label(), main.pet.active() ? "active pet" : "pets menu", main.pet.type()));
+        if (main.pet != null && main.pet.active() && owned.petLiveAt > 0) r.liveAt.put("pet", owned.petLiveAt);
         r.accessories = main.accessories.size();
         List<Item> sellable = new ArrayList<>(pieces); sellable.addAll(main.accessories);
         for (Item item : sellable) if (!item.instance.isBlank()) r.resaleQueries.put(item.instance, Resale.of(item));

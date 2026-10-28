@@ -19,6 +19,10 @@ public final class StartWith {
         public boolean godPotion = true, inventoryKnown, petsKnown;
         /** True when the player chose the held tool (Breakdown tab); the API does not expose the held item. */
         public boolean toolKnown;
+        /** True when the held tool comes from the game client (live gear), not from the player's Tool choice. */
+        public boolean toolLive;
+        /** When the game client showed each piece (Piece key, "pet" for the pet; epoch ms); absent = from the API. */
+        public Map<String, Long> liveAt = new HashMap<>();
         /** Best owned loadout: armor, equipment, tool, pet and the accessories that add the method's stats. */
         public List<Piece> best = new ArrayList<>();
         /** Accessories in the best loadout that add none of the method's stats (not listed). */
@@ -53,6 +57,8 @@ public final class StartWith {
         r.inventoryKnown = owned.inventoryKnown; r.petsKnown = owned.petsKnown;
         String bestTool = Loadout.bestTool(owned, m);
         r.toolKnown = heldTool != null && !heldTool.isBlank();
+        r.toolLive = !r.toolKnown && !owned.heldTool.isBlank();
+        if (r.toolLive) { heldTool = owned.heldTool; r.toolKnown = true; }
         Loadout equipped = Loadout.equipped(owned, r.toolKnown ? heldTool : bestTool), best = Loadout.bestFor(owned, m, bestTool);
         if (!r.toolKnown) r.notes.add("The API does not show the held tool, so the current loadout assumes the best owned tool. Pick your held tool with Tool on the Breakdown tab to see a tool swap.");
         r.currentTree = StatBreakdown.chooseTree(member, equipped, context, m);
@@ -66,7 +72,7 @@ public final class StartWith {
             if (item != null) r.best.add(piece(item, equipped));
         }
         if (best.tool != null) r.best.add(new Piece("Tool", key(best.tool), best.tool.id, best.tool.name, where(best.tool.location),
-                r.toolKnown ? "" : "held tool not in the API", r.toolKnown && best.tool == equipped.tool));
+                r.toolLive ? (best.tool == equipped.tool ? "held now" : "") : r.toolKnown ? "" : "held tool not in the API", r.toolKnown && best.tool == equipped.tool));
         if (best.pet != null) r.best.add(piece(best.pet, Objects.equals(best.pet, equipped.pet)));
         for (Item item : best.accessories) {
             if (Loadout.methodValue(item, m) > 0) r.best.add(piece(item, equipped));
@@ -113,6 +119,9 @@ public final class StartWith {
             e.zone = c.zone() == null ? "" : c.zone().label;
             r.worn.add(e);
         }
+        for (Item item : equipped.gear()) if (item.liveAt > 0) r.liveAt.put(key(item), item.liveAt);
+        for (Item item : best.gear()) if (item.liveAt > 0) r.liveAt.put(key(item), item.liveAt);
+        if (owned.petLiveAt > 0) r.liveAt.put("pet", owned.petLiveAt);
         Set<String> notes = new LinkedHashSet<>(equipped.notes); notes.addAll(best.notes);
         r.notes.addAll(notes);
         return r;
@@ -191,6 +200,7 @@ public final class StartWith {
             case "ender_chest_contents" -> slot < 0 ? "ender chest" : "ender chest page " + (slot / 45 + 1);
             case "personal_vault_contents" -> "personal vault";
             case "talisman_bag" -> "accessory bag";
+            case LiveGear.MOVED -> "moved since the API read (storage unknown)";
             case "potion_bag", "quiver", "sacks_bag", "fishing_bag" -> container.replace('_', ' ');
             default -> location;
         };
