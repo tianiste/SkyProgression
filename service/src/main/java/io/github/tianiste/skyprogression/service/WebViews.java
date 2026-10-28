@@ -65,7 +65,7 @@ final class WebViews {
             case "upgrades" -> upgrades(out, q, d, engine, p, prices, mayor);
             case "methods" -> methods(out, q, d, prices, mayor);
             case "start" -> start(out, q, d, prices);
-            case "hotm" -> hotm(out, member.member(), p);
+            case "hotm" -> { hotm(out, member.member(), p); planner(out, q, d, mayor); }
             default -> throw new IllegalArgumentException("Unknown view");
         }
         return out;
@@ -312,6 +312,11 @@ final class WebViews {
         if (trees.isEmpty() && at(member, "mining_core", "nodes").isJsonObject()) trees.add(tree("HOTM tree", at(member, "mining_core", "nodes")));
         out.put("trees", trees);
         out.put("tokensSpent", number(at(member, "skill_tree", "tokens_spent", "mining"), -1));
+    }
+    /** HOTM tree planner for the selected method (HotmPlanner.Plan); null when the tree, the HOTM XP or the rate model is missing. */
+    private static void planner(Map<String, Object> out, Query q, PlayerData d, List<StatBreakdown.MayorPerk> mayor) {
+        StatsReport r = d.stats(q.profileId(), q.method(), "", true, context(q), mayor);
+        out.put("planner", HotmPlanner.plan(q.method(), r.hotm, totals(r), q.method().defaultEfficiency(), r.ability, context(q)));
     }
     private static Map<String, Object> tree(String label, JsonElement nodes) {
         Map<String, Integer> levels = new TreeMap<>();
