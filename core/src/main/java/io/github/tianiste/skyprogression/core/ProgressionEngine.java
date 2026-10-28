@@ -103,11 +103,21 @@ public final class ProgressionEngine {
      */
     public List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps) {
         if (!p.inventoryEnabled) return List.of();
-        List<Step> greedy = plan(p, m, baseline, prices, basis, maxSteps, false);
-        if (maxSteps <= 0) return greedy;
-        List<Step> ahead = plan(p, m, baseline, prices, basis, maxSteps, true);
-        return noWorse(ahead, greedy) ? ahead : greedy;
+        boolean outer = RATES.get() == null;
+        if (outer) RATES.set(new HashMap<>());
+        try {
+            List<Step> greedy = plan(p, m, baseline, prices, basis, maxSteps, false);
+            if (maxSteps <= 0) return greedy;
+            List<Step> ahead = plan(p, m, baseline, prices, basis, maxSteps, true);
+            return noWorse(ahead, greedy) ? ahead : greedy;
+        } finally { if (outer) RATES.remove(); }
     }
+    /**
+     * Rates already computed during one plan call: both passes and the lookahead's re-picks score the same stats many times
+     * (a Glacite rate walks 90 Cold levels). Keyed by every input of MethodRates.perHour; per thread, cleared after the plan.
+     */
+    private static final ThreadLocal<Map<RateKey, Optional<Double>>> RATES = new ThreadLocal<>();
+    private record RateKey(MiningMethod m, Map<Stat, Double> stats, double efficiency, MethodRates.Ability ability) {}
     private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, boolean lookahead) {
         // A step that replaces what an earlier step bought (a second reforge on one item, a new helmet after enchanting
         // the old one) would pay twice: ban the earlier step and plan again, so the later choice is taken directly.
@@ -661,8 +671,18 @@ public final class ProgressionEngine {
     private static Double perHour(MiningMethod m, Map<Stat, Double> stats, RateBasis basis, double cooldownFactor) {
         var a = basis.ability();
         if (a != null && cooldownFactor != 1 && a.cooldown() != null) a = a.withCooldown(a.cooldown() * cooldownFactor);
-        try { return MethodRates.perHour(m, stats, basis.efficiency(), a); }
-        catch (IllegalArgumentException e) { return null; }
+        Map<RateKey, Optional<Double>> memo = RATES.get();
+        RateKey key = null;
+        if (memo != null) {
+            key = new RateKey(m, new EnumMap<>(stats), basis.efficiency(), a);
+            Optional<Double> hit = memo.get(key);
+            if (hit != null) return hit.orElse(null);
+        }
+        Double r;
+        try { r = MethodRates.perHour(m, stats, basis.efficiency(), a); }
+        catch (IllegalArgumentException e) { r = null; }
+        if (memo != null) memo.put(key, Optional.ofNullable(r));
+        return r;
     }
     /** Drop-only model. Does not pretend speed, cold, route, abilities or tick thresholds are linear yield. */
     public static double yieldMultiplier(MiningMethod m, Map<Stat, Double> stats) {
