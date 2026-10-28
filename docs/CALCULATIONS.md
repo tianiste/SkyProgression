@@ -575,7 +575,8 @@ method's context (same conditions as the Breakdown) and the total cost from the 
 - HOTM perks: levelling perks already unlocked in the evaluated tree, to the next level, +5, +10, +25 and max.
   Powder per level from NEU `constants/hotmlayout.json`: floor((level + 2)^e) with e = 3 (Mining Speed), 3.05
   (Mining Fortune, Rags to Riches), 3.2 (Speedy/Fortunate Mineman), 2.3 (Professional, Strong Arm), 4 (Gem Lover,
-  Old-School, Blockhead, Metal Head), 2.6 (Efficient Miner), 2.2 (Mole); Mining Master floor((level + 8)^5); level is
+  Old-School, Blockhead, Metal Head), 2.6 (Efficient Miner), 2.17883 (Mole: wiki `Template:Heart_of_the_Mountain/List/Tier_4`; NEU still has 2.2, and only
+  2.17883 reproduces the fixture's `powder_spent_gemstone` exactly); Mining Master floor((level + 8)^5); level is
   the current level. Unspent powder = `powder_<type>` (the API value is already net of `powder_spent_<type>`; owner check: 21.2M
 Gemstone Powder in game). An option is free when the unspent powder
   covers it, otherwise it is shown as grinding (no coin price) and the plan skips it.

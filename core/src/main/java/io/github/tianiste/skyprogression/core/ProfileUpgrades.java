@@ -97,7 +97,10 @@ public final class ProfileUpgrades {
     private static final Map<String, String> SHARDS = Map.of("fortunate_miner", "SHARD_FLITTER", "rotten_pickaxe", "SHARD_MINER_ZOMBIE",
             "quartz_speed", "SHARD_QUARTZFANG", "mossy_box", "SHARD_HIDEONLEAF", "devouring_spread", "SHARD_GEMZIE", "deep_technique", "SHARD_BAL",
             "ultimate_dna", "SHARD_GALAXY_FISH", "sleepy_spread", "SHARD_SNOOZLE", "gold_box", "SHARD_HIDEONSUN");
-    /** HOTM perk powder and cost exponent (hotmlayout.json); Mining Master uses offset 8, others 2. */
+    /**
+     * HOTM perk powder and cost exponent (hotmlayout.json); Mining Master uses offset 8, others 2. Mole uses 2.17883 (wiki Tier 4
+     * template; NEU still has 2.2), which makes the fixture's powder_spent_gemstone match exactly.
+     */
     private record PerkCost(String powder, double offset, double exponent) {}
     private static final Map<String, PerkCost> PERK_COSTS = Map.ofEntries(
             Map.entry("mining_speed", new PerkCost("MITHRIL", 2, 3)), Map.entry("speedy_mineman", new PerkCost("GEMSTONE", 2, 3.2)),
@@ -106,7 +109,7 @@ public final class ProfileUpgrades {
             Map.entry("rags_to_riches", new PerkCost("GLACITE", 2, 3.05)), Map.entry("gem_lover", new PerkCost("GEMSTONE", 2, 4)),
             Map.entry("old_school", new PerkCost("GEMSTONE", 2, 4)), Map.entry("blockhead", new PerkCost("GEMSTONE", 2, 4)),
             Map.entry("metal_head", new PerkCost("GLACITE", 2, 4)), Map.entry("efficient_miner", new PerkCost("MITHRIL", 2, 2.6)),
-            Map.entry("mole", new PerkCost("GEMSTONE", 2, 2.2)), Map.entry("mining_master", new PerkCost("GLACITE", 8, 5)),
+            Map.entry("mole", new PerkCost("GEMSTONE", 2, 2.17883)), Map.entry("mining_master", new PerkCost("GLACITE", 8, 5)),
             Map.entry("eager_adventurer", new PerkCost("GLACITE", 2, 2.3)), Map.entry("steady_hand", new PerkCost("GLACITE", 2, 2.6)));
 
     /** omelette: the evaluated drill holds a Blue Cheese Goblin Omelette, so HOTM perks count one level higher. */
