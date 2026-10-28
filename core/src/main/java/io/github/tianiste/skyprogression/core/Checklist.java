@@ -193,7 +193,7 @@ public final class Checklist {
         String id = string(r.get("item"), "");
         int need = Math.max(1, (int)number(r.get("count"), 1));
         if (id.equals("REAPER_PEPPER")) {
-            // Eaten peppers are permanent (player_data.reaper_peppers_eaten; key assumed, as in the stat ledger).
+            // Eaten peppers are permanent (player_data.reaper_peppers_eaten, omitted until the first pepper).
             JsonElement eaten = at(member, "player_data", "reaper_peppers_eaten");
             if (!eaten.isJsonNull()) {
                 int n = (int)number(eaten, 0);

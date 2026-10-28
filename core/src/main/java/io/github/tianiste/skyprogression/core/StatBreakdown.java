@@ -58,14 +58,14 @@ public final class StatBreakdown {
             new Perk("warm_heart", "Warm Heart", Stat.COLD_RESISTANCE, 0, .4, 50, Condition.NONE),
             new Perk("powder_buff", "Powder Buff", Stat.ALL_POWDER, 0, 1, 50, Condition.NONE));
     /**
-     * Mineshaft Mayhem (HOTM 8): one random buff on entering a Glacite Mineshaft (wiki Tier 8 template). The node key is
-     * assumed to be `mineshaft_mayhem`; it has not been observed in an API response.
+     * Mineshaft Mayhem (HOTM 8): one random buff on entering a Glacite Mineshaft (wiki Tier 8 template). Node key
+     * `mineshaft_mayhem` as in NEU hotmlayout.json (docs/references/API-FIELDS.md).
      */
     static final Map<Stat, Double> MINESHAFT_MAYHEM = Map.of(Stat.MINING_FORTUNE, 100.0, Stat.MINING_SPEED, 200.0,
             Stat.COLD_RESISTANCE, 10.0, Stat.PICKAXE_ABILITY_COOLDOWN, 25.0);
     /**
      * Front Loaded (HOTM 4): +150 Gemstone Fortune and +250 Mining Speed for the first 2,500 Gemstones each
-     * day. The node key is assumed to be `front_loaded`; it has not been observed in an API response.
+     * day. Node key `front_loaded` as in NEU hotmlayout.json (docs/references/API-FIELDS.md).
      */
     static final Map<Stat, Double> FRONT_LOADED = Map.of(Stat.GEMSTONE_FORTUNE, 150.0, Stat.MINING_SPEED, 250.0);
     /** Sky Mall grants one random daily buff on Mining Islands; the day's buff is not in the API. */
@@ -110,9 +110,8 @@ public final class StatBreakdown {
             new Attribute("greedy_goblin", "Greedy Goblin (Gimmiegold Shard)", "RARE", Stat.ORE_FORTUNE, 1, Condition.unchecked("With a Goblin pet active")),
             new Attribute("freezing_spread", "Freezing Spread (Littlefoot Shard)", "EPIC", Stat.GEMSTONE_SPREAD, 0,
                     Condition.zones(EnumSet.of(Zone.GLACITE_MINESHAFTS), "In Glacite Mineshafts")));
-    /** Attribute keys taken from the attribute's name (as every observed key is) but not yet seen in an API response. */
-    static final Set<String> ASSUMED_ATTRIBUTE_KEYS = Set.of("cold_resistance", "atomized_glacite", "ultimate_dna", "sleepy_spread", "gold_box",
-            "royal_riches", "greedy_goblin", "freezing_spread", "echo_of_boxes", "echo_of_wisdom", "echo_of_atomized", "echo_of_echoes");
+    // attributes.stacks keys are NEU attribute_shards.json internal names (ATTRIBUTE_SHARD_<KEY>) in lower case; all 84 keys on
+    // the test profile follow it, and every key above and in ECHOES is listed there (docs/references/API-FIELDS.md).
     /**
      * Echo attributes (wiki Cuboa, Wyvern, Iguana and Tiamat shards): Echo of Boxes / Wisdom / Atomized make their family
      * +2% per level stronger (rarity, family); Echo of Echoes makes those echoes +5% per level stronger. Matches the
@@ -162,8 +161,7 @@ public final class StatBreakdown {
                     Condition.unchecked("Per Glacial mob killed in the current Glacite Mineshaft, shown at the 10-kill cap")),
             new Essence("fungus_fortuna", "Fungus Fortuna (Crimson Essence)", Stat.MINING_FORTUNE, 2, 10, null, Condition.unchecked("While mining Mycelium")),
             new Essence("harena_fortuna", "Harena Fortuna (Crimson Essence)", Stat.MINING_FORTUNE, 2, 10, null, Condition.unchecked("While mining Red Sand")));
-    /** Essence perk keys not yet seen in an API response (taken from the perk name like the observed ones). */
-    static final Set<String> ASSUMED_ESSENCE_KEYS = Set.of("frozen_skin", "dwarven_expertise", "cut_loose", "fungus_fortuna", "harena_fortuna");
+    // player_data.perks keys are the NEU essenceshops.json keys (all nine shop perks on the test profile match; API-FIELDS.md).
     /** Cumulative shards for levels 1..10 per rarity (wiki Attributes leveling table). */
     static final Map<String, int[]> ATTRIBUTE_SHARDS = Map.of(
             "COMMON", new int[]{1, 4, 9, 15, 22, 30, 40, 54, 72, 96},
@@ -591,7 +589,7 @@ public final class StatBreakdown {
         Double frontLoaded = FRONT_LOADED.get(b.stat);
         if (frontLoaded != null) {
             if (number(at(nodes, "front_loaded"), 0) <= 0) b.contributions.add(new Contribution("HOTM", "Front Loaded", b.stat, 0.0, frontLoaded,
-                    "First 2,500 Gemstones mined each day", State.MISSING, Confidence.KNOWN, "Not in this tree (API key front_loaded assumed, not yet observed)."));
+                    "First 2,500 Gemstones mined each day", State.MISSING, Confidence.KNOWN, "Not in this tree."));
             else add(b, "HOTM", "Front Loaded", frontLoaded, frontLoaded, Condition.unchecked("First 2,500 Gemstones mined each day"),
                     Confidence.KNOWN, "The day's count is not in the API.");
         }
@@ -599,7 +597,7 @@ public final class StatBreakdown {
         if (mayhem != null) {
             String text = "One random buff on entering a Glacite Mineshaft";
             if (number(at(nodes, "mineshaft_mayhem"), 0) <= 0) b.contributions.add(new Contribution("HOTM", "Mineshaft Mayhem", b.stat, 0.0, mayhem,
-                    text, State.MISSING, Confidence.KNOWN, "Not in this tree (API key mineshaft_mayhem assumed, not yet observed)."));
+                    text, State.MISSING, Confidence.KNOWN, "Not in this tree."));
             else add(b, "HOTM", "Mineshaft Mayhem", mayhem, mayhem, Condition.unchecked(text), Confidence.KNOWN,
                     "Which buff you rolled is not in the API.");
         }
@@ -702,10 +700,9 @@ public final class StatBreakdown {
             }
             int shards = (int)number(at(stacks, a.id), 0), level = attributeLevel(stacks, a.id, a.rarity);
             String scope = ATTRIBUTE_SCOPE.containsKey(a.id) ? " " + ATTRIBUTE_SCOPE.get(a.id) : "";
-            String assumed = ASSUMED_ATTRIBUTE_KEYS.contains(a.id) ? " (API key " + a.id + " assumed, not yet observed)" : "";
             if (level == 0) {
                 b.contributions.add(new Contribution("Attribute", a.name, b.stat, 0.0, maximum, a.condition.text(),
-                        State.MISSING, Confidence.KNOWN, (assumed.isEmpty() ? "No shards syphoned." : "No shards found" + assumed + ".") + scope));
+                        State.MISSING, Confidence.KNOWN, "No shards syphoned." + scope));
                 continue;
             }
             Condition condition = a.condition;
@@ -717,18 +714,17 @@ public final class StatBreakdown {
                 Breakdown cold = compute(member, l, b.context, Stat.COLD_RESISTANCE);
                 Double value = cold.complete() ? .5 * Math.floor(cold.total() / per) : null;
                 add(b, "Attribute", a.name + " " + level, value, null, condition, value == null ? Confidence.UNKNOWN : Confidence.KNOWN,
-                        "+0.5 per " + per + " Cold Resistance" + (value == null ? "; Cold Resistance is incomplete." : " (" + fmt(cold.total()) + " counted here).") + assumed);
+                        "+0.5 per " + per + " Cold Resistance" + (value == null ? "; Cold Resistance is incomplete." : " (" + fmt(cold.total()) + " counted here)."));
                 continue;
             }
             add(b, "Attribute", a.name + " " + level, a.perLevel * level, maximum, condition, Confidence.KNOWN,
-                    shards + " shards syphoned." + assumed + scope);
+                    shards + " shards syphoned." + scope);
             Echo echo = echoFor(a.id);
             if (echo == null) continue;
             double bonus = echoBonus(stacks, a.id);
             String text = echo.name + " on " + a.name.replaceFirst(" \\(.*", "");
             if (bonus <= 0) b.contributions.add(new Contribution("Attribute", text, b.stat, 0.0, a.perLevel * level * .3, condition.text(),
-                    State.MISSING, Confidence.KNOWN, "Makes the attribute up to 20% stronger (30% with Echo of Echoes X)."
-                    + (ASSUMED_ATTRIBUTE_KEYS.contains(echo.id) ? " API key " + echo.id + " assumed, not yet observed." : "")));
+                    State.MISSING, Confidence.KNOWN, "Makes the attribute up to 20% stronger (30% with Echo of Echoes X)."));
             else add(b, "Attribute", text, a.perLevel * level * bonus, a.perLevel * level * .3, condition, Confidence.KNOWN,
                     String.format(Locale.ROOT, "+%.1f%% from the echoes (Echo of Echoes included).", bonus * 100));
         }
@@ -747,7 +743,7 @@ public final class StatBreakdown {
             }
             int level = (int)number(at(perks, e.id), 0);
             if (level == 0) b.contributions.add(new Contribution("Essence", e.name, b.stat, 0.0, maximum, where.text(),
-                    State.MISSING, Confidence.KNOWN, ASSUMED_ESSENCE_KEYS.contains(e.id) ? "Not found (API key " + e.id + " assumed, not yet observed)." : "Not purchased."));
+                    State.MISSING, Confidence.KNOWN, "Not purchased."));
             else add(b, "Essence", e.name.replaceFirst(" \\(", " " + level + " ("), e.at(level), maximum, where, Confidence.KNOWN,
                     e.values != null ? "Level " + level + " of " + e.maxLevel + "." : fmt(e.perLevel) + " per level.");
         }
@@ -755,16 +751,15 @@ public final class StatBreakdown {
     private static String fmt(double v) { return v == Math.rint(v) ? String.valueOf((long)v) : String.valueOf(v); }
 
     /**
-     * Permanent consumables the API exposes. Reaper Pepper (wiki): +1 Cold Resistance per pepper, up to 5. The key
-     * `player_data.reaper_peppers_eaten` is assumed (not present on the observed profile).
+     * Permanent consumables the API exposes. Reaper Pepper (wiki): +1 Cold Resistance per pepper, up to 5. Key
+     * `player_data.reaper_peppers_eaten` as read by Skyblocker and NEU; the API omits it until a pepper is eaten.
      */
     private static void consumables(Breakdown b, JsonObject member) {
         if (b.stat != Stat.COLD_RESISTANCE) return;
-        JsonElement peppers = at(member, "player_data", "reaper_peppers_eaten");
-        if (peppers.isJsonNull()) b.contributions.add(new Contribution("Consumable", "Reaper Pepper", b.stat, 0.0, 5.0, "", State.MISSING,
-                Confidence.UNKNOWN, "No reaper_peppers_eaten field: none eaten, or the API does not report it (key assumed, not yet observed)."));
+        if (!at(member, "player_data").isJsonObject()) b.contributions.add(new Contribution("Consumable", "Reaper Pepper", b.stat, null, 5.0, "",
+                State.COUNTED, Confidence.UNKNOWN, "Player data missing from the API response."));
         else {
-            int eaten = (int)Math.min(5, number(peppers, 0));
+            int eaten = (int)Math.min(5, number(at(member, "player_data", "reaper_peppers_eaten"), 0));
             b.contributions.add(new Contribution("Consumable", "Reaper Pepper x" + eaten, b.stat, (double)eaten, 5.0, "",
                     eaten > 0 ? State.COUNTED : State.MISSING, Confidence.KNOWN, "+1 per pepper eaten, up to 5."));
         }

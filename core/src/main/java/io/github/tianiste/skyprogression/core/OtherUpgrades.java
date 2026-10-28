@@ -50,13 +50,12 @@ public final class OtherUpgrades {
     /** Bonuses for the method's zone: cereals and Royal Riches (Mines of Divan only). Gold Box and Dwarven Expertise are read from the profile (ProfileUpgrades). */
     private static List<Bonus> bonuses(MiningMethod m) {
         List<Bonus> out = new ArrayList<>(CEREALS);
-        String attribute = " Attributes are in the API (attributes.stacks), but this one's key has never been observed, so a missing key is not proof you lack it.";
         // Wiki Nilbog Shard: Royal Riches (Epic) +5 to +50 Mining Speed and +2.5 to +25 Ore Fortune in the Mines of Divan.
         if (m.defaultZone() == StatContext.Zone.CRYSTAL_HOLLOWS)
             out.add(new Bonus("SHARD_NILBOG", "Royal Riches X (Nilbog Shard)", "SHARD_NILBOG", EPIC_MAX, Map.of(Stat.MINING_SPEED, 50.0, Stat.ORE_FORTUNE, 25.0),
                     "+5 Mining Speed and +2.5 Ore Fortune per level in the Mines of Divan, level 10: +50 / +25",
                     "Syphon 32 Nilbog Shards (Bazaar); needs Hunting 15.",
-                    "Counts only in the Mines of Divan; the gain assumes you mine there." + attribute));
+                    "Counts only in the Mines of Divan; the gain assumes you mine there. Your level is in the Stat Breakdown (attribute royal_riches)."));
         return out;
     }
 
