@@ -109,7 +109,11 @@ public final class ProgressionService {
                 case "/resale" -> send(x, 200, Collections.singletonMap("price", resale(query(x))));
                 default -> send(x, 404, Map.of("error", "Unknown endpoint"));
             }
-        } catch (LookupException e) { send(x, e.status, Map.of("error", e.getMessage())); }
+        } catch (LookupException e) {
+            Map<String, String> body = new LinkedHashMap<>(e.details);
+            body.put("error", e.getMessage());
+            send(x, e.status, body);
+        }
         catch (Exception e) { send(x, 502, Map.of("error", "Data service unavailable. Please try again later.")); }
         finally { x.close(); }
     }
@@ -191,7 +195,9 @@ public final class ProgressionService {
         String key = name.toLowerCase(Locale.ROOT);
         Timed<String> hit = names.get(key);
         if (hit == null || !hit.time().plusSeconds(86400).isAfter(Instant.now())) {
-            JsonObject identity = get("https://api.mojang.com/users/profiles/minecraft/" + name, false);
+            JsonObject identity;
+            try { identity = get("https://api.mojang.com/users/profiles/minecraft/" + name, false); }
+            catch (LookupException e) { throw e.status == 404 ? new LookupException(404, "Minecraft player not found") : e; }
             String id = string(identity.get("id"), "").toLowerCase(Locale.ROOT);
             if (!id.matches("[a-f0-9]{32}")) throw new LookupException(404, "Minecraft player not found");
             if (names.size() > 500) names.clear();
@@ -326,8 +332,8 @@ public final class ProgressionService {
     private record WebRequest(Map<String, JsonElement> fields, JsonElement data, PlayerData known, JsonElement bundle) {
         String text(String name, String fallback) { return string(fields.get(name), fallback); }
     }
-    /** A page and what it took (Server-Timing): reading the request, decoding the profile, building the page (about 0 when it was ready). */
-    private record WebAnswer(String json, String timing) {}
+    /** A page, what it took (Server-Timing: reading the request, decoding the profile, building the page, about 0 when it was ready) and whose it is. */
+    private record WebAnswer(String json, String timing, String uuid, String player) {}
     /**
      * POST /web {"uuid", "player"?, "view", "profile"?, "method"?, "price"?, "cost"?, "god"?, "gear"?, "data"?, "fetchedAt"?, "bundle"?}: one
      * website page (WebViews) for a player. Like /checklist, "data" is the raw profiles response and "bundle" the hosted API's
@@ -359,7 +365,7 @@ public final class ProgressionService {
         JsonElement data = request.data(), bundle = request.bundle();
         boolean sent = data != null || request.known() != null;
         if (data != null && !data.isJsonObject() || bundle != null && !bundle.isJsonObject()) throw new LookupException(400, "data and bundle must be objects");
-        if (RELAY_SECRET != null && (!sent || bundle == null)) throw new LookupException(400, "data and bundle are required: the relay fetches neither");
+        if (RELAY_SECRET != null && bundle == null) throw new LookupException(400, "bundle is required: the relay fetches no prices");
         if (uuid.isEmpty() && !sent) { Map<String, String> found = uuid(player); uuid = found.get("id"); player = found.get("name"); }
         if (!uuid.matches("[a-f0-9]{32}")) throw new LookupException(400, "uuid must be 32 hex characters");
         if (!player.matches("[A-Za-z0-9_]{0,16}")) throw new LookupException(400, "Invalid player name");
@@ -367,7 +373,15 @@ public final class ProgressionService {
         Future<WebViews.Skin> skin = background.submit(() -> skin(skinOf)); // Mojang answers while the page is built
         long read = System.nanoTime();
         boolean firstPage = request.known() == null;
-        PlayerData d = request.known() != null ? request.known() : player(uuid, player, data, request.text("fetchedAt", ""));
+        PlayerData d;
+        if (request.known() != null) d = request.known();
+        else if (data == null && RELAY_SECRET != null) {
+            // Relay mode without a profile: a copy held here, or 409 so the Worker fetches and sends one.
+            Held h = held(uuid, player);
+            if (h == null) throw new LookupException(409, "Profile needed", Map.of("uuid", uuid, "name", player));
+            d = h.data();
+            firstPage = h.decodedNow();
+        } else d = player(uuid, player, data, request.text("fetchedAt", ""));
         WebPrices p = webPrices(bundle);
         ProgressionEngine e = engine();
         String wanted = request.text("profile", "");
@@ -389,7 +403,8 @@ public final class ProgressionService {
                 catch (Exception ignored) { /* Built again, with its error, when the page is asked for. */ }
             });
         }
-        return new WebAnswer(json, String.format(Locale.ROOT, "read;dur=%.0f, decode;dur=%.0f, build;dur=%.0f", (read - start) / 1e6, (decodedAt - read) / 1e6, (built - decodedAt) / 1e6));
+        return new WebAnswer(json, String.format(Locale.ROOT, "read;dur=%.0f, decode;dur=%.0f, build;dur=%.0f", (read - start) / 1e6, (decodedAt - read) / 1e6, (built - decodedAt) / 1e6),
+                d.uuid, d.player);
     }
     /**
      * The request's fields in one streaming pass. The Worker sends the small fields first, so when "data" comes and that profile
@@ -417,6 +432,25 @@ public final class ProgressionService {
         } catch (IOException | RuntimeException e) { throw new LookupException(400, "Body must be a JSON object"); }
         return new WebRequest(fields, data, known, bundle);
     }
+    /**
+     * The newest copy of this player's profile held here that is under five minutes old (the Worker's own freshness rule):
+     * one already decoded, or the raw copy the relay's /profile fetched (decoded now, and the player's other pages are then
+     * built ahead); null when none. So another Cloudflare location needs neither a Hypixel fetch nor the upload.
+     */
+    private record Held(PlayerData data, boolean decodedNow) {}
+    private Held held(String uuid, String player) throws Exception {
+        long now = System.currentTimeMillis();
+        PlayerData best = null;
+        synchronized (decoded) {
+            for (PlayerData d : decoded.values()) if (d.uuid.equals(uuid) && (best == null || d.fetchedAtMillis > best.fetchedAtMillis)) best = d;
+        }
+        Cached raw = profiles.get(uuid);
+        if (raw != null && fresh(raw) && (best == null || raw.time().toEpochMilli() > best.fetchedAtMillis)) {
+            boolean decodedNow = !decoded.containsKey(uuid + "@" + raw.time());
+            return new Held(player(uuid, player, null, ""), decodedNow);
+        }
+        return best != null && now - best.fetchedAtMillis < 300_000 ? new Held(best, false) : null;
+    }
     /** The decoded copy of this player's profile fetched at fetchedAt, or null. */
     private PlayerData decodedCopy(String uuid, String fetchedAt) {
         if (uuid.isEmpty()) return null;
@@ -429,8 +463,9 @@ public final class ProgressionService {
         return e;
     }
     /**
-     * Relay start: builds every page of the bundled sample profile (the core test fixture) a few times, without prices, so the
-     * first visitor's page does not wait for class loading and the JIT compiler.
+     * Relay start: builds every page of the bundled sample profile (the core test fixture) a few times with a bundled price
+     * snapshot (so the plan's costing and choice paths run too, both cost modes), so the first visitor's page does not wait
+     * for class loading and the JIT compiler. It runs on the ahead thread, so it pauses while a visitor's request is handled.
      */
     private void warmUp() {
         long start = System.nanoTime();
@@ -444,10 +479,16 @@ public final class ProgressionService {
                 members.add(uuid, members.entrySet().iterator().next().getValue());
             }
             PlayerData d = new PlayerData("", uuid, root, Instant.EPOCH.toString());
+            Map<String, Price> prices = Map.of();
+            try (var snapshot = ProgressionService.class.getResourceAsStream("/warmup-prices.json")) {
+                if (snapshot != null) prices = Map.copyOf(Catalog.GSON.<Map<String, Price>>fromJson(
+                        JsonParser.parseReader(new InputStreamReader(snapshot, StandardCharsets.UTF_8)).getAsJsonObject().get("prices"),
+                        new com.google.gson.reflect.TypeToken<Map<String, Price>>(){}.getType()));
+            }
             ProgressionEngine e = engine();
             for (int round = 0; round < 3; round++) for (MiningMethod m : List.of(MiningMethod.MF_GEMS, MiningMethod.TUNGSTEN, MiningMethod.END_STONE))
-                for (String view : WebViews.VIEWS)
-                    WebViews.GSON.toJson(WebViews.build(new WebViews.Query(view, "", m, MethodComparison.PriceMode.INSTANT_SELL, true, true), d, e, Map.of(), List.of(), "", null));
+                for (String view : WebViews.VIEWS) for (Model.CostMode cost : view.equals("upgrades") ? Model.CostMode.values() : new Model.CostMode[] {Model.CostMode.INSTANT_BUY})
+                    WebViews.GSON.toJson(WebViews.build(new WebViews.Query(view, "", m, MethodComparison.PriceMode.INSTANT_SELL, true, true, cost), d, e, prices, List.of(), "", null));
             System.out.printf(Locale.ROOT, "Page engine warmed up in %.1f s%n", (System.nanoTime() - start) / 1e9);
         } catch (Exception e) { System.out.println("Page engine warm-up failed: " + e); }
     }
@@ -537,6 +578,8 @@ public final class ProgressionService {
         x.getResponseHeaders().set("Cache-Control", "no-store");
         x.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
         x.getResponseHeaders().set("Server-Timing", answer.timing());
+        x.getResponseHeaders().set("X-Uuid", answer.uuid());
+        x.getResponseHeaders().set("X-Player", answer.player());
         x.sendResponseHeaders(200, body.length);
         x.getResponseBody().write(body);
     }
@@ -620,7 +663,7 @@ public final class ProgressionService {
             byte[] body = getBytes("https://api.hypixel.net/v2/skyblock/profiles?uuid=" + uuid, true);
             // Raw payloads can be several megabytes each, so only a few players are kept.
             if (profiles.size() >= 8) profiles.clear();
-            Cached fresh = new Cached(Instant.now(), body);
+            Cached fresh = new Cached(Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS), body);
             profiles.put(uuid, fresh);
             return fresh;
         }
@@ -767,6 +810,9 @@ public final class ProgressionService {
     }
     private static final class LookupException extends Exception {
         final int status;
-        LookupException(int status, String message) { super(message); this.status = status; }
+        /** Extra answer fields (the /web 409 names the player it needs the profile of). */
+        final Map<String, String> details;
+        LookupException(int status, String message) { this(status, message, Map.of()); }
+        LookupException(int status, String message, Map<String, String> details) { super(message); this.status = status; this.details = details; }
     }
 }
