@@ -410,10 +410,13 @@ Gain per step is against the state after the previous step; the total is rate (o
 start - 1. Blocked and unpriced upgrades are skipped, not assumed free. A replacement base item has no known
 modifiers, so no in-place upgrades are proposed for it afterwards. Prices are the current quotes for every step
 (no market impact). Steps are chosen on cash outlay; the plan card also totals the sale value of what the steps
-replace and the net cost, and counts replaced items without a sale price. The plan never pays twice for one slot: when the
+replace and the net cost, and counts replaced items without a sale price. The plan avoids paying twice for one slot: when the
 best next step would replace what an earlier step bought (a second reforge, gem, fuel tank, engine or module on one
 item; a new item in a slot whose item an earlier step enchanted, coated or replaced; a new pet after a pet step or
-Quick Claw), the earlier step is banned and the plan is recomputed, so the later choice is taken directly. Added
+Quick Claw), the earlier step is banned and the plan is recomputed, so the later choice is taken directly. Exception
+(2026-10-29): an earlier step that cost at most 10% of its replacement is kept as a stepping stone (a lantern before
+Will-o'-wisp, a cheap reforge before an expensive one), so the plan does not open with the big purchase; the lookahead's
+"A then B" check uses the same rule. Added
 levels (Efficiency, Prismatic, Polarvoid, HOTM, essence, attributes) build on each other and are not conflicts.
 
 Bundles and lookahead (2026-10-28):
