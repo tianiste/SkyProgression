@@ -26,7 +26,9 @@ public final class GearUpgrades {
      * the next step from the new state; stat totals are updated by the caller.
      */
     /** returned: item ID given back to the player by the swap (old drill part, removed gem), or "" when none. */
-    public record Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor,Consumer<Item> apply,String returned) {
+    /** icon: item shown for the upgrade ("" = its first material). */
+    public record Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor,Consumer<Item> apply,String returned,String icon) {
+        public Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor,Consumer<Item> apply,String returned){this(gear,label,delta,plan,blocked,cooldownFactor,apply,returned,"");}
         public Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,double cooldownFactor,Consumer<Item> apply){this(gear,label,delta,plan,blocked,cooldownFactor,apply,"");}
         public Proposal(Item gear,String label,Map<Stat,Double> delta,Plan plan,String blocked,Consumer<Item> apply){this(gear,label,delta,plan,blocked,1,apply,"");}
     }
@@ -138,6 +140,7 @@ public final class GearUpgrades {
                 }
             }
         }
+        if(gear.group.equals("Tool"))forgeUpgrades(gear,method,profile,out);
         reforges(gear,method,out);
         gemstones(gear,method,out);
         recombobulate(gear,method,out);
@@ -176,6 +179,54 @@ public final class GearUpgrades {
         out.add(new Proposal(gear,"Recombobulator 3000 ("+next.toLowerCase(Locale.ROOT)+")",delta,
                 new Plan(Map.of("RECOMBOBULATOR_3000",1),0,"Combine in an anvil; once per item. Only reforge and gem values change."),"",
                 g->{g.tier=next;g.recombobulated=true;g.extra.addProperty("rarity_upgrades",1);}));
+    }
+    /** Catalogued tools by ID (forge upgrades need their base stats, rarity and slots). */
+    private static volatile Map<String,Item> tools;
+    private static Map<String,Item> tools() {
+        if(tools==null){Map<String,Item> m=new HashMap<>();for(Item i:Catalog.load())if(i.group.equals("Tool"))m.put(i.id,i);tools=m;}
+        return tools;
+    }
+    /**
+     * Forge upgrades of the tool itself (NEU forge recipes that take this tool, e.g. Titanium Drill DR-X655 + Divan's Alloy + 50M
+     * coins -> Divan's Drill). The forged tool keeps its enchantments, reforge, gems, drill parts and recombobulation, so the gain is
+     * the base-stat difference plus the reforge and socketed gems at the new rarity; gems in slots the new tool lacks are not counted.
+     */
+    private static final String FORGED=" (forged from your ";
+    /** Whether the proposal forges the tool into the next one (forgeUpgrades). */
+    public static boolean forged(Proposal p){return p.label().contains(FORGED);}
+    private static void forgeUpgrades(Item gear,MiningMethod method,Profile profile,List<Proposal> out) {
+        Item base=tools().get(gear.id);
+        if(base==null||!TIERS.contains(base.tier)||!TIERS.contains(gear.tier))return;
+        int recombobulated=Math.max(0,TIERS.indexOf(gear.tier)-TIERS.indexOf(base.tier));
+        for(var recipe:Recipes.forgedFrom(gear.id).entrySet()) {
+            Item next=tools().get(recipe.getKey());
+            if(next==null||!next.applies(method)||!TIERS.contains(next.tier))continue;
+            String tier=TIERS.get(Math.min(TIERS.size()-1,TIERS.indexOf(next.tier)+recombobulated));
+            Map<Stat,Double> delta=new EnumMap<>(Stat.class);
+            for(Stat s:Stat.values())delta.merge(s,next.stats.getOrDefault(s,0.0)-base.stats.getOrDefault(s,0.0),Double::sum);
+            Reforges.Reforge reforge=Reforges.byModifier(gear.modifier);
+            if(reforge!=null) {
+                Map<Stat,Double> now=reforge.at(gear.tier,method),then=reforge.at(tier,method);
+                if(now==null||then==null)continue;
+                for(Stat s:Stat.values())delta.merge(s,then.getOrDefault(s,0.0)-now.getOrDefault(s,0.0),Double::sum);
+            }
+            Item forged=gear.copy();forged.slots=next.slots;
+            Map<Stat,Double> gemsNow=socketed(gear,gear.tier),gemsThen=socketed(forged,tier);
+            if(gemsNow==null||gemsThen==null)continue;
+            for(Stat s:Stat.values())delta.merge(s,gemsThen.getOrDefault(s,0.0)-gemsNow.getOrDefault(s,0.0),Double::sum);
+            delta.values().removeIf(v->Math.abs(v)<1e-9);
+            if(delta.values().stream().noneMatch(v->v>0))continue;
+            Map<String,Integer> materials=new LinkedHashMap<>();double coins=0;
+            for(var in:recipe.getValue().inputs().entrySet()) {
+                if(in.getKey().equals("SKYBLOCK_COIN"))coins+=in.getValue();
+                else if(!in.getKey().equals(gear.id))materials.put(in.getKey(),(int)Math.ceil(in.getValue()));
+            }
+            int hotm=recipe.getValue().hotm();
+            out.add(new Proposal(gear,next.name+FORGED+base.name+", keeps its upgrades)",delta,
+                    new Plan(materials,coins,"Forge"+(hotm>0?" (HOTM "+hotm+")":"")+" with your "+base.name+"; its enchantments, reforge, gems and drill parts stay on it."),
+                    profile.hotm<hotm?"Requires HOTM "+hotm:"",1,
+                    g->{g.id=next.id;g.name=next.name;g.tier=tier;g.slots=next.slots;g.hotm=next.hotm;g.category=next.category;g.methods=next.methods;},"",next.id));
+        }
     }
     /** Mining stats of the socketed gems at a rarity, or null when a gem's quality is not recognised. */
     private static Map<Stat,Double> socketed(Item gear,String tier) {

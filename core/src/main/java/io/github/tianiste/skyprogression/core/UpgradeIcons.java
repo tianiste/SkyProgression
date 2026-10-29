@@ -20,6 +20,7 @@ public final class UpgradeIcons {
     }
     /** A gear upgrade shows the item it uses: the drill part, reforge stone, gem, book, Recombobulator or coating. */
     public static String proposal(GearUpgrades.Proposal p) {
+        if (!p.icon().isEmpty()) return p.icon();
         var materials = p.plan().materials();
         return materials.isEmpty() ? "" : material(materials.keySet().iterator().next());
     }

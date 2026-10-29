@@ -536,7 +536,9 @@ public final class ProgressionEngine {
         for(Item gear:owned.values()) {
           List<Candidate> parts=new ArrayList<>();
           List<GearUpgrades.Plan> plans=new ArrayList<>();
-          for(var proposal:GearUpgrades.forItem(gear,m,p,prices,basis==null?Map.of():basis.profile().omeletteGain())) {
+          Map<Stat,Double> omelette=basis==null?Map.of():basis.profile().omeletteGain();
+          var proposals=GearUpgrades.forItem(gear,m,p,prices,omelette);
+          for(var proposal:proposals) {
             Double after=before==null?null:rate(m,plus(baseline,proposal.delta()),basis,proposal.cooldownFactor());
             double gain=before!=null?(after==null?Double.NaN:(after/before-1)*100):focus==null?yieldGain(m,baseline,proposal.delta()):stat(proposal.delta(),focus);
             boolean drillPart="DRILL".equals(gear.category)&&focus==null&&gearKind(proposal.label())!=null&&Double.isFinite(gain)&&gain>=-1e-9;
@@ -554,6 +556,10 @@ public final class ProgressionEngine {
           }
           Candidate build=drillBuild(parts,plans,m,p,prices,baseline,basis,before);
           if(build!=null)result.add(build);
+          for(var proposal:proposals)if(GearUpgrades.forged(proposal)) {
+            Candidate forged=forgeBundle(gear,proposal,m,p,prices,omelette,baseline,basis,before);
+            if(forged!=null)result.add(forged);
+          }
         }
         for (Item i : catalog) {
             if (!i.applies(m)) continue;
@@ -724,6 +730,60 @@ public final class ProgressionEngine {
         Candidate build = combine(chosen, "Full drill build (" + chosen.size() + " parts)", gain, cost.coins(), cost.materialsOwned(),
                 chosen.stream().map(c -> c.upgrade().item().name).reduce((a, b) -> a + " + " + b).orElse("") + ". " + cost.detail());
         return new Candidate(build.upgrade(), null, cost.used(), null, null, null, build.parts());
+    }
+    /**
+     * A forge upgrade (Divan's Drill from a DR-X655) with the best gem for each gem slot the new tool adds, taken together:
+     * alone the forge leaves those slots empty, and their gems only exist after it (Mining Cat lists the drill "with the
+     * next lines" the same way). Each slot's gem is the one with the lowest cost per 1% after the forge.
+     */
+    private Candidate forgeBundle(Item gear, GearUpgrades.Proposal forge, MiningMethod m, Profile p, Map<String, Price> prices, Map<Stat, Double> omelette,
+                                  Map<Stat, Double> baseline, RateBasis basis, Double before) {
+        if (!forge.blocked().isEmpty()) return null;
+        Item forged = gear.copy();
+        forge.apply().accept(forged);
+        Map<String, Integer> had = new HashMap<>();
+        if (gear.slots != null) for (Slot slot : gear.slots) if (slot != null) had.merge(slot.slot_type, 1, Integer::sum);
+        Map<Stat, Double> afterForge = plus(baseline, forge.delta());
+        Double base = before == null ? null : rate(m, afterForge, basis, 1);
+        Map<String, GearUpgrades.Proposal> pick = new LinkedHashMap<>();
+        Map<String, Double> perUnit = new HashMap<>();
+        for (var gem : GearUpgrades.forItem(forged, m, p, prices, omelette)) {
+            String kind = gearKind(gem.label());
+            if (kind == null || !kind.startsWith("gem:") || !gem.blocked().isEmpty()) continue;
+            String[] slot = kind.substring(4).split(" slot ");
+            if (Integer.parseInt(slot[1]) <= had.getOrDefault(slot[0].toUpperCase(Locale.ROOT), 0)) continue; // a slot the old tool has
+            Double coins = GearUpgrades.cost(gem.plan(), p, prices).coins();
+            if (coins == null) continue;
+            double gain = base != null ? (rate(m, plus(afterForge, gem.delta()), basis, 1) / base - 1) * 100 : yieldGain(m, afterForge, gem.delta());
+            if (!(gain > 1e-9)) continue;
+            double ratio = coins / gain;
+            if (!perUnit.containsKey(kind) || ratio < perUnit.get(kind)) { perUnit.put(kind, ratio); pick.put(kind, gem); }
+        }
+        if (pick.isEmpty()) return null;
+        List<GearUpgrades.Proposal> chosen = new ArrayList<>(List.of(forge));
+        chosen.addAll(pick.values());
+        Map<String, Integer> materials = new LinkedHashMap<>();
+        double fees = 0;
+        Map<Stat, Double> delta = new EnumMap<>(Stat.class);
+        List<Candidate> parts = new ArrayList<>();
+        for (var c : chosen) {
+            c.plan().materials().forEach((k, v) -> materials.merge(k, v, Integer::sum));
+            fees += c.plan().fees();
+            c.delta().forEach((st, v) -> delta.merge(st, v, Double::sum));
+            var cost = GearUpgrades.cost(c.plan(), p, prices);
+            Item display = new Item(); display.id = "upgrade:" + gear.instance + ":" + c.label(); display.name = c.label();
+            display.modification = true; display.source = cost.detail(); display.icon = UpgradeIcons.proposal(c);
+            parts.add(new Candidate(new Upgrade(display, gear, c.delta(), cost.coins(), 0, cost.materialsOwned(), "", 1, before, null), c.apply(), cost.used()));
+        }
+        Double after = before == null ? null : rate(m, plus(baseline, delta), basis, 1);
+        double gain = before != null ? (after == null ? Double.NaN : (after / before - 1) * 100) : yieldGain(m, baseline, delta);
+        if (!Double.isFinite(gain) || gain <= 1e-9) return null;
+        var cost = GearUpgrades.cost(new GearUpgrades.Plan(materials, fees, forge.plan().instruction() + " Then socket the new slots (Gemstone Grinder)."), p, prices);
+        if (cost.coins() == null) return null;
+        String tool = forge.label().substring(0, forge.label().indexOf(" ("));
+        Candidate bundle = combine(parts, tool + " + gems in its " + pick.size() + " new slot" + (pick.size() == 1 ? "" : "s"), gain, cost.coins(), cost.materialsOwned(),
+                chosen.stream().map(GearUpgrades.Proposal::label).reduce((a, b) -> a + " + " + b).orElse("") + ". " + cost.detail());
+        return new Candidate(bundle.upgrade(), null, cost.used(), null, null, null, bundle.parts());
     }
     private static boolean better(Upgrade a, Upgrade b) {
         if (Math.abs(a.gain() - b.gain()) > 1e-9) return a.gain() > b.gain();

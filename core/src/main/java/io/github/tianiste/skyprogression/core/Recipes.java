@@ -34,6 +34,12 @@ public final class Recipes {
         } catch (IOException e) { throw new UncheckedIOException(e); }
         return out;
     }
+    /** Forge recipes that take the item as an input (tool upgrades such as DR-X655 -> Divan's Drill), by output ID. */
+    static Map<String, Recipe> forgedFrom(String id) {
+        Map<String, Recipe> out = new TreeMap<>();
+        RECIPES.forEach((k, r) -> { if (r.type().equals("forge") && r.inputs().containsKey(id)) out.put(k, r); });
+        return out;
+    }
     /** The item's crafting or forge recipe, or null when it has none. */
     static Recipe recipe(String id) { return RECIPES.get(id); }
     /**
