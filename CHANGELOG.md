@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.6.1 - 2026-10-29
+
 - Upgrade tooltips are shorter and easier to read: coloured name, stat change, gain and price on one line each, "Free"
   instead of "Owned", one short line for the best method, and recipes as a short list (up to three steps) instead of
   one long sentence.
@@ -12,6 +14,9 @@
   but the guides hold about 95 Heat and cool on the spot with a Water Bottle or a Yog kill, so Heat costs no mining time.
   Heat-only upgrades such as Keep It Cool, Yog Membrane and a Hephaestus Relic on Bal no longer show up as gains (the
   relic on Bal now only shows its tiny Mining Fortune difference to Quick Claw). Magma Fields rates rise by about 0.7%.
+- The upgrade plan keeps a cheap step when a much dearer later step replaces it (a step costing at most a tenth of its
+  replacement), so it no longer opens with an expensive Will-o'-wisp while a cheap lantern or reforge is available.
+- Gem socket upgrades have readable names, such as "Socket Perfect Jade (Jade slot 1)".
 - Less background CPU while /sp is open: a calculation replaced by a newer one (new stats, prices, quotes or a gear
   swap) now stops instead of running to the end next to its replacement.
 
