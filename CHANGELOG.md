@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixes
+
+- Session tracker: gemstones that go straight into the Gemstone Sack are now counted (their names start with a gem
+  symbol, which the sack summary matching missed), so mining gems with sacks starts and fills a session.
+
 ### HOTM tree planner
 
 - New card on the Upgrades tab: the best HOTM tree for the method within your tier, Tokens of the Mountain and powder

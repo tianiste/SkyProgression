@@ -91,13 +91,22 @@ public final class SessionTracker {
         if (m == method || state != State.READY) return;
         method = m;
         Map<String, Tracked> ids = new HashMap<>(), names = new HashMap<>();
-        for (Tracked t : items(m)) { ids.put(t.id(), t); names.put(t.name().toLowerCase(Locale.ROOT), t); }
+        for (Tracked t : items(m)) { ids.put(t.id(), t); names.put(key(t.name()), t); }
         byId = ids; byName = names; version++;
     }
     /** The tracked item with this SkyBlock id, or null. */
     public Tracked byId(String id) { return id == null ? null : byId.get(id); }
     /** The tracked item with this display name (sack summaries list names), or null. */
-    public Tracked byName(String name) { return name == null ? null : byName.get(name.strip().toLowerCase(Locale.ROOT)); }
+    public Tracked byName(String name) { return name == null ? null : byName.get(key(name)); }
+    /**
+     * Name key without leading symbols: gem items are named with a gem glyph first (NEU ROUGH_AMBER_GEM displayname
+     * "<glyph> Rough Amber Gemstone"), and sack summaries list that full name.
+     */
+    private static String key(String name) {
+        int i = 0;
+        while (i < name.length() && !Character.isLetterOrDigit(name.charAt(i))) i++;
+        return name.substring(i).strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
 
     public void start(long now) {
         if (state == State.RUNNING) return;
