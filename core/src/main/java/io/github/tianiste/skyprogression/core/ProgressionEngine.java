@@ -177,7 +177,7 @@ public final class ProgressionEngine {
             if (next == null) return UNKNOWN;
             if (next.isEmpty()) break;
             Candidate after = choose(next.get(), banned, m, null, false);
-            if (after == null || Collections.disjoint(replaces(after), owns(best))) break;
+            if (after == null || Collections.disjoint(replaces(after), owns(best)) || best.upgrade().cost() <= STEPPING_STONE * after.upgrade().cost()) break;
             skipped.add(id(best));
             Candidate other = choose(all, skipped, m, now, true);
             if (other == null) break;
@@ -248,6 +248,8 @@ public final class ProgressionEngine {
     }
     /** Lookahead bounds: candidates considered for pairs (best by cost per 1%, and cheapest without a gain of their own), and re-picks per step. */
     private static final int PAIR_POOL = 10, RECHECKS = 3;
+    /** An earlier step that a later one replaces stays in the plan when it cost at most this share of the replacement. */
+    private static final double STEPPING_STONE = 0.1;
     /** One plan pass; null when a conflict was found (its earlier step is then added to banned). */
     private List<Step> plan(Profile p, MiningMethod m, Map<Stat, Double> baseline, Map<String, Price> prices, RateBasis basis, int maxSteps, Set<String> banned,
                             boolean ignoreConflicts, boolean lookahead, Trail trail) {
@@ -288,6 +290,9 @@ public final class ProgressionEngine {
             if (best == null) break;
             if (!ignoreConflicts) for (Candidate earlier : taken) {
                 if (Collections.disjoint(replaces(best), owns(earlier))) continue;
+                // A cheap stepping stone (a lantern before Will-o'-wisp, a cheap reforge before an expensive one) is kept:
+                // it pays off until the replacement is affordable, and dropping it would make the plan start with the big buy.
+                if (earlier.upgrade().cost() <= STEPPING_STONE * best.upgrade().cost()) continue;
                 banned.add(id(earlier));
                 return null;
             }
@@ -418,9 +423,12 @@ public final class ProgressionEngine {
             this(upgrade, apply, materials, pet, profile, set, null);
         }
     }
+    /** The gem slot in a socket upgrade's label, e.g. "(Mining slot 1)". */
+    private static final java.util.regex.Pattern GEM_SLOT = java.util.regex.Pattern.compile("\\(([A-Za-z]+ slot \\d+)\\)");
     /** Which part of an item an in-place upgrade replaces (null for added levels, recombobulation and coating). */
     private static String gearKind(String label) {
-        if (label.contains("[") && label.contains("]")) return "gem:" + label.substring(label.indexOf('[') + 1, label.indexOf(']'));
+        var slot = GEM_SLOT.matcher(label);
+        if (slot.find()) return "gem:" + slot.group(1);
         if (label.contains(" reforge")) return "reforge";
         if (label.contains("Fuel Tank")) return "fuel";
         if (label.contains("Drill Engine")) return "engine";
