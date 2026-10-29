@@ -8,6 +8,10 @@
 - Shorter tooltips everywhere else too: stats, coins/hour chart, session tracker, Gear, HOTM planner and the Other &
   progress cards, without repeating the ranking model on every entry. The coins/hour chart no longer claims that
   Hard Stone and the grotto's other gems are left out (they are counted where known).
+- Heat Resistance no longer counts towards any rate. The Magma Fields model assumed you cool from 90 Heat to 0 in water,
+  but the guides hold about 95 Heat and cool on the spot with a Water Bottle or a Yog kill, so Heat costs no mining time.
+  Heat-only upgrades such as Keep It Cool, Yog Membrane and a Hephaestus Relic on Bal no longer show up as gains (the
+  relic on Bal now only shows its tiny Mining Fortune difference to Quick Claw). Magma Fields rates rise by about 0.7%.
 - Less background CPU while /sp is open: a calculation replaced by a newer one (new stats, prices, quotes or a gear
   swap) now stops instead of running to the end next to its replacement.
 

@@ -336,8 +336,8 @@ Temporary buffs (owner decision 2026-10-26: listed, never counted):
 Rates: Mining Speed Boost uptime now uses the cooldown ledger, 120 s (wiki, every level) x product(1 - counted reductions),
 via `StatBreakdown.effectiveAbility` (Breakdown, Compare, Start with, Upgrades). The DR-X655 and a Golden Pickaxe without a
 tank both show `Cooldown: 108s` (= 120 x 0.9, the attribute), so the lore leaves out the fuel tank; the ledger gives 103.68 s.
-Fixture effect: MF Gems 12.04 -> 12.14 Flawless/h, Grotto 6.72 -> 6.80, Tungsten +1%, Coal +0.1%. Since 2026-10-27 Heat Resistance
-(Magma Fields) and Cold Resistance (Glacite Tunnels and Mineshafts) feed the rates through the wiki Heat and Cold build-up ("Rates:
+Fixture effect: MF Gems 12.04 -> 12.14 Flawless/h, Grotto 6.72 -> 6.80, Tungsten +1%, Coal +0.1%. Since 2026-10-27 Cold Resistance
+(Glacite Tunnels and Mineshafts) feeds the rates (Heat Resistance did in the Magma Fields until 2026-10-29) through the wiki Heat and Cold build-up ("Rates:
 pickaxe abilities, Heat and Cold"). Wisdom, Breaking Power (beyond the existing tool requirement) and powder have no rate use yet.
 
 Attainable maximum (`Breakdown.attainable`, `StatsReport.Ledger.attainable/attainableKnown/unknownMaxima`):
@@ -977,14 +977,24 @@ Heat (wiki Heat, <https://hypixelskyblock.minecraft.wiki/w/Heat>, last edited 19
   +1 while on fire; one Heat Tick every 1 x (1 + 0.01 x Heat Resistance) seconds. At 90 the player is set on fire, at 100 takes
   increasing true damage. Crystal Hollows water removes 5 per second, a Water Bottle 10, changing worlds or dying resets it.
   Heat depletes by 1 per second elsewhere; it does not deplete while gaining (otherwise it could never build), which is how we read it.
-- Model (Magma Fields zone, so MF Gems / Ruby / Topaz and a Grotto with the zone picker on Magma Fields): mine until 90 Heat, then
-  cool to 0 in water: build = 90 / 0.1 x (1 + Heat Resistance / 100) s, cooling = 90 / 5 = 18 s; share of mining time kept =
-  build / (build + cooling). Fixture Heat Resistance 204.5: 45.7 min of mining per 18 s, 99.3% kept (MF Gems 12.14 -> 12.06
-  Flawless / hour). Without Heat Resistance: 15 min per 18 s, 98.0% kept. Each Heat Resistance point therefore has a small, real
-  value in the Upgrades ranking of Magma Fields methods (+10 at 204.5 is about +0.02%).
-- Unknown, left out with a label: the walk to water (route dependent); whether players hold heat near 95 for the Heated reforge (the
-  Magma Fields guide says so; the Heated bonus is not in the ledger). Not modelled: Heat Armor's full immunity, the Tungsten Regulator
-  and Bal's Dispersion.
+- Model (Magma Fields zone, so MF Gems / Ruby / Topaz and a Grotto with the zone picker on Magma Fields), changed 2026-10-29: Heat
+  costs no mining time, so Heat Resistance has no rate value and is not a rate stat (`StatBreakdown.RATE_STATS`). The Magma Fields
+  and Fairy Grotto guides (owner's private notes, `service-data/guides/magma-fields-gemstones.txt`, `fairy-grotto.txt`) hold about
+  95 Heat on purpose ("Try to stay at roughly 95 Heat") and cool on the spot with a Water Bottle, a Yog kill or jumping; the wiki
+  lists a Water Bottle at -10 Heat and Bal's Dispersion (Epic+) at -4 per mob kill. Heat Resistance's use in that routine is to slow
+  the climb from 95 to 100 while holding Heat for the Heated reforge (+4 Mining Speed and +1 Mining Fortune per Heat, wiki Heat),
+  which the ledger does not count. Bal is no longer immune to Heat (wiki Bal Pet: Protective Skin is an old ability, removed in
+  the 0.20.6 revamp).
+- Before 2026-10-29 the model mined from 0 to 90 Heat and then cooled to 0 in water (-5 per second, 18 s per cycle), so every Heat
+  Resistance point bought mining time (fixture: 99.3% kept, Keep It Cool 25 -> 50 +0.02%, Hephaestus Relic on Bal +0.15%, almost
+  all from its +72.75 Heat Resistance). That routine is not what the guides do, and it ranked Heat-only upgrades (Keep It Cool, Yog
+  Membrane, Hephaestus Relic on Bal) as free gains. Fixture after the change: MF Gems 12.06 -> 12.14 Flawless / hour; Keep It Cool
+  is no longer listed; Hephaestus Relic on Bal (level 97) is +0.024%, only its 48.5 vs Quick Claw's 48 Mining Fortune (its lost 48
+  Mining Speed crosses no tick threshold here), behind the 500,000-coin fee. This matches the guides' Bal (Quick Claw) and the
+  general stat guide's Bal totals (150 Mining Fortune with either item; Hephaestus adds 75 Heat Resistance instead of 50 Mining
+  Speed; wiki Hephaestus Relic: "+50%" of the pet's stats, base stats only).
+- Not modelled: the Heated reforge's Heat bonus (so a Heated tool still shows only its flat stats), Water Bottle cost (Alchemist),
+  Heat Armor and the Tungsten Regulator.
 - Crystal Hollows zone (Coal, Gold, Grotto, Obsidian by default): Heat only builds at Y 64 and below; how much of a route is that deep
   is unknown, so no Heat loss is applied and the card says so.
 
@@ -1001,6 +1011,13 @@ Cold (wiki Cold, <https://hypixelskyblock.minecraft.wiki/w/Cold>, last edited 23
   removes the loss; every point below that has value in Upgrades and Compare.
 - Unknown, left out with a label: the reset trip's time and where a player really stops (we use the documented -90 warning; earlier
   resets lose less speed but cost more trips). Not modelled: Portable Campfires, the Tungsten Regulator, mob hits, water.
+- Guides (checked 2026-10-29, owner's private notes): unlike Heat, Cold stays a rate stat. The mineshaft gemstone guide calls Warm
+  Heart "very necessary" and uses Portable Campfires; the general stat guide lists Cold as -0.5% Mining Speed per Cold beyond Cold
+  Resistance and totals about 103.5 Cold Resistance without a pet (enough to remove the loss in this model). The Dwarven Metals guide
+  skips Warm Heart in its minimum HOTM tree and swaps to a Glacial drill above 25 Cold (the Glacial bonus is not counted), so its
+  tunnel players do let Cold build. Low-Cold-Resistance profiles, such as the fixture (5.4), therefore see Warm Heart and Cold
+  Resistance pets near the top for Tungsten / Umber / Shafting (Warm Heart 1 -> 50: +9.6%); that follows from the wiki mechanic and
+  our reset-at--90 routine, not from guide weights.
 
 ## Rates: secondary drops
 
@@ -1033,8 +1050,8 @@ drops scale with it, mineshaft loot follows blocks, not Fortune.
 - Unpriced contents are left out and the value is marked "at least"; an amount that is unknown stays "amount unknown", a price that is
   unknown stays "coins unknown"; neither is shown as 0.
 
-Change against the guide reference rates (not tuned): MF Gems' estimated hypermax drops about 0.5% for Heat (19.6 -> about 19.5 Amber /
-hour at 60%, guide 20.1). Grotto, Coal, Obsidian, Gold, End Stone, Cobblestone, Mycelium and Red Sand rates are unchanged with their
+Change against the guide reference rates (not tuned): MF Gems' estimated hypermax dropped about 0.5% for Heat (19.6 -> about 19.5 Amber /
+hour at 60%, guide 20.1) until Heat stopped costing time on 2026-10-29. Grotto, Coal, Obsidian, Gold, End Stone, Cobblestone, Mycelium and Red Sand rates are unchanged with their
 default abilities (no Heat in the Crystal Hollows zone); the guides' Maniac Miner setups for End Stone / Cobblestone would add about 6-7%
 (fixture +6.9%), so the 8.5M hypermax vs the guides' 11-16M gap stays mostly unexplained. Coal's guide Hard Stone (3-6M) is now counted
 through its own ratio, by construction. The Grotto's other gems match the guide's ratio by construction.

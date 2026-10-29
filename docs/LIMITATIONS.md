@@ -99,9 +99,11 @@ is "assumed" is labelled in the interface where it affects a number.
   ticks on Jasper is unconfirmed. Maniac Miner's level is read with an assumed lore pattern (no lore observed); only the
   mined block adds a stack; Mana is not limited; its level-3 cap bug and the Blue Cheese bonus over the cap are not
   modelled. Whether Mining Fortune applies to Pure Gold is an open question from a changelog.
-- **Heat and Cold:** Heat is applied only in the Magma Fields (the Crystal Hollows share below Y 64 is unknown); Cold in the
-  Glacite Tunnels and Mineshafts, with resets at the -90 warning. The walk to water, the reset trip time, Heat Armor
-  immunity, the Tungsten Regulator, Portable Campfires and mob hits are not modelled.
+- **Heat and Cold:** Heat costs no mining time (the guides hold about 95 Heat and cool on the spot with a Water Bottle or a
+  Yog kill), so Heat Resistance does not change any rate; its real use, holding Heat for the Heated reforge, is not
+  modelled because the Heated bonus is not counted. Cold applies in the Glacite Tunnels and Mineshafts, with resets at the
+  -90 warning. The reset trip time, the Glacial reforge's Cold bonus, the Tungsten Regulator, Portable Campfires and mob
+  hits are not modelled.
 - **Secondary drops:** Hard Stone on gem and metal routes has no source (amount unknown, not counted); Coal's Hard Stone uses
   a guide estimate. Mineshaft corpse loot: Umber and Tungsten corpses are unknown because their Crystals have no price;
   Vanguard corpses, the Surveyor, extra-corpse chances, Glacite Powder and HOTM XP are not counted.
