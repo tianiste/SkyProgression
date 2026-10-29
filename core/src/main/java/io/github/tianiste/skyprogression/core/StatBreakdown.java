@@ -19,7 +19,7 @@ public final class StatBreakdown {
     /** Stats the rate models and upgrade ranking read; the comparison and Start with tabs compute only these. */
     public static final Set<Stat> RATE_STATS = EnumSet.of(Stat.MINING_FORTUNE, Stat.MINING_SPEED, Stat.GEMSTONE_FORTUNE,
             Stat.ORE_FORTUNE, Stat.DWARVEN_METAL_FORTUNE, Stat.BLOCK_FORTUNE, Stat.MINING_SPREAD, Stat.GEMSTONE_SPREAD, Stat.PRISTINE,
-            Stat.HEAT_RESISTANCE, Stat.COLD_RESISTANCE);
+            Stat.COLD_RESISTANCE);
     /** Display groups (SkyCompass stat groups as a feature spec, docs/references/SKYCOMPASS.md). */
     public static final Map<String, List<Stat>> GROUPS = new LinkedHashMap<>();
     static {

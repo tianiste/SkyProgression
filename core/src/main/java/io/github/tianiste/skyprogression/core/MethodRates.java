@@ -337,19 +337,13 @@ public final class MethodRates {
 
     /** Share of the rate kept after Heat or Cold over a session, with its explanation (null when neither applies or not asked). */
     public record Exposure(double kept, String note) {}
-    /** Wiki Heat: +0.1 per Heat Tick at Y 64 and below in the Crystal Hollows, one tick every 1 x (1 + 0.01 x Heat Resistance) s; set on fire at 90; water -5 / s. */
-    static final double HEAT_STOP = 90, HEAT_PER_TICK = .1, WATER_COOLING = 5;
     /** Wiki Cold: -1 every 5 x (1 + 0.01 x Cold Resistance) / (1 + Cold Vulnerability) s; Mining Speed -0.5% per Cold beyond Cold Resistance; FROSTBITE at -90. */
     static final int COLD_STOP = 90;
     static Exposure exposure(Map<Stat, Double> stats, StatContext.Zone zone, DoubleUnaryOperator rateAt, boolean explain) {
-        if (zone == StatContext.Zone.MAGMA_FIELDS) {
-            double hr = Math.max(0, stat(stats, Stat.HEAT_RESISTANCE)), tick = 1 + hr / 100;
-            double build = HEAT_STOP / HEAT_PER_TICK * tick, cool = HEAT_STOP / WATER_COOLING, kept = build / (build + cool);
-            return new Exposure(kept, !explain ? null : "Heat (wiki Heat): +0.1 every " + fmt(Math.round(tick * 100) / 100.0) + "s in the Magma Fields (1 x (1 + Heat Resistance "
-                    + fmt(hr) + " / 100)), so 90 Heat, where you are set on fire, after " + fmt(Math.round(build / 6) / 10.0) + " min; cooling to 0 in Crystal Hollows water "
-                    + "(-5 per second) takes " + fmt(cool) + "s. Mining time kept: " + fmt(Math.round(kept * 1000) / 10.0) + "%. The walk to water is not counted (unknown); "
-                    + "Heat Armor's immunity and the Heated reforge's Heat bonus are not modelled.");
-        }
+        if (zone == StatContext.Zone.MAGMA_FIELDS) // wiki Heat; Magma Fields and Fairy Grotto guides: hold about 95 Heat, cool with a Water Bottle or a Yog kill
+            return new Exposure(1, !explain ? null : "Heat (wiki Heat): +0.1 per Heat Tick in the Magma Fields, one tick every 1 x (1 + Heat Resistance / 100) s. "
+                    + "The guides hold about 95 Heat on purpose and cool on the spot with a Water Bottle (-10), a Yog kill or Bal's Dispersion (-4 per kill), "
+                    + "so no mining time is lost and Heat Resistance does not change this rate. Its use is holding Heat for the Heated reforge, which is not modelled.");
         if (zone == StatContext.Zone.CRYSTAL_HOLLOWS)
             return new Exposure(1, !explain ? null : "Heat builds only at Y 64 and below in the Crystal Hollows (wiki Heat); how much of this route is that deep is unknown, so no Heat loss is applied.");
         boolean shaft = zone == StatContext.Zone.GLACITE_MINESHAFTS;
