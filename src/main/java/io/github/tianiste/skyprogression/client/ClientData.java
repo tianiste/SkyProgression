@@ -229,6 +229,7 @@ final class ClientData {
             StartWith.Report result=null;String error="";
             try{result=d.start(profileId,method,tool,context,g);}
             catch(NoSuchElementException e){error=e.getMessage();}
+            catch(java.util.concurrent.CancellationException e){return;}
             catch(Exception e){error="Could not work out the best owned loadout for this profile.";}
             StartWith.Report loaded=result;String failure=error;
             dispatch.accept(()->{
@@ -264,6 +265,7 @@ final class ClientData {
             StatsReport result=null;String error="";Map<String,CompletableFuture<Price>> late=Map.of();
             try{result=d.stats(profileId,method,tool,best,context,perks,g);late=resale(base,result.resaleQueries,result.resale);result.resalePending=!late.isEmpty();}
             catch(NoSuchElementException e){error=e.getMessage();}
+            catch(java.util.concurrent.CancellationException e){return;}
             catch(Exception e){error="Could not calculate the stat breakdown for this profile.";}
             StatsReport loaded=result;String failure=error;Map<String,CompletableFuture<Price>> pending=late;
             dispatch.accept(()->{
@@ -350,6 +352,7 @@ final class ClientData {
             MethodComparison.Report result=null;String error="";
             try{result=d.compare(profileId,god,g);}
             catch(NoSuchElementException e){error=e.getMessage();}
+            catch(java.util.concurrent.CancellationException e){return;}
             catch(Exception e){error="Could not compare methods for this profile.";}
             MethodComparison.Report loaded=result;String failure=error;
             dispatch.accept(()->{

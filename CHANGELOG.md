@@ -8,6 +8,8 @@
 - Shorter tooltips everywhere else too: stats, coins/hour chart, session tracker, Gear, HOTM planner and the Other &
   progress cards, without repeating the ranking model on every entry. The coins/hour chart no longer claims that
   Hard Stone and the grotto's other gems are left out (they are counted where known).
+- Less background CPU while /sp is open: a calculation replaced by a newer one (new stats, prices, quotes or a gear
+  swap) now stops instead of running to the end next to its replacement.
 
 ## 0.6.0 - 2026-10-29
 
