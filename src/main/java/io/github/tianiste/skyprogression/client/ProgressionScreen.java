@@ -826,7 +826,7 @@ public final class ProgressionScreen extends Screen {
             String gain=focused?(u.cost()==null||!Double.isFinite(u.costPerUnit())?"":coins(u.costPerUnit())+" / pt"):"+"+fmt(u.gain())+"%";
             String changes=changes(u);
             c.add(new Entry(upgradeIcon(u),"#"+rank+"  "+u.item().name,u.blocked().isEmpty()?TEXT:RED,!u.blocked().isEmpty()?u.blocked():!changes.isEmpty()?changes:u.current()!=null?"Replaces: "+u.current().name:"",!u.blocked().isEmpty()?RED:CYAN,
-                    gain,GREEN,u.owned()?"Owned":costText(u),u.owned()?GREEN:u.cost()==null?MUTED:TEXT,upgradeTip(u,focused),null));
+                    gain,GREEN,u.owned()?"Free":costText(u),u.owned()?GREEN:u.cost()==null?MUTED:TEXT,upgradeTip(u,focused),null));
         }
     }
 
