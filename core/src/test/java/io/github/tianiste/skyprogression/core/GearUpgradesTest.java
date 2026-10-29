@@ -76,14 +76,14 @@ class GearUpgradesTest {
         Item i=drill();i.tier="MYTHIC";i.slots.add(jadeSlot(true));
         i.extra=JsonParser.parseString("{\"gems\":{\"JADE_0\":{\"quality\":\"FLAWLESS\"}}}").getAsJsonObject();
         Profile p=profile(i);p.owned.put("PERFECT_JADE_GEM",1);
-        var proposal=GearUpgrades.forItem(i,MiningMethod.MF_GEMS,p,Map.of()).stream().filter(c->c.label().contains("PERFECT JADE")).findFirst().orElseThrow();
+        var proposal=GearUpgrades.forItem(i,MiningMethod.MF_GEMS,p,Map.of()).stream().filter(c->c.label().contains("Perfect Jade")).findFirst().orElseThrow();
         assertEquals(15,proposal.delta().get(Stat.MINING_FORTUNE));
         assertEquals(100000,GearUpgrades.cost(proposal.plan(),p,Map.of()).coins());
         assertFalse(proposal.plan().materials().containsKey("GEMSTONE_CHAMBER"));
     }
     @Test void emptyLockedSocketUsesOwnedChamber() {
         Item i=drill();i.slots.add(jadeSlot(true));Profile p=profile(i);p.owned.put("GEMSTONE_CHAMBER",1);
-        var proposal=GearUpgrades.forItem(i,MiningMethod.MF_GEMS,p,Map.of()).stream().filter(c->c.label().contains("PERFECT JADE")).findFirst().orElseThrow();
+        var proposal=GearUpgrades.forItem(i,MiningMethod.MF_GEMS,p,Map.of()).stream().filter(c->c.label().contains("Perfect Jade")).findFirst().orElseThrow();
         assertEquals(40,proposal.delta().get(Stat.MINING_FORTUNE));
         assertEquals(123,GearUpgrades.cost(proposal.plan(),p,Map.of("PERFECT_JADE_GEM",new Price(123,"Bazaar"))).coins());
     }

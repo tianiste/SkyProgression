@@ -299,13 +299,15 @@ public final class GearUpgrades {
                         if(ingredient.type.equals("COINS"))fee+=ingredient.coins;
                         else if(ingredient.type.equals("ITEM"))materials.merge(ingredient.item_id,ingredient.amount,Integer::sum);
                     }
-                    out.add(new Proposal(gear,(unlocked?"Socket ":"Unlock + socket ")+target+" "+type+" ["+key+"]"+(swap?" (replaces "+quality+" "+oldType+")":""),delta,
+                    out.add(new Proposal(gear,(unlocked?"Socket ":"Unlock + socket ")+word(target)+" "+word(type)+" ("+word(slot.slot_type)+" slot "+(index+1)+")"+(swap?" (replaces "+word(quality)+" "+word(oldType)+")":""),delta,
                             new Plan(materials,fee,"Gemstone Grinder. Includes unlock/removal fees"+(quality.isEmpty()?".":"; the removed gem is given back.")),"",1,
                             g->socket(g,key,target,type,!type.equals(slot.slot_type)),quality.isEmpty()?"":quality+"_"+oldType+"_GEM"));
                 }
             }
         }
     }
+    /** PERFECT -> Perfect, for gem qualities, types and slot types in labels. */
+    private static String word(String id){return id.isEmpty()?id:id.substring(0,1)+id.substring(1).toLowerCase(Locale.ROOT);}
     public static Set<String> priceIds(List<Item> catalog) {
         Set<String> ids=new LinkedHashSet<>(List.of("ENCHANTMENT_FORTUNE_4","ENCHANTMENT_EFFICIENCY_5","SIL_EX","POLARVOID_BOOK","RECOMBOBULATOR_3000","DIVAN_POWDER_COATING","GOBLIN_OMELETTE_BLUE_CHEESE"));
         for(var table:List.of(FUEL_TANKS.keySet(),ENGINES.keySet(),MODULES.keySet()))for(String key:table)ids.add(key.toUpperCase(Locale.ROOT));
