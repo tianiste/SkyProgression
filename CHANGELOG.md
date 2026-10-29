@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.6.2 - 2026-10-29
+
 - Divan's Drill now appears in the upgrades: it is offered as a Forge upgrade of your Titanium Drill DR-X655 (Divan's Alloy
   + 50M coins) that keeps your enchantments, reforge, gems and drill parts. Before, it was compared bare with your fully
   fitted drill and always looked like a downgrade. A bundle with gems in its two new slots is listed too. The same applies
