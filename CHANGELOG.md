@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Divan's Drill now appears in the upgrades: it is offered as a Forge upgrade of your Titanium Drill DR-X655 (Divan's Alloy
+  + 50M coins) that keeps your enchantments, reforge, gems and drill parts. Before, it was compared bare with your fully
+  fitted drill and always looked like a downgrade. A bundle with gems in its two new slots is listed too. The same applies
+  to the lower Mithril, Titanium and Gemstone drill tiers.
+- The step-by-step plan goes up to 30 steps instead of 12, so expensive steps such as Divan's Drill can appear in it.
+
 ## 0.6.1 - 2026-10-29
 
 - Upgrade tooltips are shorter and easier to read: coloured name, stat change, gain and price on one line each, "Free"

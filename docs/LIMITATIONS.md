@@ -133,10 +133,12 @@ is "assumed" is labelled in the interface where it affects a number.
 ## Upgrades and costs
 
 - **Alternatives are independent.** Each upgrade is measured against the same current state; the list is not a shopping
-  list. The step-by-step plan (up to 12 steps, cheapest per 1% first) looks only two steps ahead (pairs and "A then B" against
+  list. The step-by-step plan (up to 30 steps, cheapest per 1% first) looks only two steps ahead (pairs and "A then B" against
   "B alone") from a bounded pool, at today's quotes with no market impact; longer combinations are found only as the
   predefined bundles (full sets, full drill build). Within a pair each upgrade's cost is its own. Stopgaps that the guides skip
-  (Mineral before Glossy Mineral) stay in a 12-step plan when the better item is out of its budget.
+  (Mineral before Glossy Mineral) stay in the plan when the better item is out of its budget. Levels of one source (Gold Box 1, 2, 3...) are still separate steps.
+- **Forge upgrades of a tool** (DR-X655 -> Divan's Drill) assume the forged tool keeps its enchantments, reforge, gems and drill
+  parts; the wiki does not say so. Forge time (30 s for Divan's Drill) is not counted.
 - **Buy vs craft** follows NEU recipes up to 5 levels deep; forge slots and the value of forge time are not modelled, and the
   forge time shown is the sum over the whole chain. The buy-order cost mode assumes your order fills at today's top buy order (no queue time, no undercutting). A
   collection requirement with the Collections API off is not checked: the item is bought, or, when no one sells it, priced by

@@ -387,6 +387,20 @@ is the cumulative view.
   Ruby-Polished +250/+30 matches its lore, and the Mining Cat MF Gems page's engine deltas (+150/+20 to Sapphire,
   +200/+50 Sapphire to Amber) match these tables. Fuel-only omelettes are not proposed. Which drills accept which
   parts is not stated on the wiki; every drill is assumed to accept every part.
+- Forge upgrades of the tool you hold (added 2026-10-29): every NEU forge recipe that takes the evaluated tool as an input and makes
+  another catalogued tool, e.g. Divan's Drill = Titanium Drill DR-X655 + Divan's Alloy + 50,000,000 coins, HOTM 7, 30 s (wiki Divan's
+  Drill "Raw Materials to upgrade"; the lower Mithril, Titanium and Gemstone drill tiers the same way). The forged tool is assumed to keep
+  its enchantments, reforge, gems, drill parts and recombobulation (the wiki does not say; Mining Cat's listing says "keeps your
+  upgrades" and the guides' Divan's Drill builds carry the same parts). delta = new base stats - old base stats (item resource)
+  + the reforge and socketed gems at the new rarity (one tier up per recombobulation, as for the Recombobulator); gems in slots
+  the new tool lacks are not counted. Cost = the other inputs (Divan's Alloy at its quote) + the coins. Before this, Divan's Drill
+  was only compared as a bare item (150 Fortune / 1,800 Speed) with the fully fitted DR-X655 (fixture 235 / 1,985 / 4.5 Pristine),
+  so it always looked like a loss and was never listed. Fixture: +245 Mining Speed, +45 Mining Fortune, +0.2 Pristine for 1.519B
+  (Mining Cat comparison on the owner's live profile: +235 / +55 / +0.2 for 1.51B; different gems and reforge).
+- The forge also adds gem slots (Divan's Drill: a second Amber and Jade), so a bundle "Divan's Drill + gems in its new slots"
+  takes the forge with the best gem (lowest cost per 1% after the forge, slot unlock included) in each new slot; the plan still
+  takes the forge and the gems as separate steps when that is cheaper per 1%. Fixture: bundle +5.5% on MF Gems (forge alone
+  +3.4%), +9.6% Grotto, +10.1% Tungsten; with 30 steps the plan reaches it at step 8 on Grotto and step 21 on MF Gems.
 - Swapping a part: the current part of that kind is removed first for 9,999 coins and given back (wiki
   <https://hypixelskyblock.minecraft.wiki/w/Amber-Polished_Drill_Engine> and the Blue Cheese page: "can then be removed
   via the same menu for 9,999 Coins, which gives the item back to the player"). The fee is added to the outlay; the
@@ -399,7 +413,7 @@ is the cumulative view.
 
 ## Step-by-step upgrade plan
 
-The Upgrades tab (method view) shows a plan of up to 12 steps. Each step takes the available upgrade with the lowest
+The Upgrades tab (method view) shows a plan of up to 30 steps (12 until 2026-10-29, which ended most plans before any step over ~700M). Each step takes the available upgrade with the lowest
 known cost per 1% (ties: larger gain), applies it and recomputes every candidate from the new state:
 - the gear copy changes (enchantment level, Polarvoid count, drill part, socketed gem and unlocked slot), so the next
   proposal for that item starts from there (Prismatic 4 -> 5 after 3 -> 4, no second fuel tank of the same kind);
