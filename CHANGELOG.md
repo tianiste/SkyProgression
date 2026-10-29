@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 - 2026-10-29
 
 ### Fixes
 
@@ -23,6 +23,11 @@
   (no more waiting for the API, and the held tool no longer needs picking), plus equipment and the active pet once you
   open the equipment or pets menu (the pet also from the tab list and summon messages). The API fills the rest. Works
   with the Inventory API off for what the game shows. Each piece is labelled Live or API with its age. Read only.
+
+### Faster
+
+- Stats, upgrades and the step-by-step plan are calculated noticeably faster (rules and lore patterns parsed once,
+  rates reused within a plan, fewer copies while pricing recipes). Armor and equipment rows keep a fixed order.
 
 ## 0.5.0 - 2026-10-28
 
