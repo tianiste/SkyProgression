@@ -18,7 +18,7 @@ final class WebViews {
     private WebViews() {}
     static final Set<String> VIEWS = Set.of("overview", "gear", "upgrades", "methods", "start", "hotm");
     /** Plan steps on the Upgrades page, as in the mod. */
-    private static final int PLAN_STEPS = 12;
+    private static final int PLAN_STEPS = 30;
     /** Compact output; NaN and infinities (unknown rates) become null, which JSON can carry. */
     static final Gson GSON = new GsonBuilder().serializeNulls().registerTypeAdapter(Double.class, new Finite()).registerTypeAdapter(double.class, new Finite()).create();
     private static final class Finite extends TypeAdapter<Double> {

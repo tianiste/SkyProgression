@@ -246,7 +246,7 @@ public final class ProgressionScreen extends Screen {
     private void selectProfile(){if(data.report!=null)Compat.setScreen(minecraft,new ChoiceScreen(this,"SkyBlock profile",data.report.profiles.stream().map(p->p.name+" ["+p.mode+"]"+(p.selected?" - active":"")).toList(),n->{data.profileIndex=n;scroll=0;slot="";}));}
 
     // ---- Analysis (worker) ----
-    private static final int PLAN_STEPS=12;
+    private static final int PLAN_STEPS=30;
     private void analyze(){
         int generation=++analysisGeneration;if(analysis!=null)analysis.cancel(true);
         Profile p=data.profile();overview=List.of();upgrades=List.of();plan=List.of();other=null;hotm=null;bestRow=null;bestGains=new IdentityHashMap<>();
