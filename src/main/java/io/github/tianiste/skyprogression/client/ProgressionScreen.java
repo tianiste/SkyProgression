@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.regex.*;
 import static io.github.tianiste.skyprogression.core.Model.*;
 import static io.github.tianiste.skyprogression.client.Theme.*;
 
@@ -389,7 +390,7 @@ public final class ProgressionScreen extends Screen {
         if(plan.isEmpty()){c.line("No priced upgrade found to recommend.",MUTED,"This does not mean the account is maxed: unpriced and blocked upgrades are skipped.");return;}
         var step=plan.getFirst();var u=step.upgrade();
         c.add(new Entry(upgradeIcon(u),u.item().name,TEXT,u.current()!=null?(u.item().modification?"On: ":"Replaces: ")+u.current().name:"Step 1 of the plan",MUTED,
-                "+"+fmt(u.gain())+"%",GREEN,costText(u),Objects.equals(u.cost(),0.0)?GREEN:TEXT,upgradeTip(u,false)+"\nClick for the whole plan.",()->switchTab(UPGRADES)));
+                "+"+fmt(u.gain())+"%",GREEN,costText(u),Objects.equals(u.cost(),0.0)?GREEN:TEXT,upgradeTip(u,false)+"\n§8Click for the whole plan.",()->switchTab(UPGRADES)));
     }
     /** Coins / hour by method as a bar chart; the best method is cyan, the selected one gold; clicking a row selects it. */
     private void methodChart(boolean home){
@@ -720,33 +721,65 @@ public final class ProgressionScreen extends Screen {
         if(u.cooldownFactor()!=1)changes.add("ability cooldown x"+fmt(u.cooldownFactor()));
         return changes.toString();
     }
-    /** Every detail of one upgrade, for its tooltip. */
+    private static final Pattern CHEAPER=Pattern.compile("^Cheaper to (\\w+) \\(([\\d,]+) vs ([\\d,]+) to buy\\)$");
+    private static final Pattern NO_BUY=Pattern.compile("^No buy quote; (\\w+) for ([\\d,]+) coins$");
+    private static final int TIP_STEPS=3;
+    /**
+     * One upgrade's tooltip, short enough to read at a glance: name, what it changes, gain, price, then only the notes that
+     * apply (free, blocked, net after selling, best method, how to get it). Colours: gold name, cyan stats, green gain.
+     */
     private String upgradeTip(Upgrade u,boolean focused){
         StringJoiner tip=new StringJoiner("\n");
-        tip.add(u.item().name);
-        if(u.current()!=null)tip.add((u.item().modification?"On: ":"Replaces: ")+u.current().name);
-        String changes=changes(u);if(!changes.isEmpty())tip.add(changes);
-        tip.add(u.cost()==null?("GRIND".equals(u.item().category)?"Grinding (no coin price)":"Price unknown"):coins(u.cost())+" | "+coins(u.costPerUnit())+(focused?" / point":" / 1%"));
-        if(!u.resaleNote().isEmpty()&&u.cost()!=null)tip.add(u.net()!=null?"Net "+coins(u.net())+" after selling the replaced item for "+coins(u.resale())+" ("+u.resaleNote()+")":u.resaleNote()+"; net cost unknown");
-        if(u.rateBefore()!=null)tip.add("Rate: +"+fmt(u.gain())+"% | "+fmt(u.rateBefore())+" -> "+fmt(u.rateAfter())+" "+MethodRates.unit(method,ability()));
-        else if(!focused)tip.add("Estimated drops: +"+fmt(u.gain())+"%");
-        if(u.rateBefore()!=null&&u.rateAfter()!=null){String cross=crossMethod(u);if(!cross.isEmpty())tip.add(cross);}
-        if(u.owned())tip.add("HOTM".equals(u.item().group)?"Covered by your unspent powder and tokens":u.item().modification?"Materials already owned":"Item already owned");
-        if(!u.blocked().isEmpty())tip.add(u.blocked());
+        tip.add("§6"+u.item().name);
+        if(u.current()!=null)tip.add("§7"+(u.item().modification?"On ":"Replaces ")+u.current().name);
+        String changes=changes(u);if(!changes.isEmpty())tip.add("§b"+changes);
+        if(u.rateBefore()!=null)tip.add("§a+"+fmt(u.gain())+"% §7("+compact(u.rateBefore())+" → "+compact(u.rateAfter())+" "+MethodRates.unit(method,ability())+")");
+        else if(!focused)tip.add("§a+"+fmt(u.gain())+"% §7drops");
+        if(u.owned())tip.add("§a"+("HOTM".equals(u.item().group)?"Free: your powder and tokens cover it":u.item().modification?"Free: you own the materials":"Free: you own it"));
+        else if(u.cost()==null)tip.add("§7"+("GRIND".equals(u.item().category)?"Grinding, no coin price":"Price unknown"));
+        else{var quote=data.prices.get(u.item().id);
+            String where=quote==null||u.item().modification?"":" §7"+shortSource(quote.source)+(data.costMode==Model.CostMode.BUY_ORDER&&quote.source.startsWith("Bazaar")?", buy order":"");
+            tip.add("§f"+coins(u.cost())+" §7· "+compact(u.costPerUnit())+(focused?" per point":" per 1%")+where);}
+        if(u.net()!=null&&u.resale()!=null&&u.resale()>0)tip.add("§7Net "+coins(u.net())+" after selling the old one for "+compact(u.resale()));
+        if(!u.blocked().isEmpty())tip.add("§c"+u.blocked());
+        if(u.rateBefore()!=null&&u.rateAfter()!=null){String cross=crossMethod(u);if(!cross.isEmpty())tip.add("§7"+cross);}
         var quote=data.prices.get(u.item().id);
-        if(quote!=null&&!u.item().modification)tip.add(quote.source+(data.costMode==Model.CostMode.BUY_ORDER&&quote.source.startsWith("Bazaar")?", buy order":""));
-        if(data.costMode==Model.CostMode.BUY_ORDER)tip.add("Cost: Bazaar items at buy-order prices; fills only when a seller accepts your order.");
-        if(quote==null||u.item().modification||u.item().source.matches("^(Cheaper|Buying|No buy|Price unknown).*"))tip.add(u.item().source);
+        if(quote==null||u.item().modification||u.item().source.matches("^(Cheaper|Buying|No buy|Price unknown).*"))how(tip,u.item().source);
         return tip.toString();
     }
-    /** The upgrade's coins/hour here, and its rate gain and coins/hour in the best method (by coins / hour). */
+    /** "Bazaar (Hypixel)" -> "Bazaar", "Auction House lowest BIN, level 100 (Coflnet)" -> "Auction House". */
+    private static String shortSource(String source){
+        String s=source.replaceAll("\\s*\\(.*\\)$","");int comma=s.indexOf(',');
+        s=comma>0?s.substring(0,comma):s;
+        return s.replace(" lowest BIN","");
+    }
+    /** How to get it: a recipe note becomes a short head line plus up to three steps; other notes stay one line. */
+    private static void how(StringJoiner tip,String source){
+        if(source==null||source.isBlank())return;
+        String text=source.strip().replaceAll("\\.$","");
+        int colon=text.indexOf(": ");
+        if(colon<0||!text.matches("^(Cheaper|No buy).*")){tip.add("§7"+text);return;}
+        String head=text.substring(0,colon);
+        Matcher m=CHEAPER.matcher(head),n=NO_BUY.matcher(head);
+        if(m.matches())head="Cheaper to "+m.group(1)+": "+compact(number(m.group(2)))+" (buy "+compact(number(m.group(3)))+")";
+        else if(n.matches())head="Not sold: "+n.group(1)+" for "+compact(number(n.group(2)));
+        tip.add("§7"+head);
+        List<String> steps=new ArrayList<>(),notes=new ArrayList<>();
+        for(String part:text.substring(colon+2).split("; "))(part.matches(".*forge time in total|^needs .*")?notes:steps).add(part);
+        for(int i=0;i<Math.min(TIP_STEPS,steps.size());i++)tip.add("§8 • §7"+steps.get(i));
+        if(steps.size()>TIP_STEPS)tip.add("§8 • §7"+(steps.size()-TIP_STEPS)+" more step"+(steps.size()-TIP_STEPS>1?"s":""));
+        for(String note:notes)tip.add("§7"+Character.toUpperCase(note.charAt(0))+note.substring(1));
+    }
+    private static double number(String s){return Double.parseDouble(s.replace(",",""));}
+    /** The upgrade's coins/hour here and, when another method earns more, its gain there; one line. */
     private String crossMethod(Upgrade u){
         Double each=MethodComparison.coinsPerItem(data.prices,method,data.priceMode);
         double hours=MethodRates.windowHours(method,ability());
-        String here=each==null?"coins unknown":"+"+compact((u.rateAfter()-u.rateBefore())/hours*each)+" coins / hour";
-        if(bestRow==null||bestRow.method()==method)return each==null?"":"Here: "+here+" ("+data.priceMode.label+")";
+        String here=each==null?"":"+"+compact((u.rateAfter()-u.rateBefore())/hours*each)+" coins/h here";
+        if(bestRow==null||bestRow.method()==method)return here;
         Double g=bestGains.get(u);
-        return "Here: +"+fmt(u.gain())+"%, "+here+"\nIn "+bestRow.method().label+" (best by coins / hour): "+(g==null||g<=0?"no rate change":"+"+fmt(g*100)+"%, +"+compact(g*bestRow.coinsPerHour())+" coins / hour");
+        String best="in "+bestRow.method().label+": "+(g==null||g<=0?"no change":"+"+fmt(g*100)+"%");
+        return here.isEmpty()?Character.toUpperCase(best.charAt(0))+best.substring(1):here+", "+best;
     }
     private String costText(Upgrade u){return u.cost()==null?("GRIND".equals(u.item().category)?"Grinding":"Price unknown"):u.cost()==0?"Free":coins(u.cost());}
     private void upgradeCards(Profile p){
@@ -775,7 +808,7 @@ public final class ProgressionScreen extends Screen {
                     Card c=card("",GOLD,n%2==1?0:1);
                     c.add(new Entry(upgradeIcon(u),n+". "+u.item().name+(u.current()!=null&&u.item().modification?" ("+u.current().name+")":""),TEXT,
                             "Total +"+fmt(step.totalGain())+"% for "+coins(step.totalCost()),MUTED,"+"+fmt(u.gain())+"%",GREEN,costText(u),Objects.equals(u.cost(),0.0)?GREEN:TEXT,
-                            upgradeTip(u,false)+(step.rate()!=null?"\nAfter this step: "+fmt(step.rate())+" "+MethodRates.unit(method,ability()):""),null));
+                            upgradeTip(u,false)+(step.rate()!=null?"\n§7After this step: "+fmt(step.rate())+" "+MethodRates.unit(method,ability()):""),null));
                 }
                 if(n%2==1)card("",GOLD,1).line(plan.size()==PLAN_STEPS?"First "+PLAN_STEPS+" steps shown.":"End of the plan.",MUTED);
             }

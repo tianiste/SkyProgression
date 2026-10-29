@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Upgrade tooltips are shorter and easier to read: coloured name, stat change, gain and price on one line each, "Free"
+  instead of "Owned", one short line for the best method, and recipes as a short list (up to three steps) instead of
+  one long sentence.
+
 ## 0.6.0 - 2026-10-29
 
 ### Fixes
