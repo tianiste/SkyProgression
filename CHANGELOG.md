@@ -5,6 +5,9 @@
 - Upgrade tooltips are shorter and easier to read: coloured name, stat change, gain and price on one line each, "Free"
   instead of "Owned", one short line for the best method, and recipes as a short list (up to three steps) instead of
   one long sentence.
+- Shorter tooltips everywhere else too: stats, coins/hour chart, session tracker, Gear, HOTM planner and the Other &
+  progress cards, without repeating the ranking model on every entry. The coins/hour chart no longer claims that
+  Hard Stone and the grotto's other gems are left out (they are counted where known).
 
 ## 0.6.0 - 2026-10-29
 

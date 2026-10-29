@@ -331,7 +331,7 @@ public final class ProgressionScreen extends Screen {
     /** One bar per method stat: current vs attainable with this loadout; hover lists the top sources, click opens Gear. */
     private void statsCard(){
         Card c=card("Your stats for "+method.label,GOLD,0);
-        c.tip="Bars show the current total against the best attainable with this gear, tool, pet and HOTM tree.\n* = your Type Stats value is used instead.\nClick a bar for the full breakdown on Gear.";
+        c.tip="Current total against the most this gear, tool, pet and HOTM tree can reach.\n* = your Type Stats value.\nClick a bar for the breakdown on Gear.";
         StatsReport r=data.stats(method);var e=data.effective(method);var manual=data.inputs(method).stats;
         if(r==null&&e.isEmpty()){
             if(data.demo)c.line("Demo has no API data. Enter stats in Type Stats (More page) to try the rates.",TEXT);
@@ -395,17 +395,14 @@ public final class ProgressionScreen extends Screen {
     /** Coins / hour by method as a bar chart; the best method is cyan, the selected one gold; clicking a row selects it. */
     private void methodChart(boolean home){
         Card c=card("Coins / hour by method",GOLD,FULL);c.right=data.priceMode.label;c.optional=home;
-        c.tip="Ranked at the "+data.priceMode.label+" price ("+data.priceMode.meaning+"). Each method uses its best owned gear and tool in its usual zone, with that method's Type Stats values and efficiency.\n"
-                +"Coins / hour = items / hour x the quote; a missing quote stays unknown and sorts last.\n"
-                +"Windows: Coal per 30 minutes with two lobby hops; Obsidian per Mining Speed Boost cycle; gems, metals and Shafting per hour.\n"
-                +"Bazaar figures are gross, before tax. Flawless gems have no NPC price, so NPC sell counts them as Rough.\n"
-                +"Not counted: Hard Stone, the grotto's other gems, mineshaft loot, crafting into enchanted items. Coleweight is not shown (coefficients unverified).\n"
+        c.tip="Coins / hour at the "+data.priceMode.label+" price, each method with its best owned gear in its usual zone.\n"
+                +"Includes secondary drops where known; missing prices sort last. Bazaar figures are before tax.\n"
                 +"Click a row to select that method.";
         if(data.demo){c.line("Demo has no API data. Load your player to compare methods.",MUTED);return;}
         var rows=data.comparisonRows();var r=data.comparison();
         if(r==null||rows.isEmpty()){String error=data.compareError();
             if(!error.isEmpty())c.line(error,RED,"Refresh on the Methods tab retries.");else c.line("Comparing methods...",MUTED);return;}
-        c.tip+="\nProfile data from "+r.fetchedAt+(r.godPotion?", God Potion assumed.":", no God Potion.");
+        c.tip+="\nProfile "+apiAge(r.fetchedAt)+(r.godPotion?", God Potion on.":", God Potion off.");
         double top=rows.stream().filter(x->x.totalCoinsPerHour()!=null).mapToDouble(MethodComparison.Row::totalCoinsPerHour).max().orElse(1);
         var best=rows.stream().filter(x->x.totalCoinsPerHour()!=null).findFirst().orElse(null);
         for(var row:rows){
@@ -426,10 +423,9 @@ public final class ProgressionScreen extends Screen {
         String state=switch(t.state()){case READY->"not started";case RUNNING->"running";case PAUSED->"idle, paused";case STOPPED->"stopped";};
         Card c=card(home?"Session: "+m.label:"Session tracker | "+m.label,CYAN,home?1:FULL);c.icon=productIcon(m);c.right=state;c.rightColor=t.state()==SessionTracker.State.RUNNING?GREEN:MUTED;
         String unit=MethodComparison.itemName(m);
-        c.tip="Measures what you really mine and compares it with the model.\nCounted: items picked up into your inventory, the [Sacks] chat summaries (their hover lists the items) and Pristine procs. "
-                +"Compacted forms count as their base items (Enchanted = 160, blocks and cubes = 160 Enchanted, gems 80 per tier).\n"
-                +"Starts by itself on the first "+unit+" gain (Auto-start), pauses after "+(t.idleMs/1000)+" s without one (trackerIdleSeconds in config/skyprogression.json); the active time ends at the last gain.\n"
-                +"Keeps running with /sp closed. Read only: it never clicks, mines or sends anything.";
+        c.tip="Measures what you really mine and compares it with the model.\n"
+                +"Counts inventory pickups, [Sacks] summaries and Pristine procs; compacted items count as their base items.\n"
+                +"Starts on the first "+unit+", pauses after "+(t.idleMs/1000)+" s without one. Keeps running with /sp closed. Read only.";
         if(t.empty()){
             c.line(t.autoStart?"Starts when you mine "+unit+", or press Session: Start.":"Press Session: Start, then mine.",TEXT);
             if(!home)c.line("Counts pickups, [Sacks] summaries and Pristine procs; compares with the model below.",MUTED);
@@ -575,10 +571,10 @@ public final class ProgressionScreen extends Screen {
         Card used=card("Stats use",MUTED,0);used.optional=true;
         StatsReport s=data.stats(method);
         if(s!=null){StringJoiner tip=new StringJoiner("\n");for(var piece:s.loadout)tip.add(piece.name()+"  ("+StartWith.where(piece.location())+", "+source(s.liveAt,piece.key(),StartWith.where(piece.location()),s.fetchedAt)+")");
-            tip.add(s.accessories+" accessories from the accessory bag, one per family.");
+            tip.add(s.accessories+" accessories, one per family.");
             if(s.hotmTrees>1)tip.add(StatBreakdown.treeLabel(s.hotmTree)+" of "+s.hotmTrees+": best for "+method.label+" (the API does not show the active tree).");
-            if(s.bestGear)tip.add("Picked from all readable storage; equip these to reach the totals. Gear: Equipped shows what you wear now.");
-            tip.add("Attainable keeps this gear, tool, pet and HOTM tree with each source at its own maximum, plus missing attributes, essence perks, collections and consumables. It is not a maxed account.");
+            if(s.bestGear)tip.add("Picked from all storage: equip these to reach the totals.");
+            tip.add("Attainable: this gear with every source at its maximum, not a maxed account.");
             used.line((s.bestGear?"Best owned gear":"Gear worn now")+", "+s.loadout.size()+" pieces, "+s.accessories+" accessories",TEXT,tip.toString());}
         bestMethodLines(used,r);
         if(!r.notes.isEmpty())used.line("Notes ("+r.notes.size()+")",MUTED,String.join("\n",r.notes));
@@ -658,10 +654,11 @@ public final class ProgressionScreen extends Screen {
         StringJoiner tip=new StringJoiner("\n");
         tip.add(l.stat==Stat.PICKAXE_ABILITY_COOLDOWN?"Reductions multiply: 1 - product of (1 - each). Sum of the parts: "+amount(l.stat,l.flat)
                 :"Flat "+amount(l.stat,l.flat)+(l.multiplier!=1?" x "+fmt(l.multiplier)+" from additive % buffs":""));
-        if(l.attainable==null&&l.unknownMaxima>0)tip.add("Attainable unknown: "+l.unknownMaxima+" counted source"+(l.unknownMaxima==1?"":"s")+" without a known maximum (such as gear stat lines); at least "+amount(l.stat,l.attainableKnown)+".");
+        if(l.attainable==null&&l.unknownMaxima>0)tip.add("Attainable: at least "+amount(l.stat,l.attainableKnown)+" ("+l.unknownMaxima+" source"+(l.unknownMaxima==1?"":"s")+", such as gear lines, without a known maximum)");
         if(r.bestGear&&l.equipped!=null)tip.add("Wearing now: "+amount(l.stat,l.equipped));
         if(!r.bestGear&&l.bestOwned!=null)tip.add("Best owned gear: "+amount(l.stat,l.bestOwned));
-        l.notes.forEach(tip::add);
+        l.notes.stream().limit(3).forEach(tip::add);
+        if(l.notes.size()>3)tip.add("+ "+(l.notes.size()-3)+" more notes");
         c.tip=tip.toString();
         // Segments: what each category adds to the total; the cooldown's multiplicative parts are scaled to the total.
         Map<String,Double> buckets=new LinkedHashMap<>();for(String b:List.of("Gear","HOTM","Skill","Pet","Other"))buckets.put(b,0.0);
@@ -790,12 +787,12 @@ public final class ProgressionScreen extends Screen {
         if(!focused&&!data.hasStats(method)){card(data.statsLoading(method)?"Loading automatic stats...":"Enter your effective stats",GOLD,0).line("Automatic method stats come from your loaded profile. Type Stats adds or overrides values.",TEXT)
                 .line("Rank: stat points works without them and ranks coins per stat point.",CYAN);return;}
         boolean rated=!focused&&upgrades.stream().anyMatch(u->u.rateBefore()!=null);
-        String model=focused?stat.label+": cheapest points first.":rated?"Model: rate gain (automatic "+method.label+" rate, "+MethodRates.unit(method,ability())+"). Mining Speed counts only when it changes ticks; ability cooldown counts through uptime."
+        String model=focused?stat.label+": cheapest points first.":rated?"Ranked by rate gain ("+MethodRates.unit(method,ability())+"); Mining Speed counts only when it changes ticks."
                 :ProgressionEngine.rateModel(method)?"Model: drop multiplier (rate unavailable for these stats). Fortune x Spread x Pristine.":"Model: drop multiplier (no rate model for "+method.label+" yet).";
-        String buy="Owned materials are used first. Supported socket unlock and removal fees are included.\nCosts are cash outlay; net cost subtracts the replaced item's sale quote when one exists; modifiers are not transferred.";
+        String buy="Owned materials are used first. Costs are what you pay; net subtracts what the replaced item sells for.";
         if(!focused){
             Card head=card("Step-by-step plan",GOLD,FULL);
-            head.tip="Take the best value, apply it, recompute everything, repeat. Unpriced and blocked upgrades are skipped.\n"+model+"\n"+buy;
+            head.tip="Takes the best value, applies it and recomputes, up to "+PLAN_STEPS+" steps. Unpriced and blocked upgrades are skipped.\n"+model+"\n"+buy;
             if(plan.isEmpty())head.line("No priced upgrade available to plan with.",MUTED);
             else{var last=plan.getLast();
                 head.right="+"+fmt(last.totalGain())+"% "+(rated?"rate":"drops")+" for "+coins(last.totalCost());head.rightColor=GREEN;
@@ -816,9 +813,7 @@ public final class ProgressionScreen extends Screen {
         }
         Card list=card(focused?stat.label+" | cheapest points first":"All upgrades, best value first",GOLD,FULL);
         list.right=upgrades.size()+" found";
-        var known=upgrades.stream().filter(u->u.cost()!=null&&Double.isFinite(u.costPerUnit())&&u.blocked().isEmpty()).limit(4).toList();
-        StringJoiner eff=new StringJoiner("\n");for(var u:known)eff.add(coins(u.costPerUnit())+(focused?" / point":" / 1%")+"  "+u.item().name);
-        list.tip=model+"\nEach card compares to your current setup; they are alternatives, not a combined shopping list.\n"+buy+(known.isEmpty()?"":"\nBest cost efficiency:\n"+eff);
+        list.tip=model+"\nEach card compares with your current setup: alternatives, not one shopping list.\n"+buy;
         if(upgrades.isEmpty()){list.line("No supported upgrades found. This does not mean the account is maxed.",MUTED);return;}
         int rank=0;
         for(var u:upgrades){rank++;
@@ -834,9 +829,9 @@ public final class ProgressionScreen extends Screen {
     private void hotmCard(){
         StatsReport r=data.stats(method);var h=hotm;
         Card c=card("HOTM tree planner",PURPLE,FULL);
-        c.tip="Best perk allocation for "+method.label+" within your HOTM tier, Tokens of the Mountain and powder, rated with the same model as the plan."
-                +"\nA reset is free and refunds all tokens and powder except Core of the Mountain, whose level is kept."
-                +"\nOnly perks with modelled stats are valued; Sky Mall, Front Loaded, Precision Mining, Mineshaft Mayhem and other perks are not.";
+        c.tip="Best HOTM tree for "+method.label+" with your tier, tokens and powder, rated like the plan."
+                +"\nA reset is free and refunds everything except Core of the Mountain."
+                +"\nPerks without modelled stats (Sky Mall, Front Loaded and others) count as nothing.";
         if(r==null||r.hotm==null){c.line("HOTM tree or HOTM XP not in the API, so the planner can't tell what you have.",MUTED);return;}
         if(h==null){c.line(MethodRates.supported(method)?"Rate unavailable for these stats.":"No rate model for "+method.label+" yet.",MUTED);return;}
         Double g=h.gain();var t=h.now()!=null?h.now():h.target();
@@ -874,14 +869,14 @@ public final class ProgressionScreen extends Screen {
         String model=r.rated()?"Gain: rate gain in "+method.label+" ("+MethodRates.unit(method,ability())+"), the same model as Purchases.":"Gain: drop multiplier (rate unavailable for these stats).";
         var s=r.stage();
         Card stage=card("Guide stage: "+s.name(),PURPLE,FULL);
-        stage.tip="Placed on the supplied early / mid / end mining checklist from its stage headings only (HOTM tier, Divan armor, drill, Pendant), for orientation.\nIt is not a fixed optimal order, and its unticked rows say nothing about your profile. Your next steps are the ranked lists below and on Purchases.";
+        stage.tip="Your place on the community early / mid / end checklist, from its stage headings only.\nFor orientation: your next steps are the ranked lists below and on Purchases.";
         stage.line("From: "+String.join(", ",s.because()),TEXT).line(s.next(),MUTED);
         String key="stage:"+s.name();boolean open=expanded.contains(key);
         stage.add(new Text((open?"- ":"+ ")+"Checklist items ("+s.nextItems().size()+")",CYAN,"\"(you own one)\" means the API shows that item somewhere; nothing else is checked.",()->toggle(key)));
         if(open)for(String item:s.nextItems())stage.line("  "+item,item.endsWith("(you own one)")?GREEN:MUTED);
 
         Card head=card("Can't check: skip if you already have it",CYAN,FULL);head.right=r.unchecked().size()+" bonuses";
-        head.tip="Permanent bonuses the profile API never shows (or whose key has never been observed). A missing field is not proof you lack them.\nPrice: Coflnet buy quote for the whole amount; unknown stays unknown.\n"+model;
+        head.tip="Permanent bonuses the API doesn't show: skip any you already have.\nPrice: buy quote for the whole amount.";
         if(r.unchecked().isEmpty())head.line("No such bonus changes "+method.label+".",MUTED);
         else if(r.hidden()>0)head.line(r.hidden()+" other bonus"+(r.hidden()>1?"es don't":" doesn't")+" change "+method.label+".",MUTED);
         int n=0;
@@ -892,7 +887,7 @@ public final class ProgressionScreen extends Screen {
         if(n%2==1)card("",CYAN,1).line("Can't check: skip any you already have.",MUTED);
 
         Card grind=card("Progress you have to grind",GREEN,FULL);grind.right="by rate gain";
-        grind.tip="HOTM perks, tokens and tiers, Mining skill, collections, pet levels, Compact and forge-only items. Ranked by the gain alone: coins are not part of the ranking.\n"+model;
+        grind.tip="HOTM, Mining skill, collections, pet levels, Compact and forge-only items, ranked by gain (coins don't count).";
         if(!p.inventoryEnabled)grind.line("Inventory API off: Compact and forge-only items need your gear.",RED);
         if(r.grinding().isEmpty())grind.line("Nothing to grind that changes "+method.label+".",MUTED);
         n=0;
@@ -908,17 +903,16 @@ public final class ProgressionScreen extends Screen {
     }
     private String otherTip(OtherUpgrades.Entry e,String model){
         StringJoiner tip=new StringJoiner("\n");
-        tip.add(e.name());
-        if(!e.effect().isEmpty())tip.add("Effect: "+e.effect());
-        tip.add(e.gain()==null?"Gain: not modelled":"Gain: +"+fmt(e.gain())+"% in "+method.label);
-        if(!e.requirement().isEmpty())tip.add("Needs: "+e.requirement());
-        if(!e.distance().isEmpty())tip.add(e.distance());
-        if(!e.how().isEmpty())tip.add("How: "+e.how());
+        tip.add("§6"+e.name());
+        if(!e.effect().isEmpty())tip.add("§b"+e.effect());
+        tip.add(e.gain()==null?"§7Gain not modelled":"§a+"+fmt(e.gain())+"% §7in "+method.label);
+        if(!e.requirement().isEmpty())tip.add("§7Needs "+e.requirement());
+        if(!e.distance().isEmpty())tip.add("§7"+e.distance());
+        if(!e.how().isEmpty())tip.add("§7"+e.how());
         boolean forge=e.id().startsWith("forge:");
-        if(e.cost()!=null)tip.add((forge?"Missing materials: ":"Price: ")+coins(e.cost()));
-        else if(forge)tip.add("Missing materials: price unknown");
-        if(!e.note().isEmpty())tip.add(e.note());
-        tip.add(model);
+        if(e.cost()!=null)tip.add("§f"+(forge?"Missing materials: ":"")+coins(e.cost()));
+        else if(forge)tip.add("§7Missing materials: price unknown");
+        if(!e.note().isEmpty())tip.add("§8"+e.note());
         return tip.toString();
     }
 
