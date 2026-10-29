@@ -177,6 +177,11 @@ final class WebViews {
         out.put("ranked", list);
         out.put("plan", plan.stream().map(s -> step(s, costs)).toList());
         out.put("other", other);
+        // The item each Other entry is about (the mod's icons), by entry id.
+        Map<String, String> icons = new LinkedHashMap<>();
+        for (var e : other.unchecked()) icons.put(e.id(), UpgradeIcons.other(e, r));
+        for (var e : other.grinding()) icons.put(e.id(), UpgradeIcons.other(e, r));
+        out.put("otherIcons", icons);
     }
 
     // Methods: coins / hour of every method and the selected method's rate in detail.
@@ -475,6 +480,7 @@ final class WebViews {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", i.id); m.put("name", i.name); m.put("group", i.group); m.put("category", i.category);
         m.put("modification", i.modification); m.put("source", i.source); m.put("location", i.location);
+        m.put("icon", i.icon);
         return m;
     }
     private static Map<String, Object> upgrade(Upgrade u, Map<String, Price> prices) {
