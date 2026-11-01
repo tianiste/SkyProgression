@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Guide checklists know the rarity of the foraging attributes, so a maxed one such as Helix Sharpening shows as owned at
+  level 10 instead of partly done.
+
 ## 0.6.2 - 2026-10-29
 
 - Divan's Drill now appears in the upgrades: it is offered as a Forge upgrade of your Titanium Drill DR-X655 (Divan's Alloy

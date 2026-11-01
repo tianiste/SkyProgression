@@ -44,7 +44,7 @@ public final class Checklist {
     public static final int MAX_REQUIREMENTS = 400;
     private static final List<String> RARITIES = List.of("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE");
     private static final List<String> QUALITIES = List.of("ROUGH", "FLAWED", "FINE", "FLAWLESS", "PERFECT");
-    /** Rarity of attributes the stat ledger does not use (wiki shard pages); the ledger's own table wins. */
+    /** Rarity of attributes the stat ledger does not use (wiki shard pages, NEU attribute_shards.json); the ledger's own table wins. */
     private static final Map<String, String> ATTRIBUTE_RARITY = Map.ofEntries(
             Map.entry("mountain_climber", "UNCOMMON"), Map.entry("bigger_box", "UNCOMMON"), Map.entry("dwarven_training", "UNCOMMON"),
             Map.entry("crystal_serendipity", "RARE"), Map.entry("breeze", "RARE"), Map.entry("dwarven_serendipity", "RARE"),
@@ -52,7 +52,15 @@ public final class Checklist {
             Map.entry("glossy_fortune", "EPIC"), Map.entry("why_not_more", "EPIC"), Map.entry("pity", "LEGENDARY"),
             Map.entry("fog_elemental", "COMMON"), Map.entry("water_elemental", "UNCOMMON"), Map.entry("torrent_elemental", "RARE"),
             Map.entry("frost_elemental", "EPIC"), Map.entry("snow_elemental", "LEGENDARY"), Map.entry("echo_of_elemental", "LEGENDARY"),
-            Map.entry("maximal_torment", "LEGENDARY"), Map.entry("mana_regeneration", "EPIC"), Map.entry("echo_of_echoes", "LEGENDARY"));
+            Map.entry("maximal_torment", "LEGENDARY"), Map.entry("mana_regeneration", "EPIC"), Map.entry("echo_of_echoes", "LEGENDARY"),
+            Map.entry("nocturnal_animal", "COMMON"), Map.entry("diurnal_animal", "COMMON"), Map.entry("moonglade_mastery", "COMMON"),
+            Map.entry("fig_sharpening", "COMMON"), Map.entry("unity_is_strength", "COMMON"), Map.entry("torrhus_mastery", "COMMON"),
+            Map.entry("strong_legs", "UNCOMMON"), Map.entry("strong_arms", "UNCOMMON"), Map.entry("galatea_training", "UNCOMMON"),
+            Map.entry("fig_collector", "UNCOMMON"), Map.entry("forest_felling", "UNCOMMON"), Map.entry("starlyn_training", "UNCOMMON"),
+            Map.entry("forest_essence", "RARE"), Map.entry("animal_expertise", "RARE"), Map.entry("chop", "RARE"),
+            Map.entry("atomized_whispers", "RARE"), Map.entry("moonglade_serendipity", "RARE"), Map.entry("beacon_zealot", "RARE"),
+            Map.entry("forest_serendipity", "RARE"), Map.entry("helix_sharpening", "RARE"), Map.entry("first_sweep", "RARE"),
+            Map.entry("pure_reptile", "RARE"), Map.entry("tough_claws", "LEGENDARY"));
     /** In-game HOTM perk maxima (same tree as ProfileUpgrades' layout); abilities count their ability level. */
     private static final Map<String, Integer> PERK_MAX = new HashMap<>();
     static {
