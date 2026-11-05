@@ -1268,10 +1268,17 @@ Stone is a secondary drop on every Crystal Hollows, Dwarven Mines and Glacite me
   start with `-` and are ignored. Formats from the Hypixel chat as documented in comments of open-source mods
   (SkyblockAPI `SacksAPI`, SoulMod `SackChatReader`; formats only, no code copied).
 - Inventory: every 0.5 s the net base items of each counted chain in the 36 main slots are compared with the last check;
-  an increase is a gain, a decrease (selling, storing) is ignored. So Compact turning 160 Coal into 1 Enchanted Coal counts
-  nothing. Items are matched by their SkyBlock id (custom data `id`), else by name. No comparison while a container screen is
-  open (the next check starts fresh), on a new world, or for 5 s after `/gfs`, `/sacks`, `/pickupstash`, `/storage` and similar
-  commands that move items into the inventory.
+  an increase is a gain. So Compact turning 160 Coal into 1 Enchanted Coal counts nothing. Items are matched by their SkyBlock
+  id (custom data `id`), else by name. No comparison while a container screen is open (the next check starts fresh; selling,
+  storing and trades are ignored), on a new world, or for 5 s after `/gfs`, `/pickupstash`, `/storage` and similar commands
+  that move items into the inventory. A container whose title contains "Sack" (the `/sacks` menu, an opened sack) is a sack
+  menu: increases there are withdrawals and are not counted, decreases are deposits.
+- Moves: a decrease outside a container, or in a sack menu, is held for 40 s (one 30 s summary window plus slack) as base
+  items that moved. Hypixel moving items into sacks by itself (a sack picking up items, or one picked up taking them from
+  the inventory) and deposits show up this way, and so do drops, the crafting grid and the cursor in the inventory screen. A
+  sack summary line is first matched against held decreases of the same chain made within its window (`Last Ns` plus 2 s);
+  an inventory increase against any held decrease. Matched units are used up and only the rest is a gain, so items count
+  once when they reach the inventory and not again when they go on into a sack or come back after a drop.
 - Pristine: `PRISTINE! You found ❈ Flawed Amber Gemstone x28!` (a gem symbol before the name; wiki Pristine: each Pristine
   point is +1% chance per Rough of a Flawed). Procs and their Flawed are shown, but the gems are counted only once, when they
   reach the inventory or a sack.
@@ -1290,7 +1297,8 @@ total "at least". The model column is the method's rate with the current stats, 
 and its coins add the modelled secondary drops. Measured / model x efficiency is the efficiency at which the model would give
 the measured rate.
 
-**Known errors.** Moving tracked items from the inventory into sacks during a session counts them twice (once picked up, once in
-the summary). Items dropped and picked up again, or received in trades outside a container screen, count as gains. Gains while
-the selected method is another method are not counted. Saved sessions (Save session, `config/skyprogression-sessions.json`)
+**Known errors.** A real loss outside a container (an item dropped and left) is held as a move, so up to that amount of the same
+item gained in the next 40 s is not counted. A sack summary that arrives before the 0.5 s check has seen the move counts that
+batch twice. Items received outside a container screen and the listed commands still count as gains. Gains while the selected
+method is another method are not counted. Saved sessions (Save session, `config/skyprogression-sessions.json`)
 hold the method, times, counts, measured and model values and a stat/tool/zone/profile snapshot as validation evidence.

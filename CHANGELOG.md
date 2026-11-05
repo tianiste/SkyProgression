@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Session tracker: items that move from the inventory into a sack (a sack picking them up, `/sacks` deposits) are no longer
+  counted twice, and items dropped and picked up again, or put in the crafting grid and taken back, no longer count as new
+  gains. Withdrawing from a sack menu does not count either.
 - Guide checklists know the rarity of the foraging attributes, so a maxed one such as Helix Sharpening shows as owned at
   level 10 instead of partly done.
 

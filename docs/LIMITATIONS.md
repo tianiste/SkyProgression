@@ -186,10 +186,14 @@ is "assumed" is labelled in the interface where it affects a number.
 
 ## Session tracker
 
-- Moving tracked items from the inventory into sacks during a session counts them twice (once picked up, once in the sack
-  summary).
-- Items dropped and picked up again, or received in trades outside a container screen, count as gains.
-- Inventory decreases (selling, storing) and items removed from sacks are ignored; mineshaft corpse loot is not counted.
+- Inventory decreases are held for 40 s and matched against the next sack summary or re-pickup of the same item, so moves
+  into sacks and dropped-and-picked-up items count once. A real loss outside a container (an item dropped for good) makes
+  the next 40 s of gains of that item count less, by at most the amount lost. A sack summary that arrives within 0.5 s of
+  the move, before the inventory check sees it, still counts that batch twice.
+- Items received outside a container screen and outside the listed move commands (for example from a menu that is not a
+  container) count as gains. Other containers are not compared, so selling, storing and trades are ignored; a container
+  whose title contains "Sack" is treated as a sack menu.
+- Items removed from sacks are ignored; mineshaft corpse loot is not counted.
 - Only the selected method counts. Sack summaries arrive at most every 30 s, so short sessions are coarse.
 - The HUD setting is not saved between launches. Not yet run in game.
 
