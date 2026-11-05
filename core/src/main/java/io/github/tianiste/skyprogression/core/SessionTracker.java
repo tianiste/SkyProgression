@@ -118,7 +118,7 @@ public final class SessionTracker {
         if (state == State.RUNNING || state == State.PAUSED) { state = State.STOPPED; stoppedAt = now; version++; }
     }
     public void reset() {
-        state = State.READY; activeMs = 0; baseUnits.clear(); raw.clear(); bySource.clear(); pristineProcs = pristineFlawed = 0; version++;
+        state = State.READY; activeMs = 0; baseUnits.clear(); raw.clear(); bySource.clear(); pristineProcs = pristineFlawed = 0; moved.clear(); version++;
     }
     /** Pauses after idleMs without a main-product gain; the active time ends at the last gain. */
     public void tick(long now) {
@@ -165,6 +165,40 @@ public final class SessionTracker {
     public void pristine(String gem, long flawed) {
         if (state != State.RUNNING || byId("FLAWED_" + gem.toUpperCase(Locale.ROOT) + "_GEM") == null) return;
         pristineProcs++; pristineFlawed += Math.max(0, flawed); version++;
+    }
+
+    /**
+     * Base items that recently left the inventory (outside containers other than sacks): a sack taking them in, a drop, the
+     * crafting grid or the cursor. A later gain of the same chain within MOVED_MS is first matched against them, since those
+     * items moved rather than being mined: the sack summary lists items the inventory already counted, a re-picked drop
+     * comes back. Each entry is {time, base units left}, oldest first.
+     */
+    private final Map<String, ArrayDeque<long[]>> moved = new HashMap<>();
+    /** How long a decrease waits for its sack summary or re-pickup: one summary window plus slack for the 0.5 s checks. */
+    public static final long MOVED_MS = SACK_WINDOW_MS + 10_000;
+
+    /** Records base units of a tracked chain that left the inventory without a container (other than sacks) open. */
+    public void moved(String base, long units, long now) {
+        if (units <= 0) return;
+        moved.computeIfAbsent(base, k -> new ArrayDeque<>()).addLast(new long[] {now, units});
+    }
+    /**
+     * Matches a gain of units base items against recent decreases of that chain made at or after since (and within MOVED_MS);
+     * matched decreases are used up. Returns the base units left to count as a real gain.
+     */
+    public long unmoved(String base, long units, long now, long since) {
+        ArrayDeque<long[]> q = moved.get(base);
+        if (q == null) return units;
+        while (!q.isEmpty() && q.peekFirst()[0] < now - MOVED_MS) q.removeFirst();
+        for (var it = q.iterator(); units > 0 && it.hasNext(); ) {
+            long[] e = it.next();
+            if (e[0] < since) continue;
+            long used = Math.min(units, e[1]);
+            units -= used; e[1] -= used;
+            if (e[1] == 0) it.remove();
+        }
+        if (q.isEmpty()) moved.remove(base);
+        return units;
     }
 
     public long elapsedMs(long now) { return state == State.READY ? 0 : Math.max(0, (state == State.STOPPED ? stoppedAt : now) - startedAt); }

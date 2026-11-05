@@ -34,8 +34,11 @@ final class SessionWatcher {
     /** "PRISTINE! You found ❈ Flawed Amber Gemstone x28!" (a gem symbol precedes the name). */
     private static final Pattern PRISTINE = Pattern.compile("PRISTINE! You found .*?Flawed (\\w+) Gemstone x([\\d,]+)!");
     private static final Pattern FORMAT = Pattern.compile("§.");
-    /** Commands that move items from sacks or storage into the inventory: the next inventory increase is not a gain. */
-    private static final Set<String> MOVE_COMMANDS = Set.of("gfs", "getfromsacks", "sacks", "pickupstash", "ps", "pv", "storage", "ec", "enderchest", "bp", "backpack", "trade", "wardrobe");
+    /** Slack added to a sack summary's window when matching it against inventory decreases (the inventory is checked every 0.5 s). */
+    private static final long MOVE_SLACK_MS = 2_000;
+    /** Commands that move items from sacks or storage into the inventory: the next inventory increase is not a gain. The
+     * sack menu itself is handled in inventory(). */
+    private static final Set<String> MOVE_COMMANDS = Set.of("gfs", "getfromsacks", "pickupstash", "ps", "pv", "storage", "ec", "enderchest", "bp", "backpack", "trade", "wardrobe");
 
     private static Map<String, Long> baseline;
     private static MiningMethod baselineMethod;
@@ -70,12 +73,19 @@ final class SessionWatcher {
         if (ticks % 20 == 0) { t.tick(now); hud = DATA.trackerHud && !t.empty() ? hudLine(t, now) : null; }
     }
 
-    /** Net base items of each tracked chain in the main inventory; increases are gains, decreases (selling, storing) are ignored. */
+    /**
+     * Net base items of each tracked chain in the main inventory. An increase is a gain, less any of that chain that left the
+     * inventory in the last MOVED_MS (a dropped or carried stack coming back). A decrease outside a container, or in a sack
+     * menu, is remembered as moved: a sack took it in (the next summary lists it again), or it was dropped and may come back.
+     * In other containers (selling, storing, trading) nothing is compared and the next check starts fresh. In a sack menu
+     * increases are withdrawals and not counted.
+     */
     private static void inventory(Minecraft client, SessionTracker t, long now) {
         Player player = client.player;
         var screen = Compat.screen(client);
         boolean container = screen instanceof AbstractContainerScreen<?> && !(screen instanceof InventoryScreen);
-        if (player == null || container) { baseline = null; return; }
+        boolean sackMenu = container && screen.getTitle().getString().contains("Sack");
+        if (player == null || container && !sackMenu) { baseline = null; return; }
         Map<String, Long> units = new HashMap<>();
         for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (stack.isEmpty()) continue;
@@ -84,9 +94,16 @@ final class SessionWatcher {
         }
         // A new world, method or a just-closed container: start comparing from here without counting.
         boolean fresh = baseline == null || baselinePlayer != player || baselineMethod != t.method() || now < ignoreInventoryUntil;
-        if (!fresh) for (var e : units.entrySet()) {
-            long gained = e.getValue() - baseline.getOrDefault(e.getKey(), 0L);
-            if (gained > 0) t.gain(e.getKey(), gained, SessionTracker.Source.INVENTORY, now, 0);
+        if (!fresh) {
+            for (var e : units.entrySet()) {
+                long gained = e.getValue() - baseline.getOrDefault(e.getKey(), 0L);
+                if (gained > 0 && !sackMenu) gained = t.unmoved(e.getKey(), gained, now, 0);
+                if (gained > 0 && !sackMenu) t.gain(e.getKey(), gained, SessionTracker.Source.INVENTORY, now, 0);
+            }
+            for (var e : baseline.entrySet()) {
+                long lost = e.getValue() - units.getOrDefault(e.getKey(), 0L);
+                if (lost > 0) t.moved(e.getKey(), lost, now);
+            }
         }
         baseline = units; baselinePlayer = player; baselineMethod = t.method();
     }
@@ -117,7 +134,12 @@ final class SessionWatcher {
             Matcher m = SACK_LINE.matcher(line);
             if (!m.matches()) continue;
             SessionTracker.Tracked item = t.byName(m.group(2));
-            if (item != null) t.gain(item.id(), number(m.group(1)), SessionTracker.Source.SACK, now, windowMs);
+            if (item == null) continue;
+            // Items that left the inventory within the summary's window moved into the sack; the inventory already counted them.
+            long amount = number(m.group(1)), units = amount * item.baseCount();
+            long left = t.unmoved(item.base(), units, now, now - windowMs - MOVE_SLACK_MS);
+            if (left == units) t.gain(item.id(), amount, SessionTracker.Source.SACK, now, windowMs);
+            else if (left > 0) t.gain(item.base(), left, SessionTracker.Source.SACK, now, windowMs);
         }
     }
 
